@@ -1,0 +1,947 @@
+{
+  "version": 4,
+  "appMode": "player",
+  "linkDefaults": {
+    "style": "straight",
+    "outward": -12,
+    "curve": 6,
+    "laneSpacing": 14
+  },
+  "nodes": [
+    {
+      "id": "hands-symbols",
+      "tier": "shallow",
+      "virtue": "Endurance",
+      "boundary": 2,
+      "title": "Hands as Symbols",
+      "source": "Polder",
+      "bridge": 1,
+      "text": "Hands represent people, and joined hands are unity.",
+      "fixed": true,
+      "x": 690.057675522726,
+      "y": 131.01242236310824,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "kianna-style",
+          "cfg": {
+            "style": "spiral",
+            "outward": -182,
+            "curve": -203
+          }
+        },
+        {
+          "to": "claw-painspren",
+          "cfg": {
+            "style": "radial",
+            "outward": 253,
+            "curve": 37
+          }
+        }
+      ],
+      "unlocked": true,
+      "initiallyHidden": false,
+      "_baseX": 694.057675522726,
+      "_baseY": 117.01242236310824,
+      "_visible": true,
+      "bonus": "Once per scene per character: When you Help/Aid in a conversation, you also gain +1 Focus."
+    },
+    {
+      "id": "pack-tactics",
+      "tier": "mid",
+      "virtue": "Endurance",
+      "boundary": 1,
+      "title": "Pack Tactics",
+      "source": "Battle",
+      "bridge": 1,
+      "text": "Crawling claws work in packs.",
+      "fixed": true,
+      "x": 590.298710489844,
+      "y": 188.6082876789212,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "claws-dig",
+          "cfg": {
+            "style": "spiral",
+            "outward": -62,
+            "curve": -26
+          }
+        }
+      ],
+      "unlocked": true,
+      "initiallyHidden": true,
+      "_baseX": 594.298710489844,
+      "_baseY": 174.6082876789212,
+      "_visible": true
+    },
+    {
+      "id": "smudged-drawing",
+      "tier": "deep",
+      "virtue": "Endurance",
+      "boundary": 2,
+      "title": "Smudged Drawing",
+      "source": "Kianna’s Room",
+      "bridge": 2,
+      "text": "People with hand-pupils blur into one mass — unity → fusion.",
+      "fixed": true,
+      "links": [
+        {
+          "to": "painspren-nirvana",
+          "cfg": {
+            "style": "spiral",
+            "outward": -62,
+            "curve": -89
+          }
+        }
+      ],
+      "x": 239.06029116413177,
+      "y": 246.20415299473396,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "unlocked": true,
+      "initiallyHidden": true,
+      "_baseX": 219.47183389601187,
+      "_baseY": 259.20415299473393,
+      "_visible": true
+    },
+    {
+      "id": "painspren-nirvana",
+      "tier": "center",
+      "virtue": "Endurance",
+      "boundary": 0,
+      "title": "Painspren Utopia",
+      "source": "Culley",
+      "bridge": 0,
+      "text": "Enlightened painspren gather people to create their ‘utopia’.",
+      "bonus": "Reduce the pond’s Drowning Pull distance against you by 5 ft each round. (Doesn’t stack with itself.)",
+      "fixed": true,
+      "initiallyHidden": true,
+      "x": 364.8000183105469,
+      "y": 348.8000183105469,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [],
+      "unlocked": true,
+      "_visible": true,
+      "_baseX": 384.38847557866677,
+      "_baseY": 361.8000183105469
+    },
+    {
+      "id": "shared-song",
+      "tier": "shallow",
+      "virtue": "Remembrance",
+      "boundary": 0,
+      "title": "A Shared Song",
+      "source": "Ward",
+      "bridge": 0,
+      "text": "The Song is known and sung by all; each family’s history lives in it.",
+      "fixed": true,
+      "x": 364.8000183105468,
+      "y": 694.3752102054241,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "song-rewritten",
+          "cfg": {
+            "style": "spiral",
+            "outward": -100,
+            "curve": -102
+          }
+        }
+      ],
+      "unlocked": true,
+      "initiallyHidden": false,
+      "_baseX": 384.3884755786667,
+      "_baseY": 707.3752102054241,
+      "_visible": true,
+      "linkCfg": null,
+      "bonus": "Once per scene: Sincerely quoting the Song gives Advantage on one Presence-based test with people from Promise."
+    },
+    {
+      "id": "claw-painspren",
+      "tier": "mid",
+      "virtue": "Harmony",
+      "boundary": 0,
+      "title": "Claws are Painspren",
+      "source": "Battle",
+      "bridge": 2,
+      "text": "Enlightened Painspren can move debree",
+      "fixed": true,
+      "x": 139.3013261312498,
+      "y": 188.60828767892104,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "pact-empty",
+          "cfg": {
+            "style": "spiral",
+            "outward": -226,
+            "curve": -215
+          }
+        }
+      ],
+      "unlocked": true,
+      "initiallyHidden": true,
+      "_baseX": 119.7128688631299,
+      "_baseY": 201.60828767892104,
+      "_visible": true,
+      "bonus": "Once per scene: The first attack each scene against a Crawling Claw's body has Advantage."
+    },
+    {
+      "id": "rewritten-song",
+      "tier": "deep",
+      "virtue": "Remembrance",
+      "boundary": 0,
+      "title": "Rewritten Song",
+      "source": "Kianna’s Room",
+      "bridge": 1,
+      "text": "Kianna rewrites the verse where Culley dies — memory over reality.",
+      "fixed": true,
+      "links": [
+        {
+          "to": "rem-culley-innocence",
+          "cfg": {
+            "style": "spiral",
+            "outward": -69,
+            "curve": -58
+          }
+        }
+      ],
+      "x": 490.539745456962,
+      "y": 246.20415299473405,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "unlocked": true,
+      "initiallyHidden": true,
+      "_baseX": 494.539745456962,
+      "_baseY": 232.20415299473405,
+      "_visible": true,
+      "bonus": ""
+    },
+    {
+      "id": "culleys-will",
+      "tier": "center",
+      "virtue": "Remembrance",
+      "boundary": 2,
+      "title": "Culley’s Heart",
+      "source": "Culley",
+      "bridge": 1,
+      "text": "With a gemheart, Culley makes the rewrite partly real.",
+      "bonus": "You can target the gem heart; attacks/tests to damage or drain it have Advantage.",
+      "fixed": true,
+      "initiallyHidden": true,
+      "x": 390.78078042408004,
+      "y": 303.8000183105469,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [],
+      "unlocked": true,
+      "_visible": true,
+      "_baseX": 394.78078042408004,
+      "_baseY": 289.8000183105469
+    },
+    {
+      "id": "straw-doll",
+      "tier": "shallow",
+      "virtue": "Harmony",
+      "boundary": 1,
+      "title": "Straw Dolls",
+      "source": "Dellie",
+      "bridge": 2,
+      "text": "Stand-ins for absent loved ones.",
+      "fixed": true,
+      "x": 39.542361098367735,
+      "y": 131.01242236310827,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "burn-doll",
+          "cfg": {
+            "style": "spiral",
+            "outward": -120,
+            "curve": -117
+          }
+        }
+      ],
+      "unlocked": true,
+      "initiallyHidden": false,
+      "_baseX": 19.95390383024784,
+      "_baseY": 144.01242236310827,
+      "_visible": true
+    },
+    {
+      "id": "kianna-location",
+      "tier": "mid",
+      "virtue": "Harmony",
+      "boundary": 2,
+      "title": "The Ribbon & the Rattle",
+      "source": "Travel to Farm",
+      "bridge": 0,
+      "text": "Ribbon fertility wanes; farmers are pushed into the Rattle.",
+      "fixed": true,
+      "x": 364.8000183105468,
+      "y": 579.1834795737984,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "marked-x",
+          "cfg": {
+            "style": "spiral",
+            "outward": -119,
+            "curve": -127
+          }
+        }
+      ],
+      "unlocked": true,
+      "initiallyHidden": true,
+      "_baseX": 384.3884755786667,
+      "_baseY": 592.1834795737984,
+      "_visible": true,
+      "linkCfg": null
+    },
+    {
+      "id": "kianna-dolls",
+      "tier": "deep",
+      "virtue": "Harmony",
+      "boundary": 1,
+      "title": "Kianna’s Doll Collection",
+      "source": "Kianna’s Room",
+      "bridge": 0,
+      "text": "A pile of dolls in Kianna's room.",
+      "fixed": true,
+      "links": [
+        {
+          "to": "kianna-grief",
+          "cfg": {
+            "style": "spiral",
+            "outward": -50,
+            "curve": -58
+          }
+        }
+      ],
+      "x": 364.8000183105469,
+      "y": 463.99174894217265,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "unlocked": true,
+      "initiallyHidden": true,
+      "_baseX": 384.38847557866677,
+      "_baseY": 476.99174894217265,
+      "_visible": true
+    },
+    {
+      "id": "kianna-lure",
+      "tier": "center",
+      "virtue": "Harmony",
+      "boundary": 1,
+      "title": "Kianna Lured",
+      "source": "Culley",
+      "bridge": 2,
+      "text": "Kianna lured everyone to the pond.",
+      "bonus": "+3 to checks against Kianna about \"letting go\" of the past.",
+      "fixed": true,
+      "initiallyHidden": true,
+      "x": 338.8192561970137,
+      "y": 303.8000183105469,
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [],
+      "unlocked": true,
+      "_visible": true,
+      "_baseX": 319.2307989288938,
+      "_baseY": 316.8000183105469
+    },
+    {
+      "id": "end-more-vanish",
+      "virtue": "Harmony",
+      "tier": "shallow",
+      "title": "Each Weeping, More Vanish",
+      "source": "Polder",
+      "text": "Disappearances increase during the Weeping.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "claws-dig",
+          "cfg": {
+            "style": "spiral",
+            "outward": -400,
+            "curve": -335
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": false,
+      "order": 1,
+      "x": 629.1294555664062,
+      "y": 504.09796142578125,
+      "_baseX": 649.4470949812312,
+      "_baseY": 500.49962977154615,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "end-claws-made",
+      "virtue": "Harmony",
+      "tier": "shallow",
+      "title": "Claws of Debris",
+      "source": "Battle",
+      "text": "Refuse & mud form claws; they reform after destruction.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "pack-tactics",
+          "cfg": {
+            "style": "spiral",
+            "outward": -144,
+            "curve": -146
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": false,
+      "order": 0,
+      "x": 657.0877075195312,
+      "y": 339.0719909667969,
+      "_baseX": 671.1447046696265,
+      "_baseY": 328.14360162557944,
+      "_visible": true,
+      "staging": null,
+      "bonus": ""
+    },
+    {
+      "id": "end-drag-furrows",
+      "virtue": "Harmony",
+      "tier": "mid",
+      "title": "Dragging Furrows",
+      "source": "Farm Search",
+      "text": "Soil grooves show bodies pulled toward the pond.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "pepper-crate",
+          "cfg": {
+            "style": "radial",
+            "outward": 140,
+            "curve": 88
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 0,
+      "x": 323.8287048339844,
+      "y": 132.3584747314453,
+      "_baseX": 302.6718442818403,
+      "_baseY": 130.91401553017636,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "end-gemheart",
+      "virtue": "Harmony",
+      "tier": "deep",
+      "title": "Smuggled Gemheart",
+      "source": "Culley",
+      "text": "An unusual gem heart was in the pepper crate.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "culleys-will",
+          "cfg": {
+            "style": "spiral",
+            "outward": -88,
+            "curve": 6
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 0,
+      "x": 299.2951965332031,
+      "y": 367.15509033203125,
+      "_baseX": 305.31238009858373,
+      "_baseY": 389.041704613766,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "claws-dig",
+      "virtue": "Harmony",
+      "tier": "mid",
+      "title": "Claw Ambush",
+      "source": "Battle",
+      "text": "Claws can ambush from underground too!",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "end-drag-furrows",
+          "cfg": {
+            "style": "spiral",
+            "outward": -75,
+            "curve": -102
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 1,
+      "x": 465.1746826171875,
+      "y": 114.22266387939453,
+      "_baseX": 451.14429562869446,
+      "_baseY": 103.2763821725261,
+      "_visible": true,
+      "staging": null,
+      "bonus": "Once per scene: When someone hits a Crawling Claw, they may scatter it. the claw takes 2 more turns to reform."
+    },
+    {
+      "id": "kianna-style",
+      "virtue": "Endurance",
+      "tier": "shallow",
+      "title": "Kianna’s Art Style",
+      "source": "Dellie",
+      "text": "Hands motif with a specific style.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "smudged-drawing",
+          "cfg": {
+            "style": "spiral",
+            "outward": -233,
+            "curve": -215
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 2,
+      "x": 558.2061157226562,
+      "y": 26.896129608154297,
+      "_baseX": 546.1821949354262,
+      "_baseY": 14.783504272714499,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "harm-marked-x",
+      "virtue": "Remembrance",
+      "tier": "mid",
+      "title": "Missing an X",
+      "source": "Farm Search",
+      "text": "Kianna's House does not have an X.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "kianna-lure",
+          "cfg": {
+            "style": "spiral",
+            "outward": -151,
+            "curve": -20
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 0,
+      "x": 546.7484741210938,
+      "y": 376.53802490234375,
+      "_baseX": 564.0419160600834,
+      "_baseY": 368.40194640001397,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "song-rewritten",
+      "virtue": "Harmony",
+      "tier": "shallow",
+      "title": "Taboo Changes",
+      "source": "Ward",
+      "text": "Making changes to the song is a sin.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "rewritten-song",
+          "cfg": {
+            "style": "spiral",
+            "outward": -233,
+            "curve": -159
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 2,
+      "x": 520.8931274414062,
+      "y": 632.2466430664062,
+      "_baseX": 542.8590305033465,
+      "_baseY": 637.3540396389884,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "burn-doll",
+      "virtue": "Remembrance",
+      "tier": "shallow",
+      "title": "Burning Dolls",
+      "source": "Dellie",
+      "text": "Dolls are burned at Weeping’s end to let go.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "rem-dislikes-burning",
+          "cfg": {
+            "style": "spiral",
+            "outward": -157,
+            "curve": -142
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 2,
+      "x": 15.300745010375977,
+      "y": 297.2571716308594,
+      "_baseX": 1.3587542072121153,
+      "_baseY": 316.26239801601616,
+      "_visible": true,
+      "staging": null,
+      "bonus": "Once per scene: One PC may reroll the plot die (take the new result)."
+    },
+    {
+      "id": "not-returned",
+      "virtue": "Remembrance",
+      "tier": "shallow",
+      "title": "Kianna Hasn’t Returned",
+      "source": "Dellie",
+      "text": "She promised last year but hasn’t come.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "kianna-location",
+          "cfg": {
+            "style": "spiral",
+            "outward": -132,
+            "curve": -140
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": false,
+      "order": 0,
+      "x": 201.1003875732422,
+      "y": 561.7927856445312,
+      "_baseX": 213.0002710269034,
+      "_baseY": 581.9665867258656,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "rem-dislikes-burning",
+      "virtue": "Remembrance",
+      "tier": "shallow",
+      "title": "Kianna Dislikes Burning Dolls",
+      "source": "Dellie",
+      "text": "She always refused to burn them",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "kianna-dolls",
+          "cfg": {
+            "style": "spiral",
+            "outward": -113,
+            "curve": -108
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 1,
+      "x": 72.16255187988281,
+      "y": 455.0672912597656,
+      "_baseX": 66.5840918280214,
+      "_baseY": 476.9979483549386,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "rem-culley-innocence",
+      "virtue": "Remembrance",
+      "tier": "deep",
+      "title": "Craves Innocence",
+      "source": "Kianna’s Shrine",
+      "text": "She does not love Culley- she loves what he represents to her; the past can be regained.",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "kianna-lure",
+          "cfg": {
+            "style": "spiral",
+            "outward": -43,
+            "curve": -20
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 0,
+      "x": 388.19952392578125,
+      "y": 221.04373168945312,
+      "_baseX": 371.13443370951956,
+      "_baseY": 212.66215595609256,
+      "_visible": true,
+      "staging": null,
+      "bonus": ""
+    },
+    {
+      "id": "pact-empty",
+      "virtue": "Endurance",
+      "tier": "mid",
+      "title": "No Bodies in Cradlelace",
+      "source": "Farm Search",
+      "text": "There are no bodies found in Cradlelace- but lots of signs of struggle",
+      "bonus": "",
+      "dc": null,
+      "test": null,
+      "tags": [],
+      "links": [
+        {
+          "to": "painspren-nirvana",
+          "cfg": {
+            "style": "spiral",
+            "outward": -119,
+            "curve": -51
+          }
+        }
+      ],
+      "fixed": false,
+      "unlocked": true,
+      "initiallyHidden": true,
+      "order": 0,
+      "x": 170.4215087890625,
+      "y": 398.6607360839844,
+      "_baseX": 164.02077482992965,
+      "_baseY": 420.4999198225265,
+      "_visible": true,
+      "staging": null
+    },
+    {
+      "id": "pepper-crate",
+      "title": "Pepper Crate",
+      "virtue": "Harmony",
+      "tier": "deep",
+      "source": "Pond Search",
+      "text": "A horse cart near the pond with peppers floating nearby. Driver is nowhere to be seen.",
+      "dc": null,
+      "test": null,
+      "bonus": null,
+      "tags": [],
+      "loreUrl": null,
+      "unlocked": true,
+      "links": [
+        {
+          "to": "end-gemheart",
+          "cfg": {
+            "style": "spiral",
+            "outward": -31,
+            "curve": -45
+          }
+        }
+      ],
+      "initiallyHidden": true,
+      "order": 1,
+      "x": 247.6422576904297,
+      "y": 317.1479797363281,
+      "_baseX": 234.42336174020957,
+      "_baseY": 336.60799129709403,
+      "_visible": true,
+      "staging": null,
+      "fixed": false
+    },
+    {
+      "id": "marked-x",
+      "title": "Marked with an X",
+      "virtue": "Remembrance",
+      "tier": "mid",
+      "source": "Farm Search",
+      "text": "Abandoned houses bear a muddy X.",
+      "dc": null,
+      "test": null,
+      "bonus": null,
+      "tags": [],
+      "loreUrl": null,
+      "unlocked": true,
+      "links": [
+        {
+          "to": "harm-marked-x",
+          "cfg": {
+            "style": "radial",
+            "outward": 26,
+            "curve": 31
+          }
+        }
+      ],
+      "initiallyHidden": true,
+      "order": 1,
+      "x": 491.7823181152344,
+      "y": 508.0153503417969,
+      "_baseX": 513.7413682362162,
+      "_baseY": 510.8018765052166,
+      "_visible": true,
+      "staging": null,
+      "fixed": false
+    },
+    {
+      "id": "kianna-grief",
+      "title": "Kianna's Mind",
+      "virtue": "Endurance",
+      "tier": "deep",
+      "source": "Kianna",
+      "text": "She does not see reality.",
+      "dc": null,
+      "test": null,
+      "bonus": "Once per scene: If you begin your plea to Kianna with a simple childhood phrase or a line from the Song, gain Advantage and ignore chorus-borne penalties on that test.",
+      "tags": [],
+      "loreUrl": null,
+      "unlocked": true,
+      "links": [
+        {
+          "to": "rem-culley-innocence",
+          "cfg": {
+            "style": "radial",
+            "outward": 83,
+            "curve": 75
+          }
+        }
+      ],
+      "initiallyHidden": true,
+      "order": 0,
+      "x": 437.75921630859375,
+      "y": 387.9427795410156,
+      "_baseX": 459.01453916872117,
+      "_baseY": 386.8189301098981,
+      "_visible": true,
+      "staging": null,
+      "fixed": false
+    },
+    {
+      "id": "paired-spren",
+      "title": "Statues of Paired Spren",
+      "virtue": "Endurance",
+      "tier": "shallow",
+      "source": "Ward",
+      "text": "Common in homes — what ‘good harmony’ looks like.",
+      "dc": null,
+      "test": null,
+      "bonus": null,
+      "tags": [],
+      "loreUrl": null,
+      "unlocked": true,
+      "links": [
+        {
+          "to": "spren-namesake",
+          "cfg": {
+            "style": "spiral",
+            "outward": -107,
+            "curve": -77
+          }
+        }
+      ],
+      "initiallyHidden": false,
+      "order": 1,
+      "x": 393.1077575683594,
+      "y": -2.765108108520508,
+      "_baseX": 374.3685806599114,
+      "_baseY": -9.097419759911679,
+      "_visible": true,
+      "staging": null,
+      "fixed": false
+    },
+    {
+      "id": "spren-namesake",
+      "title": "Spren Seek Their Namesake",
+      "virtue": "Endurance",
+      "tier": "shallow",
+      "source": "Ward",
+      "text": "Painspren gather where pain is present.",
+      "dc": null,
+      "test": null,
+      "bonus": null,
+      "tags": [],
+      "loreUrl": null,
+      "unlocked": true,
+      "links": [
+        {
+          "to": "claw-painspren",
+          "cfg": {
+            "style": "spiral",
+            "outward": -125,
+            "curve": -159
+          }
+        }
+      ],
+      "initiallyHidden": true,
+      "order": 0,
+      "x": 236.2119598388672,
+      "y": 55.53565979003906,
+      "_baseX": 214.25509551653084,
+      "_baseY": 58.29025876659153,
+      "_visible": true,
+      "staging": null,
+      "fixed": false
+    }
+  ]
+}

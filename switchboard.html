@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Roshar BGM Switchboard</title>
+<style>
+  :root{--bg:#0f172a;--panel:#111827;--muted:#94a3b8;--text:#e5e7eb;
+        --accent:#60a5fa;--accent-2:#22d3ee;--ok:#34d399;--warn:#fbbf24;
+        --ring:rgba(96,165,250,.4);}
+  html,body{height:100%}
+  body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+  .app{display:grid;grid-template-columns:1fr 380px;gap:18px;height:100vh;padding:14px;box-sizing:border-box}
+  header{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:6px 10px;
+         background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px}
+  header h1{margin:0;font-size:18px}
+  header small{color:var(--muted)}
+  .sections{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(300px,1fr);gap:14px;overflow:auto;padding-bottom:8px}
+  .col{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;display:flex;flex-direction:column;min-height:240px}
+  .col header{background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.06);border-radius:12px 12px 0 0;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+  .col header h2{margin:0;font-size:16px}
+  .items{padding:10px 10px 12px;display:flex;flex-direction:column;gap:10px}
+
+  .item{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.03);
+        border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px;min-width:0}
+  .item.playing{outline:2px solid var(--ok);box-shadow:0 0 0 4px var(--ring)}
+  .meta{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:6px}
+  .title{display:flex;align-items:center;gap:8px;font-weight:600;min-width:0}
+  .title .dot{width:8px;height:8px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,.3);flex:0 0 auto}
+  .item.playing .title .dot{background:var(--ok);border-color:var(--ok)}
+  .urlVol{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .urlVol input[type="text"]{flex:1 1 220px;min-width:160px;border:1px solid rgba(255,255,255,.08);background:#0b1220;color:var(--text);padding:8px 10px;border-radius:8px}
+  .volWrap{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:12px;color:var(--muted)}
+  .slider{width:120px}
+  .actions{flex:0 0 auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;margin-left:auto}
+  .btn{padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.08);color:#0b1220;background:var(--accent);font-weight:600;cursor:pointer;font-size:12px}
+  .btn.secondary{background:transparent;color:var(--text)}
+  .btn.current{background:var(--accent-2);color:#0b1220}
+  .btn.toggled{background:var(--ok);color:#0b1220}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+
+  .player{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .player .now{font-size:13px;color:var(--muted)}
+  iframe{border:0;border-radius:8px;overflow:hidden;width:100%;aspect-ratio:16/9;background:black}
+  .masterVol{grid-column:1/-1;display:flex;gap:10px;align-items:center;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px}
+  .masterVol .slider{width:220px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🗝️ Roshar BGM Switchboard</h1>
+    <small>Master volume by default. Override per-track. Loop button to repeat a single song.</small>
+  </header>
+
+  <div class="masterVol">
+    <strong>Master Volume</strong>
+    <input id="masterVol" class="slider" type="range" min="0" max="100" step="1" value="50">
+    <span id="masterPct" class="pill">50</span>
+  </div>
+
+  <div class="sections" id="sections"></div>
+
+  <div class="player">
+    <div id="yt-holder"><div id="player"></div></div>
+    <div class="now">
+      Section: <span class="pill" id="curSection">—</span><br/>
+      Now Playing: <span class="pill" id="curItem">—</span>
+    </div>
+    <div class="controls">
+      <button class="btn" id="btnPlay">Play</button>
+      <button class="btn secondary" id="btnNext">Next ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LS_PREFIX='roshar_bgm_v4';
+const LS_MASTER=`${LS_PREFIX}:masterVol`;
+const LS_TRACKVOL=`${LS_PREFIX}:trackVol`;
+const LS_OVERRIDE=`${LS_PREFIX}:trackOverride`;
+const LS_LOOPONE=`${LS_PREFIX}:loopOne`;
+
+const SCENARIO_DATA = [
+  {
+    id: "town",
+    title: "Towns",
+    items: [
+      { title: "Capital City", url: "https://music.youtube.com/watch?v=3Om8b2KIhbI&si=84TCNEXeBets0tud" },
+      { title: "Bridge City", url: "https://music.youtube.com/watch?v=FKd-VIAAKgQ&si=kBNq53UF-DvO-7P-" },
+      { title: "Veo Lu Sluce", url: "https://music.youtube.com/watch?v=f266KXzVARc&si=Qo6gDV4fqTUiNYGT" },
+    ],
+  },
+  {
+    id: "npcs",
+    title: "NPCs",
+    items: [
+      { title: "High Commander", url: "https://music.youtube.com/watch?v=bWt8JckYwH4&si=iz8r6ih_GduzIq_h" },
+      { title: "Belle Handles it solo", url: "https://music.youtube.com/watch?v=IyZTb_tTVNY&si=eqOPFr0BwG0Dxq1T"},
+      { title: "Tinkerer", url: "https://music.youtube.com/watch?v=KAkjTMQ3DDM&si=LNuMipn_9Dkgxt8t" },
+      { title: "Snarky Tough Guy", url: "https://music.youtube.com/watch?v=HcMxFBFUM04&si=qzSFyytFhnkPS2IX" },
+    ],
+  },
+  {
+    id: 'environment',
+    title: 'Environments',
+    items: [
+      { title: "Let highlands", url: "https://music.youtube.com/watch?v=rvT9X89nNZM&si=eLfG3f0OrpM4XLGb" },
+      { title: "Eastern Wildlands", url: "https://music.youtube.com/watch?v=N8lPl-eqrBM&si=AKNaLJWi7BjNfh_7" },
+      { title: "Moonless Starry Night", url: "https://music.youtube.com/watch?v=KSH_0S7v2Sw&si=cdkm-RK5I4FuCOnA" },
+      { title: "Vieyard", url: "https://music.youtube.com/watch?v=TlwYp9ps_mo&si=OeRR64Q7Ip9MpZ20" },
+      { title: "Prison Sands", url: "https://music.youtube.com/watch?v=X6L3zsG4toc&si=lhDtxHNsKCL7bI6-" },
+      { title: "Silkie Guild", url: "https://music.youtube.com/watch?v=dYOPL1xs01E&si=7qCKAR-U7S3xyfo7" },
+      { title: "Costa Faguita", url: "https://music.youtube.com/watch?v=0IC9Mzhxmh4&si=PEdHKb-DuAqBlgpz" },
+      { title: "Snowfields", url: "https://music.youtube.com/watch?v=d7sxLTsfsK8&si=Vo-6YxBQP1YjGbYX" },
+      { title: "Rivelgauge Monastary", url: "https://music.youtube.com/watch?v=H9agE8AYsak&si=aDZDoku0mOWBjLnk" },
+      { title: "Althea's Waltz", url: "https://music.youtube.com/watch?v=OaMjLLHUFhw&si=6UWpbhpl-fm1cTS1" },
+      { title: "Infultration", url: "https://music.youtube.com/watch?v=EZhALr4Gpbo&si=XugRY831a4UjCqAR" },
+      { title: "Moogle Woods", url: "https://music.youtube.com/watch?v=ZSTIebYnyqU&si=rTBd_pzNTLTwZPMp" },
+
+      // { title: 'Caravan Crossroad (FFCC)', url: 'https://www.youtube.com/watch?v=W7mCq_8ZQo0' },
+      // { title: 'The First Town / Tipa (FFCC)', url: 'https://www.youtube.com/watch?v=2iL1atXP05Q' },
+      // { title: 'Midnight Rendezvous (FF7 Remake)', url: 'https://www.youtube.com/watch?v=mqq37YGxnkk' },
+    ],
+  }, {
+    id: "travel",
+    title: "Travel",
+    items: [
+        { title: "Crystal Bearer Ramble", url: "https://music.youtube.com/watch?v=tv-DaE4hjpY&si=i49vVExoeVGoI1y4" },
+        { title: "Surfin Lyle", url: "https://music.youtube.com/watch?v=4SNC5RYZqHk&si=bqxnYrgB14N5ep_-" },
+        { title: "Trouble Up Ahead", url: "https://music.youtube.com/watch?v=QDuFb2RQp18&si=_A2N_0j4e9jYpXfY" },
+        { title: "Crystal Locomotive", url: "https://music.youtube.com/watch?v=viKlH1ltyG4&si=njuGZxKQfbk6Q8Y4" },
+        // { title: "Beyond the Horizon", url: "https://music.youtube.com/watch?v=Fba_6jaD4Uc&si=OHVf_Ipqwiirbyq8" },
+    ],
+  },
+  {
+    id: 'small-battle',
+    title: 'Small battle',
+    items: [
+        { title: "An unknown enemy", url: "https://music.youtube.com/watch?v=7HynIjVloyM&si=BDesExqgTaQTY5dK" },
+        { title: "Awakened Beast", url: "https://music.youtube.com/watch?v=49j6Z7QmVT0&si=15AP2fqxknz1AiiB" },
+        { title: "Freezing Heat", url: "https://music.youtube.com/watch?v=NjfyUfyJ5xA&si=aYRBOXHP8Fe8SrVA" },
+        { title: "Blockade Buster", url: "https://music.youtube.com/watch?v=N3FuLT44aVI&si=nhnQYSBodQ7pz0t6" },
+        { title: "Narrow Escape", url: "https://music.youtube.com/watch?v=I_o88BeCsdI&si=gp-PDHSb5d4sMp6x" },
+        { title: "Destiny", url: "https://music.youtube.com/watch?v=ytx0NxwvUXI&si=1yag0JNq-T_bbCpn" },
+    ],
+  },
+
+  {
+    id: "games",
+    title: "Games",
+    items: [
+      { title: "Dig! Dig! Dig!", url: "https://music.youtube.com/watch?v=wqTBk5WAD34&si=oRCEUtOql4LNvpLi" },
+      { title: "Girls, we have to win", url: "https://music.youtube.com/watch?v=awvPLExEhGA&si=HVUadpgdnShJnL6-" },
+      { title: "Kickerball", url: "https://music.youtube.com/watch?v=4GOeZB4OMtU&si=STtK7axRsDDU4GBC" },
+      { title: "Hidden Tales of adventure", url: "https://music.youtube.com/watch?v=ODbNkc4Wg4A&si=FGzBZeooewfdFWwN" },
+    ],
+  },
+  {
+    id: 'ambush',
+    title: 'Ambush',
+    items: [
+      { title: "Zu Ambush ～ Sky Dive", url: "https://music.youtube.com/watch?v=w-GB5NhHQns&si=vmegctFyWTvJguBS", },
+      { title: 'Collapsed Expressway (FF7 Remake)', url: 'https://www.youtube.com/watch?v=ISEQF8rsMXo' },
+      { title: 'Dreaming of Twilight (FFCC)', url: 'https://www.youtube.com/watch?v=OqznLrZXNlI' },
+      { title: 'Existence and Oblivion (Crystal Bearers)', url: 'https://www.youtube.com/watch?v=U6mx0Rnno34' },
+      { title: 'Let the Battles Begin! – Extended (FF7 Remake)', url: 'https://www.youtube.com/watch?v=s5NxP6tjm5o' },
+    ],
+  },
+  {
+    id: 'rattle',
+    title: 'The Rattle & Farmhouses',
+    items: [
+      { title: "Ruins", url: "https://music.youtube.com/watch?v=hxAcEWuSIBM&si=ApjxpL6oZIVWt58d" },
+      { title: "Chase the Hostile", url: "https://music.youtube.com/watch?v=V8lC2pgW_tA&si=qNZ4MW5ls4WIe3SN" },
+      { title: "The lost tribe", url: "https://music.youtube.com/watch?v=SLecewPAF34&si=aOL7BaKSUi6GALUZ" },
+      { title: "Hide and Seek", url: "https://music.youtube.com/watch?v=sWGcU1CIayA&si=aVQV9VlMCcTlRjkC" },
+      { title: "Existance and Obliveon", url: "https://music.youtube.com/watch?v=_DEveDpKA_Q&si=Y0njphTYdXN7baGi" },
+      { title: "Areal Prison", url: "https://music.youtube.com/watch?v=f-DCtm5Vdxg&si=iKYdnngEl4M-H4MC" },
+      { title: "For the Kingdom", url: "https://music.youtube.com/watch?v=FJwI5Re6j6Y&si=mSItZxBaH8HRWLub" },
+
+      { title: 'Oblivion Village / Tida (FFCC Remastered)', url: 'https://www.youtube.com/watch?v=3xZ_13DZDSs' },
+      // { title: 'Serenity (FFCC)', url: 'https://www.youtube.com/watch?v=KI0ggsiNJP4' },
+      // { title: 'Majestic Theme (Crystal Bearers)', url: 'https://www.youtube.com/watch?v=IgjJvzNOU6A' },
+    ],
+  },
+  {
+    id: 'pond',
+    title: 'Cradlelace Pond',
+    items: [
+        { title: "The taint of power", url: "https://music.youtube.com/watch?v=EwFs9Wc-37U&si=RSeIYlCObVVDx40K" },
+        { title: "An unlikely guest", url: "https://music.youtube.com/watch?v=1z2WHPjr3mg&si=JuyDDsbHbK8fQZAD" },
+        
+      { title: 'Miasma Pit (FFCC Remastered)', url: 'https://www.youtube.com/watch?v=fGoEeIVZPsI' },
+      { title: 'Frozen Sluice (FFCC Remastered)', url: 'https://www.youtube.com/watch?v=F6Uy_V7QrkY' },
+      { title: 'Twilight in Dreamland (FFCC)', url: 'https://www.youtube.com/watch?v=c8XLVPZopmU' },
+    ],
+  },
+  {
+    id: 'boss',
+    title: 'Boss Battle — The Amalgamation',
+    items: [
+      { title: "Indominatable", url: "https://music.youtube.com/watch?v=copl-P5nKmo&si=G-HR0sbF8FW9XOVs" },
+      { title: "The Final Showdown", url: "https://music.youtube.com/watch?v=YXIPRQbAC8s&si=z6ApG3rR6k5uopDQ" },
+      { title: "Raging Ambition", url: "https://music.youtube.com/watch?v=BjMShIViODE&si=plOOArvYTn71AULZ" },
+      { title: "The World is Changing", url: "https://music.youtube.com/watch?v=6F1-KxW9Qbg&si=f0hzTHy4CNEjg77D" },
+      { title: "Bahamut strikes", url: "https://music.youtube.com/watch?v=7DCIM_9RNcQ&si=lPNXzdWn4z3p53uE" },
+      { title: "Bahamut Rage", url: "https://music.youtube.com/watch?v=Ul_OGXpcX5c&si=ow_b0xs7AzlegA6F" },
+      { title: "This is the end for you", url: "https://music.youtube.com/watch?v=avoJnm3AmLY&si=wLo2XjS81F8IW8Bd" },
+
+      // { title: 'J-E-N-O-V-A: Quickening (FF7 Remake)', url: 'https://www.youtube.com/watch?v=E62uaLhqk08' },
+      // { title: 'The Valkyrie (FF7 Remake)', url: 'https://www.youtube.com/watch?v=GrNbZqgiQr4' },
+      // { title: 'The Ghoul (FF7 Remake)', url: 'https://www.youtube.com/watch?v=ZUF9Emaxbz0' },
+      // { title: 'Monster’s Dance ~ Rondo ~ (FFCC)', url: 'https://www.youtube.com/watch?v=NbcZ2SIliFg' },
+      // { title: 'Final Showdown (Crystal Bearers)', url: 'https://www.youtube.com/watch?v=pJOjgk8be-g' },
+    ],
+  },
+  {
+    id: 'epilogue',
+    title: 'Epilogue & Return',
+    items: [
+      { title: "Moment of Repose", url: "https://music.youtube.com/watch?v=wfogm-wlbAg&si=82fOUFSVU7kz4D-S" },
+      { title: "Quiet Lament", url: "https://music.youtube.com/watch?v=gW1o4Y6VOvw&si=YXIouhNWv1zA4iCj" },
+      { title: "Ephemeron", url: "https://music.youtube.com/watch?v=bNfbUqbGILw&si=alKWGhWb73Ty6q6L" },
+      // { title: "A Hero's Resolve", url: "https://music.youtube.com/watch?v=0Im7eFGXPZg&si=Im4DWKceqVQoSNCb" },
+      { title: 'Echo of Memories (FFCC)', url: 'https://www.youtube.com/watch?v=2S65Bgf2TPQ' },
+      { title: 'Dreaming of Twilight (FFCC)', url: 'https://www.youtube.com/watch?v=OqznLrZXNlI' },
+    ],
+  },
+];
+
+let state={
+  sections:JSON.parse(JSON.stringify(SCENARIO_DATA)),
+  currentSectionIdx:null,currentItemIdx:null,
+  player:null,playerReady:false,userHasInteracted:false,
+  masterVol:loadNum(LS_MASTER,50),
+  trackVol:loadJSON(LS_TRACKVOL,{}),
+  override:loadJSON(LS_OVERRIDE,{}),
+  loopOne:loadJSON(LS_LOOPONE,{})
+};
+
+function $(s,r=document){return r.querySelector(s);}
+function parseId(u){try{if(/^[a-zA-Z0-9_-]{11}$/.test(u))return u;const x=new URL(u);return x.searchParams.get('v');}catch{}return null;}
+function curItem(){if(state.currentSectionIdx==null||state.currentItemIdx==null)return null;return state.sections[state.currentSectionIdx].items[state.currentItemIdx];}
+function itemKey(s,i){return `${s}:${i}`;}
+function saveJSON(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function loadJSON(k,d){try{const s=localStorage.getItem(k);return s?JSON.parse(s):d;}catch{return d;}}
+function loadNum(k,d){const n=Number(localStorage.getItem(k));return Number.isFinite(n)?n:d;}
+
+function applyVol(){
+  if(!state.playerReady)return;
+  const it=curItem();if(!it)return;
+  const key=itemKey(state.currentSectionIdx,state.currentItemIdx);
+  let vol=state.masterVol;
+  if(state.override[key]) vol=state.trackVol[key]??state.masterVol;
+  state.player.setVolume(vol);
+}
+function playItem(s,i){state.currentSectionIdx=s;state.currentItemIdx=i;render();const it=curItem();const id=parseId(it.url);if(id){state.player.loadVideoById(id);applyVol();}}
+function nextItem(){const s=state.currentSectionIdx;if(s==null)return;const items=state.sections[s].items;if(!items.length)return;state.currentItemIdx=(state.currentItemIdx+1)%items.length;playItem(s,state.currentItemIdx);}
+
+const sectionsEl=$('#sections');const curSectionEl=$('#curSection');const curItemEl=$('#curItem');
+const masterVolEl=$('#masterVol');const masterPctEl=$('#masterPct');$('#btnPlay').onclick=()=>{state.userHasInteracted=true;const it=curItem();if(!it)return;const id=parseId(it.url);if(id){state.player.loadVideoById(id);applyVol();}};
+$('#btnNext').onclick=()=>{nextItem();};
+
+masterVolEl.value=state.masterVol;masterPctEl.textContent=state.masterVol;
+masterVolEl.oninput=e=>{state.masterVol=+e.target.value;masterPctEl.textContent=state.masterVol;applyVol();localStorage.setItem(LS_MASTER,state.masterVol);};
+
+function render(){
+  sectionsEl.innerHTML='';
+  state.sections.forEach((sec,sIdx)=>{
+    const col=document.createElement('div');col.className='col';col.innerHTML=`<header><h2>${sec.title}</h2></header><div class="items"></div>`;
+    const wrap=$('.items',col);
+    sec.items.forEach((it,iIdx)=>{
+      const key=itemKey(sIdx,iIdx);
+      const vol=state.trackVol[key]??50;
+      const isOver=!!state.override[key];
+      const isLoop=!!state.loopOne[key];
+      const row=document.createElement('div');row.className='item'+(sIdx===state.currentSectionIdx&&iIdx===state.currentItemIdx?' playing':'');
+      row.innerHTML=`
+        <div class="meta">
+          <div class="title"><span class="dot"></span>${it.title}</div>
+          <div class="urlVol">
+            <input type="text" value="${it.url||''}">
+            <label class="volWrap"><input type="checkbox" class="ovrChk" ${isOver?'checked':''}> Override
+              <input type="range" class="slider vol" min="0" max="100" step="1" value="${vol}" ${isOver?'':'disabled'}>
+              <span class="pill pct">${vol}</span>
+            </label>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn small playNow">▶</button>
+          <button class="btn small loopBtn ${isLoop?'toggled':''}">${isLoop?'Looping':'Loop'}</button>
+        </div>`;
+      const urlIn=$('input[type=text]',row);urlIn.onchange=e=>{it.url=e.target.value.trim();};
+      const chk=$('.ovrChk',row);const volSl=$('.vol',row);const pct=$('.pct',row);
+      chk.onchange=()=>{state.override[key]=chk.checked;saveJSON(LS_OVERRIDE,state.override);volSl.disabled=!chk.checked;applyVol();};
+      volSl.oninput=e=>{pct.textContent=e.target.value;};
+      volSl.onchange=e=>{state.trackVol[key]=+e.target.value;saveJSON(LS_TRACKVOL,state.trackVol);applyVol();};
+      $('.playNow',row).onclick=()=>{playItem(sIdx,iIdx);};
+      const loopBtn=$('.loopBtn',row);loopBtn.onclick=()=>{const now=!state.loopOne[key];state.loopOne[key]=now;saveJSON(LS_LOOPONE,state.loopOne);loopBtn.classList.toggle('toggled',now);loopBtn.textContent=now?'Looping':'Loop';};
+      wrap.appendChild(row);
+    });
+    sectionsEl.appendChild(col);
+  });
+  curSectionEl.textContent=state.currentSectionIdx==null?'—':state.sections[state.currentSectionIdx].title;
+  curItemEl.textContent=curItem()?curItem().title:'—';
+}
+
+(function(){const tag=document.createElement('script');tag.src="https://www.youtube.com/iframe_api";document.head.appendChild(tag);})();
+window.onYouTubeIframeAPIReady=function(){
+  state.player=new YT.Player('player',{playerVars:{autoplay:0,rel:0,modestbranding:1},events:{
+    onReady:()=>{state.playerReady=true;render();},
+    onStateChange:e=>{
+      if(e.data===YT.PlayerState.ENDED){
+        const key=itemKey(state.currentSectionIdx,state.currentItemIdx);
+        if(state.loopOne[key]){ // loop same song
+          const it=curItem();const id=parseId(it.url);if(id)state.player.loadVideoById(id);
+        } else { nextItem(); }
+      }
+    } }});
+};
+render();
+</script>
+</body>
+</html>

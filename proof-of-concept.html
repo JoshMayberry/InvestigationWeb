@@ -1,0 +1,1895 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Investigation Web — Three Virtues</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#0f1530; --text:#e8edff; --muted:#9aa6d1;
+    --link:#44507a; --highlight:#ffd166; --stroke:#15204e;
+
+    --endurance:#e74c3c;   /* red    */
+    --harmony:#fdd835;     /* yellow */
+    --remembrance:#1e90ff; /* blue   */
+    --bridge:#b0bec5;
+
+    --btn:#1b2460; --btnhl:#22307b; --ok:#28a745; --bad:#c0392b;
+  }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji"; }
+  #wrap { display: grid; grid-template-columns: 320px 1fr; grid-template-rows: auto 1fr; height: 100%; }
+  header { grid-column: 1 / span 2; padding: 12px 16px; background: linear-gradient(180deg, #10183a, #0d1330);
+    border-bottom: 1px solid #1b2460; display:flex; align-items:center; gap:12px; justify-content:space-between; }
+  header .left { display:flex; align-items:center; gap:12px; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: .2px; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .toolbar button { background: var(--btn); color: var(--text); border:1px solid #253177; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .toolbar button.on { background: var(--btnhl); border-color:#4456c7; color: var(--highlight); box-shadow: 0 0 0 1px #ffd16666 inset; }
+  .toolbar .seg { display:inline-flex; background:#0c1230; border:1px solid #22307b; border-radius:8px; overflow:hidden; }
+  .toolbar .seg button{ border:0; border-right:1px solid #22307b; }
+  .toolbar .seg button:last-child{ border-right:0; }
+
+  aside { padding: 12px; background: var(--panel); border-right: 1px solid #1b2460; overflow:auto; }
+  main { position: relative; }
+  svg { width: 100%; height: 100%; display:block;
+    background: radial-gradient(1200px 800px at 60% -10%, #162155 0%, #0b1020 60%); }
+  .legend { display: grid; gap: 8px; margin-top: 8px; }
+  .legend .row { display:flex; align-items:center; gap:8px; color: var(--muted); }
+  .swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0005; }
+  .note { color: var(--muted); font-size: 12px; }
+
+  .tip { position: absolute; pointer-events: none; opacity: 0; transform: translate(-50%, calc(-100% - 10px));
+    background: #0e1537; color: var(--text); border: 1px solid #2a356f; border-radius: 8px; padding: 10px 12px;
+    max-width: 380px; box-shadow: 0 6px 20px #0008; transition: opacity .12s ease; }
+  .tip h3 { margin: 0 0 6px; font-size: 14px; }
+  .tip p { margin: 0; color: var(--muted); }
+  .tip .bonus { color: var(--highlight); margin-top: 6px; font-size: 12px; }
+
+  .node { cursor: pointer; }
+  .node circle.dot { stroke: var(--stroke); stroke-width: 1.25px; }
+
+  /* halo base + toggle */
+  .node .halo { display:none; opacity:0; pointer-events:none; stroke:#ffd166; stroke-width:3px; }
+  .node.show-halo .halo { display:block; opacity:1; }
+
+  /* Highlight the dot’s stroke to create a “ring” without the outer halo */
+  .node.dot-hl circle.dot{
+  stroke: #fff;                 /* was var(--highlight) */
+  stroke-width: 2.5px;          /* a touch thicker helps readability */
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.7));  /* neutral glow */
+}
+
+  .label { fill: #c8d3ff; font-size: 11px; pointer-events: none; text-shadow: 0 1px 1px #000; }
+  .link { stroke: var(--link); stroke-opacity: .55; cursor: pointer; }
+  .link.selected { stroke-opacity: .95; }
+
+  line.leader { stroke: #9aa6d1; stroke-width: .8px; stroke-opacity: .55; pointer-events: none; }
+  .panel { margin-top:12px; padding-top:10px; border-top:1px solid #1b2460; }
+  .panel h3 { margin:0 0 6px; font-size:12px; color:var(--muted); letter-spacing:.2px; text-transform:uppercase; }
+  .filters { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { padding:3px 8px; border:1px solid #2b397c; border-radius:999px; cursor:pointer; color:#c8d3ff; background:#0e1537; font-size:12px; }
+  .chip.active { background:#22307b; }
+  .search { width:100%; padding:6px 8px; border-radius:8px; border:1px solid #2b397c; background:#0c1233; color:#e8edff; }
+  .dim { opacity:.18; }
+  .match .dot { stroke:#ffe082; stroke-width:2px; }
+
+  /* Edit visuals */
+  .edit-wash { fill:none; stroke-width:22px; stroke-linecap:round; opacity:.14; }
+  .edit-wash.highlight { opacity:.3; }
+  .ghost-node { pointer-events:none; }
+  .ghost-node.valid .dot { fill:#7fd37f66; stroke:#7fd37f; }
+  .ghost-node.invalid .dot { fill:#d37f7f66; stroke:#d37f7f; }
+  .ghost-link { pointer-events:none; stroke:#ffd166; stroke-dasharray:4 4; stroke-width:2px; opacity:.9; }
+
+  /* Ghost specifically for transition drag */
+  .ghost-node.transition .dot{ fill:#ffd16622; stroke:#ffd166; stroke-dasharray:4 3; }
+
+  /* Edit side form */
+  .edit-form label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  .edit-form input, .edit-form select, .edit-form textarea { width:100%; box-sizing:border-box; padding:6px 8px; border-radius:8px; border:1px solid #2b397c; background:#0c1233; color:#e8edff; }
+  .edit-form .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .edit-form .actions{ display:flex; gap:8px; margin-top:12px; }
+  .edit-form .actions button{ background: var(--btn); color: var(--text); border:1px solid #253177; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .edit-form small{ color:var(--muted); }
+
+  /* Link pills in Edit */
+  .link-pills{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 0; }
+  .link-chip{ padding:3px 8px; border:1px solid #2b397c; border-radius:999px; cursor:pointer; background:#0e1537; color:#c8d3ff; font-size:12px; }
+  .link-chip:hover{ background:#22307b; }
+  .link-chip.selected{ background:#22307b; border-color:#4456c7; color:#ffd166; box-shadow: 0 0 0 1px #ffd16666 inset; }
+
+  /* Swap target highlight (transition swap) */
+  .node.swap-target .dot{ stroke:#ffd166; stroke-width:3px; }
+
+  /* EDIT-ONLY link highlights */
+  body.mode-edit .link.is-override {
+    stroke: #ff6b6b;
+    filter: drop-shadow(0 0 6px rgba(255,77,77,.75));
+  }
+  body.mode-edit .link.is-selected {
+    stroke: #ffd166;
+    filter: drop-shadow(0 0 8px rgba(255,209,102,.9));
+  }
+  
+  .bonuses li {
+    padding: 4px;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <div class="left">
+      <h1>Investigation Web</h1>
+      <div class="sub" id="subtitle">The Three Virtues of Promise — Endurance · Harmony · Remembrance</div>
+    </div>
+    <div class="toolbar">
+      <div class="seg" id="modeSeg">
+        <button data-mode="player">Player</button>
+        <button data-mode="gm">GM</button>
+        <button data-mode="edit">Edit</button>
+      </div>
+      <button id="btnUnlock">Unlock All</button>
+      <button id="btnClear">Clear</button>
+      <button id="btnOpen">Open JSON</button><input id="fileOpen" type="file" accept="application/json" style="display:none" />
+      <button id="btnSave">Save JSON</button>
+      <button id="btnResetZoom" title="Reset zoom">Reset View</button>
+    </div>
+  </header>
+  <aside id="aside">
+    <div class="legend" id="legend">
+      <div class="row"><span class="swatch" style="background:var(--endurance)"></span> Harmony</div>
+      <div class="row"><span class="swatch" style="background:var(--harmony)"></span> Endurance</div>
+      <div class="row"><span class="swatch" style="background:var(--remembrance)"></span> Remembrance</div>
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Quick Tips</h3>
+      <div class="note">• Click nodes to unlock (Player). • Drag/scroll to pan/zoom.</div>
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Search</h3>
+      <input id="search" class="search" placeholder="Title / text / source…" />
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Filters (Source)</h3>
+      <div id="filterChips" class="filters"></div>
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Bonuses Unlocked</h3>
+      <ol id="bonuses" class="bonuses" style="margin:10px 0 0; padding-left:16px;"></ol>
+    </div>
+
+    <div class="panel edit-only" id="editPanel" style="display:none">
+      <h3>Edit Node</h3>
+      <form class="edit-form" id="editForm">
+        <label>ID<input type="text" id="f_id" /></label>
+        <label>Title<input type="text" id="f_title" /></label>
+        <div class="row">
+          <label>Virtue<select id="f_virtue"><option>Endurance</option><option>Harmony</option><option>Remembrance</option></select></label>
+          <label>Tier<select id="f_tier"><option>shallow</option><option>mid</option><option>deep</option><option>center</option></select></label>
+        </div>
+        <div class="row">
+          <label>Source<input type="text" id="f_source" /></label>
+          <label>Bridge<input type="number" id="f_bridge" /></label>
+        </div>
+        <label>Description<textarea id="f_text" rows="4"></textarea></label>
+        <div class="row">
+          <label>DC<input type="number" id="f_dc" /></label>
+          <label>Test<input type="text" id="f_test" placeholder="e.g. Awareness" /></label>
+        </div>
+        <label>Bonus<textarea id="f_bonus" rows="2"></textarea></label>
+        <label>Tags (comma separated)<input type="text" id="f_tags" /></label>
+        <label>Lore URL<input type="url" id="f_loreUrl" /></label>
+
+        <label>Links From This Node</label>
+        <div id="f_linksWrap" class="link-pills"></div>
+        <small>Click a pill to select/deselect · <b>Shift+click</b> to remove · Shift+drag on the canvas to add a new link.</small>
+
+        <label style="margin-top:10px"><input type="checkbox" id="f_initiallyHidden" /> Initially hidden in Player mode (reveals after all prerequisites unlocked)</label>
+        <div class="actions">
+          <button type="button" id="btnAddNode">Add Node</button>
+          <button type="button" id="btnDeleteNode">Delete Node</button>
+        </div>
+        <small id="editHelp"></small>
+
+        <div class="panel edit-only" id="linkPanel" style="display:none">
+          <h3>Link Styling</h3>
+          <label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;">
+            <input type="checkbox" id="link_override">
+            This link overrides global settings
+          </label>
+
+          <div class="row">
+            <label>Style
+              <select id="link_style">
+                <option value="radial">Radial</option>
+                <option value="spiral">Spiral</option>
+                <option value="straight">Straight / trimmed</option>
+              </select>
+            </label>
+            <label>Curve
+              <input type="range" id="link_curve" min="-400" max="400" step="1" value="0">
+            </label>
+          </div>
+          <div class="row">
+            <label>Outward
+              <input type="range" id="link_outward" min="-400" max="400" step="1" value="60">
+            </label>
+            <label>Lane spacing (global)
+              <input type="range" id="cfg_lane_space" min="0" max="30" step="1" value="12">
+            </label>
+          </div>
+          <div class="actions">
+            <button type="button" id="btnResetLinkCfg">Reset</button>
+          </div>
+          <small class="note" id="linkPanelNote">
+            No link selected → controls edit global defaults. With a link selected, controls are disabled unless “This link overrides…”
+          </small>
+        </div>
+      </form>
+    </div>
+  </aside>
+  <main>
+    <svg></svg>
+    <div class="tip" id="tip"></div>
+  </main>
+</div>
+
+<!-- libs -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script>/* simple focus style reset */(function(){const s=document.createElement('style');s.textContent='svg:focus, svg *:focus { outline: none !important; } g.node:focus { outline: none; }';document.head.appendChild(s);})();</script>
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+<script>
+/* =========================
+   Modes and basic UI wiring
+   ========================= */
+const MODES = { PLAYER:'player', GM:'gm', EDIT:'edit' };
+const MODE_KEY = 'iweb.mode.v1';
+let appMode = localStorage.getItem(MODE_KEY) || MODES.PLAYER;
+if (!Object.values(MODES).includes(appMode))  appMode = MODES.PLAYER;
+
+function setMode(m){
+  appMode = m;
+  document.body.classList.toggle('mode-edit', m === MODES.EDIT);
+  document.querySelectorAll('#modeSeg button').forEach(b=> b.classList.toggle('on', b.dataset.mode===appMode));
+  document.querySelectorAll('.gm-player-only').forEach(el=> el.style.display = (appMode===MODES.EDIT)?'none':'' );
+  document.querySelectorAll('.edit-only').forEach(el=> el.style.display = (appMode===MODES.EDIT)?'':'none' );
+  hideTip();
+  if (appMode !== MODES.EDIT) {
+    if (searchEl) searchEl.value = '';
+    activeSources = new Set(currentSources());
+  }
+  rebuildChips();
+  localStorage.setItem(MODE_KEY, appMode);
+  refreshAll();
+}
+
+document.getElementById('modeSeg').addEventListener('click', (e)=>{
+  const b = e.target.closest('button[data-mode]'); if(!b) return; setMode(b.dataset.mode);
+});
+
+/* =========================
+   SVG / Zoom / Layers
+   ========================= */
+const svg = d3.select('svg');
+const { width:w, height:h } = svg.node().getBoundingClientRect();
+svg.attr('viewBox', [0,0,w,h]);
+const cx=w/2, cy=h/2;
+
+const root    = svg.append('g');
+const gWash   = root.append('g'); // edit spiral wash
+const gLinks  = root.append('g');
+const gNodes  = root.append('g');
+const gLeader = root.append('g');
+const gLabels = root.append('g').attr('pointer-events','none');
+
+let currentZoomK = 1;
+const zoom = d3.zoom().scaleExtent([0.5, 2.5]).on('zoom', e=> {
+  root.attr('transform', e.transform); currentZoomK=e.transform.k;
+  gLeader.selectAll('line.leader').attr('opacity', Math.max(0, 1 - (currentZoomK-1)/0.7) * 0.8);
+});
+svg.call(zoom);
+function resetZoom(){ svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity); }
+document.getElementById('btnResetZoom').addEventListener('click', resetZoom);
+
+/* =========================
+   Tooltip (Popper)
+   ========================= */
+const tip = d3.select('#tip');
+let popperInstance=null;
+function svgToClient(x, y){
+  const pt = svg.node().createSVGPoint();
+  pt.x = x; pt.y = y;
+  // Use the zoomed <g> (root) CTM, which includes pan/zoom
+  const m = root.node().getScreenCTM() || svg.node().getScreenCTM();
+  const p = m ? pt.matrixTransform(m) : { x, y };
+  return { x: p.x, y: p.y };
+}
+function ensurePopper(d){
+  if (!window.Popper) return null;
+  const pos=svgToClient(d.x,d.y);
+  const virtualRef={ getBoundingClientRect:()=>({x:pos.x,y:pos.y,left:pos.x,top:pos.y,right:pos.x,bottom:pos.y,width:0,height:0}), contextElement:svg.node() };
+  if(!popperInstance){
+    popperInstance=Popper.createPopper(virtualRef, tip.node(), {
+      placement:'top',
+      modifiers:[{name:'offset',options:{offset:[0,10]}},{name:'preventOverflow',options:{boundary:document.body}},{name:'flip',options:{fallbackPlacements:['top','right','left','bottom']}}]
+    });
+  } else {
+    popperInstance.state.elements.reference=virtualRef;
+    popperInstance.update();
+  }
+  return popperInstance;
+}
+function showTip(d, ev){
+  if(appMode===MODES.EDIT) return;
+
+  const shiftPeek = !!(ev && ev.shiftKey);
+  const undiscovered = (appMode === MODES.PLAYER && !d.unlocked);
+
+  if (undiscovered && !shiftPeek){
+    tip.html(`<h3>?</h3>`);
+  } else if (shiftPeek){
+    // Minimal: title, source, DC/Test only
+    const dcLine = (d.dc != null || d.test)
+      ? `<span style="padding:1px 6px;border:1px solid #30408e;border-radius:999px;background:#0e1537;color:#c8d3ff;font-size:11px;">
+           ${d.dc != null ? `DC ${d.dc}` : ''}${(d.dc != null && d.test)?' · ':''}${d.test?d.test:''}
+         </span>`
+      : '';
+    tip.html(
+      `<h3>${d.title}</h3>
+       ${dcLine ? `<div style="margin-top:6px;">${dcLine}</div>` : ''}
+       <p class='bonus' style='opacity:.8'>Source: ${d.source||'—'}</p>`
+    );
+  } else {
+    // Full details (your previous content)
+    const dcLine = d.dc
+      ? `<span style="padding:1px 6px;border:1px solid #30408e;border-radius:999px;background:#0e1537;color:#c8d3ff;font-size:11px;">DC ${d.dc}${d.test?` · ${d.test}`:''}</span>`
+      : '';
+    const tagsLine = (d.tags && d.tags.length)
+      ? `<div style="margin-top:6px;opacity:.8;font-size:11px">Tags: ${d.tags.join(', ')}</div>`
+      : '';
+    const loreLink = d.loreUrl
+      ? `<div style="margin-top:6px;"><a href="${d.loreUrl}" target="_blank" rel="noreferrer noopener">Lore</a></div>`
+      : '';
+    tip.html(
+      `<h3>${d.title}</h3>
+       <p>${d.text||''}</p>
+       ${dcLine}
+       ${tagsLine}
+       ${d.bonus?`<div class='bonus'>Bonus: ${d.bonus}</div>`:''}
+       <p class='bonus' style='opacity:.8'>Source: ${d.source||'—'}</p>
+       ${loreLink}`
+    );
+  }
+
+  ensurePopper(d);
+  tip.style('opacity',1);
+}
+
+
+function hideTip(){ tip.style('opacity',0); }
+
+/* =========================
+   Filters (defs) for glow (node halo)
+   ========================= */
+const defs = svg.append('defs');
+defs.append('filter').attr('id','halo').attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%')
+  .html(`<feGaussianBlur stdDeviation="3" in="SourceAlpha" result="blur"/><feFlood flood-color="#ffd166" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>`);
+
+/* =========================
+   Spiral geometry
+   ========================= */
+const startAngles = [ -Math.PI/6, Math.PI/2, -5*Math.PI/6 ]; // Endurance, Harmony, Remembrance
+const virtueIndex = { Endurance:0, Harmony:1, Remembrance:2 };
+const ONE_TURN = 2*Math.PI, r0 = 30, k = 55, N = 240;
+
+function segmentPath(start, f0, f1){
+  const line=d3.line().curve(d3.curveCatmullRom.alpha(0.7));
+  const i0=Math.round(f0*(N-1)), i1=Math.round(f1*(N-1));
+  const pts=[];
+  for(let i=i0;i<=i1;i++){
+    const t=(i/(N-1))*ONE_TURN, th=start+t, r=r0+k*t;
+    pts.push([cx + r*Math.cos(th), cy + r*Math.sin(th)]);
+  }
+  return line(pts);
+}
+startAngles.forEach((start,i)=>{ [[0,1/3],[1/3,2/3],[2/3,1]].forEach((fr, idx)=>{ root.append('path').attr('id',`spiral-${i}-${idx}`).attr('d',segmentPath(start,fr[0],fr[1])).attr('fill','none').attr('stroke','none').attr('opacity',0).attr('pointer-events','none'); }); });
+
+/* Edit wash visuals */
+const washColors = ['var(--endurance)','var(--harmony)','var(--remembrance)'];
+const gWashSegs = [];
+startAngles.forEach((start,i)=>{ [[0,1/3],[1/3,2/3],[2/3,1]].forEach((fr, idx)=>{
+  const p = segmentPath(start,fr[0],fr[1]);
+  const path = gWash.append('path').attr('class','edit-wash').attr('data-seg',`${i}-${idx}`).attr('d',p).attr('stroke',washColors[i]).style('display','none');
+  gWashSegs.push(path.node());
+}); });
+function setEditWashVisible(v){ gWash.selectAll('path.edit-wash').style('display', v? '':'none'); }
+
+/* ===== STAGING LANES (Edit-only) ============================================ */
+const STAGING = {
+  dirs: ['N','E','S','W'],
+  lanes: {N:[],E:[],S:[],W:[]},
+  len: Math.min(w,h)*0.6,
+  margin: 70,
+  gap: 60,
+};
+const ONE_TURN_R = r0 + k*ONE_TURN;
+function stagingLineEndpoints(dir, idx){
+  const L = STAGING.len;
+  const base = ONE_TURN_R + STAGING.margin + idx*STAGING.gap;
+  if (dir==='N'){ const y = cy - base; return {x1: cx - L/2, y1: y, x2: cx + L/2, y2: y}; }
+  if (dir==='S'){ const y = cy + base; return {x1: cx - L/2, y1: y, x2: cx + L/2, y2: y}; }
+  if (dir==='E'){ const x = cx + base; return {x1: x, y1: cy - L/2, x2: x, y2: cy + L/2}; }
+  const x = cx - base; return {x1: x, y1: cy - L/2, x2: x, y2: cy + L/2}; // W
+}
+function refreshGWashSegs(){
+  gWashSegs.length = 0;
+  gWash.selectAll('path.edit-wash').each(function(){ gWashSegs.push(this); });
+}
+function ensureLaneExists(dir, idx){
+  if (STAGING.lanes[dir][idx]) return STAGING.lanes[dir][idx];
+  const id = `staging-${dir}-${idx}`;
+  const {x1,y1,x2,y2} = stagingLineEndpoints(dir, idx);
+  const path = gWash.append('path')
+    .attr('id', id)
+    .attr('class','edit-wash staging-wash')
+    .attr('data-seg', id)
+    .attr('data-kind','staging')
+    .attr('data-dir',dir)
+    .attr('data-index',idx)
+    .attr('d', `M${x1},${y1}L${x2},${y2}`)
+    .attr('stroke','#5e6db7')
+    .style('display','none');
+  STAGING.lanes[dir][idx] = path.node();
+  refreshGWashSegs();
+  return STAGING.lanes[dir][idx];
+}
+function initStaging(){ ['N','E','S','W'].forEach(dir=> ensureLaneExists(dir,0)); refreshGWashSegs(); }
+initStaging();
+
+/* Compact lanes so there’s exactly ONE empty lane at the end per direction. */
+function ensureStagingConsistency(){
+  ['N','E','S','W'].forEach(dir=>{
+    const used = nodes.filter(n=> n.staging && n.staging.dir===dir).map(n=> n.staging.lane);
+    const uniqUsed = Array.from(new Set(used)).sort((a,b)=>a-b);
+    const map = new Map(uniqUsed.map((old,i)=>[old,i]));
+    nodes.forEach(n=>{ if(n.staging && n.staging.dir===dir){ n.staging.lane = map.get(n.staging.lane) ?? 0; } });
+    const needed = uniqUsed.length + 1;
+    for(let i=0;i<needed;i++) ensureLaneExists(dir,i);
+    const arr = STAGING.lanes[dir];
+    for(let i=arr.length-1; i>=needed; i--){ d3.select(arr[i]).remove(); arr.pop(); }
+  });
+  refreshGWashSegs();
+}
+
+/* =========================
+   Helpers
+   ========================= */
+const tierFrac = { center:0, deep:1/3, mid:2/3, shallow:1 };
+const segByTier = { deep:0, mid:1, shallow:2 };
+const tierLAdj  = { shallow:+0.14, mid:0, deep:-0.12, center:-0.2 };
+
+function pointAt(pathEl, t){ const L = pathEl.getTotalLength(); return pathEl.getPointAtLength(Math.max(0, Math.min(L, t*L))); }
+function angleOf(x,y){ return Math.atan2(y - cy, x - cx); }
+function angleDist(a,b){ let d=a-b; while(d> Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI; return Math.abs(d); }
+const clamp01 = v => Math.max(0, Math.min(1, v));
+function radiusOf(x,y){ return Math.hypot(x - cx, y - cy); }
+function toXY(r, th){ return { x: cx + r*Math.cos(th), y: cy + r*Math.sin(th) }; }
+function midAngle(a,b){ let d=b-a; while(d> Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI; return a+d/2; }
+
+/* --- Map wedge detection (absolute position) --- */
+const WEDGE_CENTERS = [ -Math.PI/2, Math.PI/6, 5*Math.PI/6 ]; // E (top), H (bottom-right), R (bottom-left)
+function wedgeAt(x,y){
+  const th = angleOf(x,y);
+  let best=0, bestD=Infinity;
+  for(let i=0;i<3;i++){
+    const d=angleDist(th, WEDGE_CENTERS[i]);
+    if(d<bestD){bestD=d; best=i;}
+  }
+  return best; // 0:E, 1:H, 2:R
+}
+
+/* --- Link geometry (center-to-center) --- */
+const NODE_R = 12;
+function quantizeAngle(theta, lanes = 24){ const step = (2*Math.PI) / lanes; return Math.round(theta / step) * step; }
+// Spiral tangent at (r, theta) for r = r0 + k * theta
+function spiralTangent(r, th){
+  const dx = k*Math.cos(th) - r*Math.sin(th);
+  const dy = k*Math.sin(th) + r*Math.cos(th);
+  const m = Math.hypot(dx,dy) || 1;
+  return { x: dx/m, y: dy/m };
+}
+
+/* =========================
+   Link defaults & overrides
+   ========================= */
+const LINK_CFG_KEY = 'iweb.linkcfg.v4';
+const DEFAULT_LINK_CFG = {
+  style: 'radial',
+  outward: 60,
+  curve: 0,
+  laneSpacing: 12
+};
+function loadLinkCfg(){
+  try{
+    const raw = localStorage.getItem(LINK_CFG_KEY);
+    if(raw) return { ...DEFAULT_LINK_CFG, ...JSON.parse(raw) };
+  }catch(e){}
+  return { ...DEFAULT_LINK_CFG };
+}
+function saveGlobalLinkCfg(){
+  try{ localStorage.setItem(LINK_CFG_KEY, JSON.stringify(LINK_CFG)); }catch(e){}
+}
+let LINK_CFG = loadLinkCfg();
+
+function linkKey(sourceId, targetId){ return `${sourceId}>${targetId}`; }
+
+function ensureLinkEntryObject(sourceNode, targetId){
+  const arr = sourceNode.links || (sourceNode.links = []);
+  for (let i=0;i<arr.length;i++){
+    const v = arr[i];
+    if ((typeof v === 'string' && v === targetId) || (v && typeof v === 'object' && v.to === targetId)){
+      if (typeof v === 'string'){ arr[i] = { to: v }; return arr[i]; }
+      return v;
+    }
+  }
+  const obj = { to: targetId };
+  arr.push(obj);
+  return obj;
+}
+function getLinkEntryObject(sourceNode, targetId){
+  const arr = sourceNode.links || [];
+  for (const v of arr){
+    if (typeof v === 'object' && v.to === targetId) return v;
+    if (typeof v === 'string' && v === targetId) return null;
+  }
+  return null;
+}
+function getLinkCfgObj(sourceId, targetId){
+  const s = nodesById.get(sourceId); if(!s) return null;
+  const entry = ensureLinkEntryObject(s, targetId);
+  return entry.cfg || null;
+}
+function ensureLinkCfg(sourceId, targetId){
+  const s = nodesById.get(sourceId); if(!s) return null;
+  const entry = ensureLinkEntryObject(s, targetId);
+  if (!entry.cfg) entry.cfg = { style: LINK_CFG.style, outward: LINK_CFG.outward, curve: LINK_CFG.curve };
+  return entry.cfg;
+}
+function clearLinkCfg(sourceId, targetId){
+  const s = nodesById.get(sourceId); if(!s) return;
+  const entry = ensureLinkEntryObject(s, targetId);
+  delete entry.cfg;
+}
+function effectiveCfgForLink(sourceId, targetId){
+  const c = getLinkCfgObj(sourceId, targetId);
+  return { ...LINK_CFG, ...(c || {}) };
+}
+
+/* Lane offsets */
+let ANGLE_BINS = 36;
+let laneOffsetMap = new Map();
+function computeLinkLaneOffsets(){
+  laneOffsetMap.clear();
+  const spacing = (LINK_CFG?.laneSpacing ?? 12);
+  const groups = new Map();
+
+  links.forEach(l=>{
+    const s=nodesById.get(l.source), t=nodesById.get(l.target);
+    if(!s||!t) return;
+    const thS = quantizeAngle(angleOf(s.x,s.y), ANGLE_BINS);
+    const thT = quantizeAngle(angleOf(t.x,t.y), ANGLE_BINS);
+    const key = `${thS.toFixed(3)}|${thT.toFixed(3)}`;
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(l);
+  });
+
+  groups.forEach(arr=>{
+    arr.sort((a,b)=> (a.source+a.target).localeCompare(b.source+b.target));
+    const n = arr.length, base = -(n-1)/2;
+    arr.forEach((l,i)=> laneOffsetMap.set(linkKey(l.source,l.target), (base+i)*spacing));
+  });
+}
+
+function getLinkPath(d){
+  const s = nodesById.get(d.source), t = nodesById.get(d.target);
+  if(!s||!t) return '';
+
+  const cfg = effectiveCfgForLink(d.source, d.target);
+
+  const E0 = { x: s.x, y: s.y };
+  const E3 = { x: t.x, y: t.y };
+
+  const ux = E3.x - E0.x, uy = E3.y - E0.y;
+  const L  = Math.hypot(ux,uy) || 1;
+  const u  = { x: ux/L, y: uy/L };
+  const nChord = { x: -u.y, y: u.x };
+
+  const M0 = { x:(E0.x+E3.x)/2, y:(E0.y+E3.y)/2 };
+
+  const rvec = { x: M0.x - cx, y: M0.y - cy };
+  const rlen = Math.hypot(rvec.x, rvec.y) || 1;
+  const rdir = { x: rvec.x/rlen, y: rvec.y/rlen };
+  const tau  = { x: -rdir.y, y: rdir.x };
+
+  const laneOffset = laneOffsetMap.get(`${d.source}>${d.target}`) || 0;
+  const laneShift  = { x: nChord.x * laneOffset, y: nChord.y * laneOffset };
+
+  const thS = angleOf(s.x,s.y), thT = angleOf(t.x,t.y);
+  const rS  = radiusOf(s.x,s.y), rT  = radiusOf(t.x,t.y);
+  const vS  = spiralTangent(rS, thS);
+  const vT  = spiralTangent(rT, thT);
+
+  /* STRAIGHT: S-bend with curve (along local tangents) + outward (perp to chord, opposite at ends) */
+  if (cfg.style === 'straight'){
+    const k = cfg.curve;
+    const o = cfg.outward;
+    const c1 = {
+      x: E0.x + vS.x*k + nChord.x*o + laneShift.x,
+      y: E0.y + vS.y*k + nChord.y*o + laneShift.y
+    };
+    const c2 = {
+      x: E3.x - vT.x*k - nChord.x*o + laneShift.x,
+      y: E3.y - vT.y*k - nChord.y*o + laneShift.y
+    };
+
+    const p = d3.path();
+    p.moveTo(E0.x, E0.y);
+    p.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, E3.x, E3.y);
+    return p.toString();
+  }
+
+  // RADIAL/SPIRAL
+  const axis = (cfg.style === 'spiral') ? tau : rdir;
+  const peak = {
+    x: M0.x + axis.x * cfg.outward + u.x * cfg.curve + laneShift.x,
+    y: M0.y + axis.y * cfg.outward + u.y * cfg.curve + laneShift.y
+  };
+  const c1 = { x: E0.x + (2/3)*(peak.x - E0.x), y: E0.y + (2/3)*(peak.y - E0.y) };
+  const c2 = { x: E3.x + (2/3)*(peak.x - E3.x), y: E3.y + (2/3)*(peak.y - E3.y) };
+
+  const p = d3.path();
+  p.moveTo(E0.x, E0.y);
+  p.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, E3.x, E3.y);
+  return p.toString();
+}
+
+/* =========================
+   Colors
+   ========================= */
+const wedgeBaseHex = ['#e74c3c','#fdd835','#1e90ff']; // Endurance, Harmony, Remembrance
+const wedgeBaseHSL = wedgeBaseHex.map(h => d3.hsl(d3.color(h)));
+
+const CENTER_ANGLES  = startAngles.map(a => a + Math.PI/3);
+const BOUNDARY_ANGLES = [
+  midAngle(CENTER_ANGLES[0], CENTER_ANGLES[1]),
+  midAngle(CENTER_ANGLES[1], CENTER_ANGLES[2]),
+  midAngle(CENTER_ANGLES[2], CENTER_ANGLES[0]),
+];
+
+const boundaryBaseHex = ['#2ECC71','#F6841F','#8B57B4'];
+const boundaryBaseHSL = boundaryBaseHex.map(h => d3.hsl(d3.color(h)));
+
+function shadeTier(baseHsl,tier){ const l = clamp01(baseHsl.l + (tierLAdj[tier]||0)); return d3.hsl(baseHsl.h, baseHsl.s, l); }
+function toHex(hsl){ return d3.hsl(hsl.h, hsl.s, hsl.l).formatHex(); }
+
+function nodeColorHSL(d){
+  const boundaryColor = d.fixed ? boundaryBaseHSL[d.bridge] : null;
+  if (appMode === MODES.EDIT){
+    if (boundaryColor) return boundaryColor;
+    const idx = wedgeAt(d.x, d.y);
+    return shadeTier(wedgeBaseHSL[idx], d.tier);
+  }
+  if (appMode === MODES.PLAYER && !d.unlocked) return d3.hsl(225, 0.15, 0.55);
+  if (boundaryColor) return boundaryColor;
+  const idx = wedgeAt(d.x, d.y);
+  return shadeTier(wedgeBaseHSL[idx], d.tier);
+}
+function nodeColor(d){ return toHex(nodeColorHSL(d)); }
+function linkColor(d){ const s = nodesById.get(d.source); const idx=wedgeAt(s.x,s.y); return toHex(wedgeBaseHSL[idx]); }
+
+/* =========================
+   DATA (same dataset)
+   ========================= */
+const handsNodes = [
+  { id:'farm-pacts', tier:'shallow', virtue:'Endurance', boundary:0, title:'Farm Pacts', source:'Polder', bridge:0, text:'Farmers survive by pooling labor, food, and tools.', fixed:true },
+  { id:'pack-tactics', tier:'mid', virtue:'Endurance', boundary:0, title:'Pack Tactics', source:'Road to Cradlelace', bridge:0, text:'Crawling claws work in packs, creating a deadly unity.', fixed:true },
+  { id:'merged-identity', tier:'deep', virtue:'Endurance', boundary:0, title:'Merged Identity', source:'Kianna’s Drawings', bridge:0, text:'People with hand-pupils blur into one mass — unity → fusion.', fixed:true, links:['painspren-nirvana'] },
+  { id:'painspren-nirvana', tier:'center', virtue:'Endurance', boundary:0, title:'Painspren Nirvana', source:'—', bridge:0, text:'Enlightened painspren gather people to create their ‘utopia’.', bonus:'Advantage vs fusion (grapple/pull).', fixed:true, initiallyHidden:true },
+];
+const songNodes = [
+  { id:'shared-song', tier:'shallow', virtue:'Remembrance', boundary:2, title:'A Shared Song', source:'Ward', bridge:1, text:'The Song is known and sung by all; each family’s history lives in it.', fixed:true },
+  { id:'rhythm-grasping', tier:'mid', virtue:'Remembrance', boundary:2, title:'Rhythm of Grasping', source:'Observed in battle', bridge:1, text:'Claws attack in a rhythm that lets them manipulate matter.', fixed:true },
+  { id:'rewritten-song', tier:'deep', virtue:'Remembrance', boundary:2, title:'Rewritten Song', source:'Kianna’s papers', bridge:1, text:'Kianna rewrites the verse where Culley dies — memory over reality.', fixed:true, links:['culleys-will'] },
+  { id:'culleys-will', tier:'center', virtue:'Remembrance', boundary:2, title:'Culley’s Will', source:'—', bridge:1, text:'With a gemheart, Culley makes the rewrite partly real.', bonus:'Identify gemheart as anchor; attacks/drain vs gemheart gain Advantage.', fixed:true, initiallyHidden:true },
+];
+const dollNodes = [
+  { id:'burning-doll', tier:'shallow', virtue:'Harmony', boundary:1, title:'Burning Doll', source:'Dellie', bridge:2, text:'Dolls are burned at Weeping’s end to let go; Kianna keeps hers.', fixed:true },
+  { id:'abandoned-doll', tier:'mid', virtue:'Harmony', boundary:1, title:'Abandoned Doll', source:'Farm search', bridge:2, text:'A doll sits where someone should be — claws take people, leave tokens.', fixed:true },
+  { id:'kianna-dolls', tier:'deep', virtue:'Harmony', boundary:1, title:"Kianna’s Doll Collection", source:'Kianna’s shrine', bridge:2, text:'She hoards the past; cannot let go.', fixed:true, links:['amalgam-hoard'] },
+  { id:'amalgam-hoard', tier:'center', virtue:'Harmony', boundary:1, title:'Amalgamation’s Hoard', source:'—', bridge: 2, text:'The horror hoards cognitive shadows like Kianna hoards dolls.', fixed:true, initiallyHidden:true, bonus:'Use the doll ritual to argue with Kianna (“let him go”).' },
+];
+[...handsNodes, ...songNodes, ...dollNodes].forEach(n=>{ const p = anchorXYBoundary(n.boundary, n.tier); n.x=p.x; n.y=p.y; });
+
+const endNodes = [
+  { id:'end-ribbon-rattle', virtue:'Endurance', tier:'shallow', title:'The Ribbon & the Rattle', source:'Polder', text:'Ribbon fertility wanes; farmers are pushed into the Rattle.' },
+  { id:'end-more-vanish', virtue:'Endurance', tier:'shallow', title:'Each Weeping, More Vanish', source:'Polder', text:'Disappearances increase during the Weeping.' },
+  { id:'end-polder-survived', virtue:'Endurance', tier:'shallow', title:'Polder Survived Drowning', source:'Polder', text:'He survived the Cradlelace incident.' },
+  { id:'end-culley-died', virtue:'Endurance', tier:'shallow', title:'Culley Died in the Weeping', source:'Dellie', text:'His death occurred at Cradlelace during the Weeping.' },
+  { id:'end-sparkles-storm', virtue:'Endurance', tier:'shallow', title:'Lake Sparkles in Highstorms', source:'Ward', text:'Cradlelace gleams when the storms pass.' },
+  { id:'end-hands-pulled', virtue:'Endurance', tier:'mid', title:'The Hands Pulled Us', source:'Polder (Difficult)', text:'Waters weren’t empty—hands dragged us down.', bonus:'Advantage vs grapples from claws/Amalgamation.' },
+  { id:'end-claws-made', virtue:'Endurance', tier:'mid', title:'Claws of Debris', source:'Observed in battle', text:'Refuse & mud form claws; they reform after destruction.' },
+  { id:'end-pond-gleams', virtue:'Endurance', tier:'mid', title:'Gleam Even in Weeping', source:'Skill Check', text:'Pond still gleams as if gems never run out of Stormlight.' },
+  { id:'end-drag-furrows', virtue:'Endurance', tier:'mid', title:'Dragging Furrows', source:'Skill Check', text:'Soil grooves show bodies pulled toward the pond.' },
+  { id:'end-survival-guilt', virtue:'Endurance', tier:'deep', title:'Survival Guilt', source:'Polder (Difficult)', text:'He saved himself instead of Culley.' },
+  { id:'end-gemheart', virtue:'Endurance', tier:'deep', title:'The Gemheart', source:'Boss', text:'A gemheart anchors the horror at the pond’s core.' },
+];
+
+const harmNodes = [
+  { id:'harm-hands-symbols', virtue:'Harmony', tier:'shallow', title:'Hands as Symbols', source:'Friend of Polder', text:'Joined hands = unity in Promise.' },
+  { id:'harm-goddaughter', virtue:'Harmony', tier:'shallow', title:'Kianna is Dellie’s Goddaughter', source:'Dellie', text:'Dellie seeks to protect her.' },
+  { id:'harm-pact-promise', virtue:'Harmony', tier:'shallow', title:'Polder’s Pact in Promise', source:'Polder', text:'They’re waiting out the Weeping together.' },
+  { id:'harm-spren-namesake', virtue:'Harmony', tier:'shallow', title:'Spren Seek Their Namesake', source:'Ward', text:'Painspren gather where pain is present.' },
+  { id:'harm-paired-spren', virtue:'Harmony', tier:'shallow', title:'Statues of Paired Spren', source:'Dellie', text:'Common in homes — what ‘good harmony’ looks like.' },
+  { id:'harm-approx-location', virtue:'Harmony', tier:'mid', title:'Kianna’s Approx. Location', source:'Dellie', text:'Guidance toward the right area.' },
+  { id:'harm-not-returned', virtue:'Harmony', tier:'mid', title:'Kianna Hasn’t Returned', source:'Dellie', text:'She promised last year but hasn’t come.' },
+  { id:'harm-knows-kianna-pact', virtue:'Harmony', tier:'mid', title:'Knows Kianna’s Pact', source:'Polder', text:'Pacts stick together; he can point you there.', bonus:'Detailed directions to Kianna’s Pact.' },
+  { id:'harm-kianna-lonely', virtue:'Harmony', tier:'mid', title:'Kianna’s Loneliness', source:'Dellie', text:'Isolation made her vulnerable.' },
+  { id:'harm-pact-collapsed', virtue:'Harmony', tier:'mid', title:'Cradlelace Pact Collapsed', source:'Skill Check', text:'Empty not from neglect — they were lured away.' },
+  { id:'harm-marked-x', virtue:'Harmony', tier:'mid', title:'Marked with an X', source:'Farmhouse', text:'Abandoned houses bear a muddy X.' },
+  { id:'harm-missing-x', virtue:'Harmony', tier:'mid', title:'Kianna’s House Missing X', source:'Farmhouse', text:'Her house lacks the mark.' },
+  { id:'harm-melded-identities', virtue:'Harmony', tier:'deep', title:'Melded Identities', source:'Boss', text:'Spren + shadows feeding; identities blend.' },
+];
+
+const remNodes = [
+  { id:'rem-straw-dolls', virtue:'Remembrance', tier:'shallow', title:'Straw Dolls', source:'Dellie', text:'Stand-ins for absent loved ones; normally burned after Weeping.' },
+  { id:'rem-song-of-virtues', virtue:'Remembrance', tier:'shallow', title:'Song of Virtues', source:'Ward', text:'Records the people’s history.' },
+  { id:'rem-song-variants', virtue:'Remembrance', tier:'shallow', title:'Song Variants Are Taboo', source:'Ward', text:'Altering the Song is forbidden.' },
+  { id:'rem-art-style', virtue:'Remembrance', tier:'shallow', title:'Kianna’s Art Style', source:'Dellie', text:'She draws to cope; distinct style.' },
+  { id:'rem-dislikes-burning', virtue:'Remembrance', tier:'mid', title:'Kianna Dislikes Burning Dolls', source:'Dellie', text:'She keeps them instead of letting go.' },
+  { id:'rem-kianna-drawing', virtue:'Remembrance', tier:'mid', title:'Kianna’s Drawing', source:'Friend of Polder', text:'A telling piece recovered in Promise.' },
+  { id:'rem-kianna-happy', virtue:'Remembrance', tier:'mid', title:'Kianna Was Happy Recently', source:'Polder', text:'She wouldn’t say why.' },
+  { id:'rem-sinkhole', virtue:'Remembrance', tier:'mid', title:'Cradlelace Was a Sinkhole', source:'Ward', text:'A home fell in; the family drowned.' },
+  { id:'rem-culley-innocence', virtue:'Remembrance', tier:'deep', title:'Culley = Lost Innocence', source:'Kianna’s Shrine', text:'Symbolic, not romantic; a shrine to the past.' },
+  { id:'rem-painspren-link', virtue:'Remembrance', tier:'deep', title:'Painspren Link', source:'Combat (Skill Check)', text:'Claws are tied to painspren.', bonus:'Larkin drains their Investiture faster.' },
+];
+
+let nodes = [...handsNodes, ...songNodes, ...dollNodes, ...endNodes, ...harmNodes, ...remNodes];
+
+/* Defaults & normalization */
+nodes.forEach(n=>{
+  n.dc ??= null; n.test ??= null; n.tags ??= []; n.links ??= [];
+  n.fixed = !!n.fixed;
+  n.unlocked ??= false;
+  n.initiallyHidden = !!n.initiallyHidden;
+  if(n.tier==='center' && !n.fixed){ const p=anchorXY(n.virtue,n.tier); n.x=p.x; n.y=p.y; }
+});
+function anchorXY(virtue, tier){ const start = startAngles[virtueIndex[virtue]]; const t = tierFrac[tier]*ONE_TURN; const th = start + t, r = r0 + k*t; return { x: cx + r*Math.cos(th), y: cy + r*Math.sin(th) }; }
+function anchorXYBoundary(boundaryIdx, tier){
+  const start = BOUNDARY_ANGLES[boundaryIdx];
+  const t = tierFrac[tier] * ONE_TURN;
+  const th = start - t;
+  const r = r0 + k*t;
+  return { x: cx + r*Math.cos(th), y: cy + r*Math.sin(th) };
+}
+function getSegPath(segId){ return document.getElementById(segId) || gWash.select(`[data-seg="${segId}"]`).node(); }
+
+/* Layout along spiral/staging paths */
+function layoutNodes(ds){
+  const buckets = new Map();
+  ds.forEach(n=>{
+    if (n.fixed) return;
+    if (n.tier==='center'){ const p=anchorXY(n.virtue,n.tier); n.x=p.x; n.y=p.y; return; }
+    if (n.staging && typeof n.staging.lane==='number'){
+      const segId = `staging-${n.staging.dir}-${n.staging.lane}`;
+      if(!buckets.has(segId)) buckets.set(segId, []);
+      buckets.get(segId).push(n);
+      return;
+    }
+    const sIdx = virtueIndex[n.virtue];
+    const seg  = segByTier[n.tier];
+    const segId= `spiral-${sIdx}-${seg}`;
+    if(!buckets.has(segId)) buckets.set(segId, []);
+    buckets.get(segId).push(n);
+  });
+
+  buckets.forEach((arr, segId)=>{
+    const pathEl = getSegPath(segId);
+    if(!pathEl) return;
+    arr.sort((a,b)=> (a.order??0) - (b.order??0));
+    arr.forEach((n,i)=>{
+      n.order = i;
+      const t=(i+1)/(arr.length+1);
+      const p=pointAt(pathEl, t);
+      n.x=p.x; n.y=p.y;
+    });
+  });
+}
+layoutNodes(nodes);
+
+/* =========================
+   Links & prerequisites
+   ========================= */
+let nodesById = new Map(nodes.map(n=>[n.id,n]));
+function buildLinks(){
+  const out=[]; const ids=new Set(nodes.map(n=>n.id));
+  nodes.forEach(n=>{
+    (n.links||[]).forEach(link=>{
+      const tid = (typeof link==='string') ? link : link.to;
+      if(ids.has(tid)) out.push({ id: linkKey(n.id, tid), source:n.id, target:tid });
+    });
+  });
+  return out;
+}
+let links = buildLinks();
+
+function buildIncomingMap(){
+  const incoming = new Map(nodes.map(n=>[n.id, []]));
+  links.forEach(l=>{ const arr=incoming.get(l.target); if(arr){ arr.push(l.source); } });
+  return incoming;
+}
+let incomingMap = buildIncomingMap();
+
+/* =========================
+   Visibility rules
+   ========================= */
+function isNodeRevealedForPlayer(n){
+  if (appMode !== MODES.PLAYER) return true;
+  if (!n.initiallyHidden) return true;
+  const prereqs = incomingMap.get(n.id) || [];
+  if (prereqs.length === 0) return true;
+  return prereqs.every(pid => (nodesById.get(pid)?.unlocked));
+}
+
+/* =========================
+   Search & Filters
+   ========================= */
+const searchEl = document.getElementById('search');
+if (searchEl) searchEl.addEventListener('input', applyFilters);
+const filterWrap = document.getElementById('filterChips');
+let activeSources = new Set();
+
+const FILTER_ALL_KEY = 'iweb.filterAll.v1';
+let allSourcesMode = (localStorage.getItem(FILTER_ALL_KEY) ?? '1') === '1';
+function setAllSourcesMode(v){
+  allSourcesMode = !!v;
+  try{ localStorage.setItem(FILTER_ALL_KEY, allSourcesMode ? '1' : '0'); }catch(e){}
+}
+
+function currentSources(){
+  if (appMode === MODES.PLAYER){
+    // Player: only show filters for *discovered* (unlocked) nodes
+    const pool = nodes.filter(n => n.unlocked);
+    return Array.from(new Set(pool.map(n => n.source || '—')))
+      .sort((a,b)=> a.localeCompare(b));
+  }
+  // GM/Edit: as before (hide staging outside Edit)
+  const pool = nodes.filter(n => !(appMode!==MODES.EDIT && n.staging));
+  return Array.from(new Set(pool.map(n => n.source || '—')))
+    .sort((a,b)=> a.localeCompare(b));
+}
+
+function renderChips(sources){
+  if(!filterWrap) return;
+
+  // Keep selection in sync with current sources
+  if (allSourcesMode){
+    activeSources = new Set(sources);                        // All = always expand to everything visible
+  } else {
+    activeSources = new Set([...activeSources].filter(s => sources.includes(s))); // prune removed
+  }
+
+  filterWrap.innerHTML='';
+
+  // "All"
+  const allChip=document.createElement('span');
+  allChip.className='chip';
+  allChip.textContent='All';
+  allChip.addEventListener('click', ()=>{
+    setAllSourcesMode(true);
+    activeSources = new Set(sources);
+    applyFilters();
+    syncChipStates();
+  });
+  filterWrap.appendChild(allChip);
+
+  // "None"
+  const noneChip=document.createElement('span');
+  noneChip.className='chip';
+  noneChip.textContent='None';
+  noneChip.addEventListener('click', ()=>{
+    setAllSourcesMode(false);
+    activeSources.clear();
+    applyFilters();
+    syncChipStates();
+  });
+  filterWrap.appendChild(noneChip);
+
+  // Individual sources
+  sources.forEach(name=>{
+    const chip=document.createElement('span');
+    chip.className='chip';
+    chip.textContent=name;
+    chip.dataset.name=name;
+    chip.addEventListener('click', ()=>{
+      setAllSourcesMode(false);                // touching individual chips leaves "All" mode
+      if(activeSources.has(name)) activeSources.delete(name);
+      else activeSources.add(name);
+      applyFilters();
+      syncChipStates();
+    });
+    filterWrap.appendChild(chip);
+  });
+
+  syncChipStates();
+}
+
+function syncChipStates(){
+  if(!filterWrap) return;
+
+  // Clear
+  filterWrap.querySelectorAll('.chip').forEach(ch=> ch.classList.remove('active'));
+
+  // Mark All/None
+  const allChip = [...filterWrap.querySelectorAll('.chip')].find(c => c.textContent==='All');
+  const noneChip = [...filterWrap.querySelectorAll('.chip')].find(c => c.textContent==='None');
+  if (allChip) allChip.classList.toggle('active', allSourcesMode);
+  if (noneChip) noneChip.classList.toggle('active', !allSourcesMode && activeSources.size===0);
+
+  // Mark per-source
+  filterWrap.querySelectorAll('.chip[data-name]').forEach(ch=>{
+    const name = ch.dataset.name;
+    const on = allSourcesMode ? true : activeSources.has(name);
+    ch.classList.toggle('active', on);
+  });
+}
+
+function rebuildChips(){
+  renderChips(currentSources());
+}
+
+/* =========================
+   Drawing + selection (nodes + links)
+   ========================= */
+let prevVisibility = new Map();
+function willRevealNow(n){ const prev = prevVisibility.get(n.id) || false; const now = (appMode!==MODES.PLAYER) || isNodeRevealedForPlayer(n); return (!prev && now); }
+function rememberVisibility(){ nodes.forEach(n=> prevVisibility.set(n.id, (appMode!==MODES.PLAYER) || isNodeRevealedForPlayer(n))); }
+
+let selectedNode = null;
+let selectedLinkId = null;
+
+function selectNode(n){
+  selectedNode = n;
+  selectedLinkId = null; // clear link selection when changing node
+  refreshAll();
+  populateEditForm(n);
+  syncLinkUIForLink();
+}
+
+function updateBonuses(){
+  const list=document.getElementById('bonuses'); if(!list) return;
+  const current=nodes.filter(n=>n.unlocked && n.bonus);
+  const currIds=new Set(current.map(n=>n.id));
+  [...list.querySelectorAll('li[data-id]')].forEach(li=>{ if(!currIds.has(li.dataset.id)) li.remove(); });
+  current.forEach(n=>{
+    let li=list.querySelector(`li[data-id="${n.id}"]`);
+    if(!li){ li=document.createElement('li'); li.dataset.id=n.id; li.textContent=`${n.title}: ${n.bonus}`; list.appendChild(li);
+      if(window.gsap){ gsap.fromTo(li, {opacity:0, y:-6}, {opacity:1, y:0, duration:0.25, ease:'power2.out'}); }
+    } else { li.textContent=`${n.title}: ${n.bonus}`; }
+  });
+}
+
+function rebuildLinks(){ links = buildLinks(); incomingMap = buildIncomingMap(); drawLinks(); }
+
+function drawLinks(){
+  computeLinkLaneOffsets();
+
+  const visibleIds = new Set(nodes.filter(n=> (appMode!==MODES.PLAYER) || isNodeRevealedForPlayer(n)).map(n=>n.id));
+  const inFilter = (n) => {
+    const txtKey = `${n.title} ${n.text||''} ${n.source||''} ${(n.tags||[]).join(' ')}`.toLowerCase();
+    const q=(searchEl && (searchEl.value||'').trim().toLowerCase())||'';
+
+    // Player mode: for revealed but not-yet-unlocked, ignore source chips
+    const srcAllowed = (appMode === MODES.PLAYER && !n.unlocked)
+      ? true
+      : (activeSources.size===0 || activeSources.has(n.source||'—'));
+
+    const qOk   = !q || txtKey.includes(q);
+    return srcAllowed && qOk;
+  };
+
+  gLinks.selectAll('path.link').data(links, d=>d.id)
+    .join(
+      enter=>enter.append('path')
+        .attr('class','link')
+        .attr('fill','none')
+        .style('pointer-events','stroke')
+        .attr('stroke-linecap','round')
+        .on('click', function(ev,d){
+          if (appMode !== MODES.EDIT) return;
+          ev.stopPropagation();
+          // Select link on path click too; also focus the source node in the form so its pills show.
+          selectedNode = nodesById.get(d.source) || selectedNode;
+          selectedLinkId = (selectedLinkId === d.id) ? null : d.id;
+          populateEditForm(selectedNode);
+          syncLinkUIForLink();
+          drawLinks();
+        }),
+      update=>update,
+      exit=>exit.remove()
+    )
+    /* Base appearance */
+    .attr('stroke', d => linkColor(d))
+    .attr('stroke-width', d=> d.id===selectedLinkId ? 3 : 2)
+    .attr('stroke-opacity', d=> d.id===selectedLinkId ? 0.95 : 0.55)
+    .attr('d', d=>getLinkPath(d))
+    .attr('display', d=>{
+      const s=nodesById.get(d.source), t=nodesById.get(d.target);
+      if (appMode===MODES.PLAYER){
+        if(!visibleIds.has(s.id) || !visibleIds.has(t.id)) return 'none';
+      }
+      return (inFilter(s) && inFilter(t)) ? null : 'none';
+    })
+    /* Edit-mode highlights via classes (CSS is scoped to body.mode-edit) */
+    .classed('is-selected', d => d.id === selectedLinkId)
+    .classed('is-override', d => !!getLinkCfgObj(d.source, d.target));
+}
+
+function updateNodeAppearance(sel, d){
+  const dot  = sel.select('circle.dot');
+  const halo = sel.select('circle.halo');
+  const fillTo = nodeColor(d);
+
+  const unlocked = !!d.unlocked;
+  const hasBonus = !!(d.bonus && String(d.bonus).trim());
+
+  // --- ring logic (what gets shown in each mode) ---
+  let showHalo = false;
+  let dotHL    = false;
+
+  if (appMode === MODES.GM){
+    showHalo = unlocked;   // halo == players have unlocked it
+    dotHL    = hasBonus;   // outline == this node grants a bonus (always on in GM)
+  } else if (appMode === MODES.PLAYER){
+    showHalo = false;                 // no halo in player
+    dotHL    = unlocked && hasBonus;  // outline only for unlocked bonus
+  } else { // MODES.EDIT
+    showHalo = (d === selectedNode);  // selection = halo only
+    dotHL    = hasBonus;              // outline still means “bonus” in edit
+  }
+
+  sel.classed('show-halo', showHalo)
+     .classed('dot-hl',   dotHL)
+     .classed('selected', (appMode === MODES.EDIT && d === selectedNode));
+
+  // halo on/off
+  halo.style('display', showHalo ? '' : 'none')
+      .attr('opacity', showHalo ? 1 : 0)
+      .attr('filter', showHalo ? 'url(#halo)' : null);
+
+  // color + keep attributes from fighting the CSS ring
+  dot.attr('fill', fillTo);
+  if (dotHL){
+    // remove any old presentational stroke so the .dot-hl CSS wins
+    dot.attr('stroke', null).attr('stroke-width', 2).style('filter', null);
+  } else {
+    dot.attr('stroke', d.fixed ? '#fff' : '#0004')
+       .attr('stroke-width', d.fixed ? 3 : 2)
+       .style('filter', null);
+  }
+}
+
+function setInitialLabelAnchors(){
+  const LABEL_RADIAL_PAD = 18;
+  gLabels.selectAll('text.label').each(function(d){
+    const th=Math.atan2(d.y-cy, d.x-cx)-Math.PI/3;
+    const rx=Math.cos(th), ry=Math.sin(th);
+    d._baseX = d.x + rx*LABEL_RADIAL_PAD + (Math.cos(th)>=0?4:-4);
+    d._baseY = d.y + ry*LABEL_RADIAL_PAD + 4;
+  });
+}
+function updateLabelTexts(){
+  gLabels.selectAll('text.label').text(d => {
+    if (appMode===MODES.PLAYER && !d.unlocked) return '';
+    return (d.title.length>30? d.title.slice(0,28)+'…' : d.title);
+  });
+}
+function layoutLabels(){
+  const LABEL_H=14;
+  const obstacles = nodes.map(n=>({x:n.x,y:n.y,r:18}));
+  gLabels.selectAll('text.label').each(function(d){
+    const t=d3.select(this);
+    const txt=this.textContent||'';
+    const w=txt ? this.getComputedTextLength():0;
+    if(!w){ t.attr('x',d.x).attr('y',d.y); return; }
+    const th=Math.atan2(d.y-cy,d.x-cx)-Math.PI/3;
+    const rvx=Math.cos(th), rvy=Math.sin(th);
+    const tvx=-rvy, tvy=rvx;
+    const RADS=[16,22,28,34]; const TANG=[0,10,-10,18,-18];
+    let placed=null;
+    outer: for(const R of RADS){ for(const T of TANG){
+      const ax=d.x+rvx*R+tvx*T, ay=d.y+rvy*R+tvy*T;
+      const right=Math.cos(th)>=0; const x1=right?ax:ax-w, x2=right?ax+w:ax, y1=ay-LABEL_H*0.6, y2=ay+LABEL_H*0.6;
+      let bad=false;
+      for(const ob of obstacles){
+        const nx=Math.max(x1, Math.min(ob.x,x2));
+        const ny=Math.max(y1, Math.min(ob.y,y2));
+        const dx=ob.x-nx, dy=ob.y-ny;
+        if(Math.hypot(dx,dy) < ob.r){ bad=true; break; }
+      }
+      if(!bad){ placed={ax,ay,right}; break outer; }
+    } }
+    const ax=placed?placed.ax:(d.x+rvx*RADS[0]); const ay=placed?placed.ay:(d.y+rvy*RADS[0]); const right=placed?placed.right:(Math.cos(th)>=0);
+    t.attr('x',ax).attr('y',ay).attr('text-anchor', right?'start':'end');
+  });
+}
+function updateLeaderLines(){
+  const THRESH=20;
+  const labelMap=new Map();
+  gLabels.selectAll('text.label').each(function(d){
+    const txt=this.textContent||'';
+    const visible = !(appMode===MODES.PLAYER && !d.unlocked) && !!txt;
+    const x=+this.getAttribute('x')||d.x; const y=+this.getAttribute('y')||d.y;
+    labelMap.set(d.id,{x,y,visible});
+  });
+  const leaders=gLeader.selectAll('line.leader').data(nodes, d=>d.id);
+  leaders.join(
+    enter=>enter.append('line').attr('class','leader'),
+    update=>update,
+    exit=>exit.remove()
+  )
+  .attr('x1', d=>d.x).attr('y1',d=>d.y)
+  .attr('x2', d=> (labelMap.get(d.id)||{x:d.x}).x)
+  .attr('y2', d=> (labelMap.get(d.id)||{y:d.y}).y)
+  .attr('opacity', Math.max(0, 1 - (currentZoomK-1)/0.7) * 0.8)
+  .attr('visibility', d=>{
+    const L=labelMap.get(d.id);
+    if(!L||!L.visible) return 'hidden';
+    const dx=L.x-d.x, dy=L.y-d.y;
+    return (Math.hypot(dx,dy)>THRESH)?'visible':'hidden';
+  });
+}
+
+function refreshAll(){
+  ensureStagingConsistency();
+  setEditWashVisible(appMode===MODES.EDIT);
+
+  nodesById = new Map(nodes.map(n=>[n.id,n]));
+  rebuildLinks();
+  rebuildChips(); // keep activeSources expanded when All is on, before drawing links
+
+  const toReveal = nodes.filter(n => willRevealNow(n));
+
+  const visibleNodes = nodes.filter(n => {
+    if (appMode !== MODES.EDIT && n.staging) return false;
+    return (appMode!==MODES.PLAYER) || isNodeRevealedForPlayer(n);
+  });
+
+  const nodeSel = gNodes.selectAll('g.node').data(visibleNodes, d=>d.id);
+  const nodeEnter = nodeSel.enter().append('g').attr('class','node')
+    .attr('transform', d=>`translate(${d.x},${d.y})`).attr('tabindex',0)
+    .on("click", function(ev, d){
+      if (appMode === MODES.EDIT){ selectNode(d); ev.stopPropagation(); return; }
+      if (appMode === MODES.PLAYER){
+        d.unlocked = !d.unlocked;
+        saveState();
+        refreshAll(); updateBonuses();
+        const n = nodesById.get(d.id); if (n) showTip(n);
+      }
+    })
+    .on('mousemove', function(ev, d){ showTip(d, ev); })
+    .on('mouseleave', function(){ hideTip(); });
+
+  nodeEnter.append('circle')
+    .attr('class','halo')
+    .attr('r',16)
+    .attr('fill','none'); // stroke/width come from CSS; opacity handled in update
+  nodeEnter.append('circle').attr('class','dot').attr('r',12);
+
+  nodeSel.merge(nodeEnter)
+    .attr('transform', d=>`translate(${d.x},${d.y})`)
+    .classed('fixed', d=>!!d.fixed)
+    .each(function(d){ updateNodeAppearance(d3.select(this), d, false); });
+
+  nodeSel.exit().remove();
+
+  gLabels.selectAll('text.label').data(visibleNodes, d=>d.id).join('text').attr('class','label');
+  setInitialLabelAnchors(); updateLabelTexts(); layoutLabels(); updateLeaderLines();
+
+  drawLinks();
+  applyFilters();
+
+  if (window.gsap){
+    toReveal.forEach(n=>{
+      const g = gNodes.selectAll('g.node').filter(d=>d.id===n.id);
+      const dot = g.select('circle.dot');
+      if (!dot.empty()){
+        gsap.fromTo(dot.node(), {scale:0, transformOrigin:'center'}, {scale:1, duration:0.3, ease:'back.out(2)'});
+      }
+    });
+  }
+
+  rememberVisibility();
+  setupDragBehavior();
+}
+
+/* Apply search + filter to dim non-matching */
+function applyFilters(){
+  const q=(searchEl && (searchEl.value||'').trim().toLowerCase())||'';
+  const matches=new Set();
+
+  if (activeSources.size===0) activeSources = new Set(currentSources());
+
+  nodes.forEach(n=>{
+    const isVisible = ((appMode!==MODES.EDIT) && n.staging) ? false
+      : ((appMode!==MODES.PLAYER) || isNodeRevealedForPlayer(n));
+
+    if (!isVisible) { n._visible = false; return; }
+    const srcOk = activeSources.has(n.source||'—');
+    const srcAllowed = (appMode === MODES.PLAYER && !n.unlocked)
+      ? true
+      : activeSources.has(n.source||'—');
+    const text = `${n.title} ${n.text||''} ${n.source||''} ${(n.tags||[]).join(' ')}`.toLowerCase();
+    const qOk = !q || text.includes(q);
+    const ok = srcAllowed && qOk;
+    n._visible = ok;
+    if(ok && q) matches.add(n.id);
+  });
+
+  gNodes.selectAll('g.node').classed('dim', d=> d._visible===false).classed('match', d=> matches.has(d.id));
+  gLabels.selectAll('text.label').classed('dim', d=> d._visible===false);
+  gLinks.selectAll('path.link').classed('dim', d=>{
+    const s=nodesById.get(d.source), t=nodesById.get(d.target);
+    return (s&&s._visible===false) || (t&&t._visible===false);
+  });
+
+  rebuildChips();
+}
+
+/* =========================
+   Header buttons
+   ========================= */
+document.getElementById('btnUnlock').addEventListener('click', ()=>{
+  nodes.forEach(n => {
+    if (!n.staging) {
+      n.unlocked = true;
+    }
+  });
+  refreshAll();
+  updateBonuses();
+  saveState();
+});
+
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  nodes.forEach(n=> n.unlocked=false);
+  refreshAll(); updateBonuses(); saveState();
+});
+
+/* =========================
+   JSON Open/Save
+   ========================= */
+function exportPayload(){
+  const serialized = nodes.map(n=>{
+    const copy = {...n};
+    copy.links = (n.links||[]).map(v=>{
+      if (typeof v === 'string') return v;
+      const out = { to: v.to };
+      if (v.cfg) out.cfg = {...v.cfg};
+      return out;
+    });
+    return copy;
+  });
+  return { version: 4, appMode, linkDefaults: LINK_CFG, nodes: serialized };
+}
+function saveState(){ try{ localStorage.setItem('investigationWeb.v4', JSON.stringify(exportPayload())); }catch(e){} }
+
+function applyPayload(doc){
+  if(!doc || !Array.isArray(doc.nodes)) throw new Error('Invalid JSON: expected { nodes: [...] }');
+
+  if (doc.linkDefaults){
+    LINK_CFG = { ...DEFAULT_LINK_CFG, ...doc.linkDefaults };
+    saveGlobalLinkCfg();
+  }
+
+  nodes = doc.nodes.map(n=>{
+    const m={...n};
+    m.dc ??= null; m.test ??= null; m.tags ??= [];
+    m.links = (m.links||[]).map(v=>{
+      if (typeof v === 'string') return v;
+      return { to: v.to, cfg: v.cfg ? { ...v.cfg } : undefined };
+    });
+    m.fixed = !!m.fixed;
+    m.unlocked = !!m.unlocked;
+    m.initiallyHidden = !!m.initiallyHidden;
+    return m;
+  });
+
+  nodes.forEach(n=>{
+    if(n.fixed && typeof n.boundary==='number'){
+      const p=anchorXYBoundary(n.boundary,n.tier);
+      n.x=p.x; n.y=p.y;
+    }
+  });
+
+  layoutNodes(nodes);
+  nodesById = new Map(nodes.map(n=>[n.id,n]));
+  rebuildLinks();
+
+  const validMode = v => Object.values(MODES).includes(v);
+  const remembered = localStorage.getItem(MODE_KEY);
+  const fileMode   = doc.appMode;
+  let nextMode = appMode;
+  if (validMode(remembered)) nextMode = remembered; else if (validMode(fileMode)) nextMode = fileMode;
+  setMode(nextMode);
+  updateBonuses();
+}
+
+/* Save / Load buttons */
+document.getElementById('btnSave').addEventListener('click', ()=>{
+  const blob=new Blob([JSON.stringify(exportPayload(),null,2)], {type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='three-virtues-web.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+const fileOpen = document.getElementById('fileOpen');
+document.getElementById('btnOpen').addEventListener('click', ()=> fileOpen.click());
+fileOpen.addEventListener('change', async ev=>{
+  const f=ev.target.files && ev.target.files[0]; if(!f) return;
+  try{
+    const text = await f.text();
+    const doc  = JSON.parse(text);
+    applyPayload(doc);
+  }catch(e){
+    alert('Invalid JSON: ' + e.message);
+  }finally{
+    ev.target.value='';
+  }
+});
+
+/* =========================
+   Edit mode: link pills, drag/link, ID rename, etc.
+   ========================= */
+const f_id=document.getElementById('f_id');
+const f_title=document.getElementById('f_title');
+const f_virtue=document.getElementById('f_virtue');
+const f_tier=document.getElementById('f_tier');
+const f_source=document.getElementById('f_source');
+const f_bridge=document.getElementById('f_bridge');
+const f_text=document.getElementById('f_text');
+const f_dc=document.getElementById('f_dc');
+const f_test=document.getElementById('f_test');
+const f_bonus=document.getElementById('f_bonus');
+const f_tags=document.getElementById('f_tags');
+const f_loreUrl=document.getElementById('f_loreUrl');
+const f_initiallyHidden=document.getElementById('f_initiallyHidden');
+const editHelp=document.getElementById('editHelp');
+const linksWrap=document.getElementById('f_linksWrap');
+
+/* ===== Link panel UI ===== */
+const linkPanel = document.getElementById('linkPanel');
+const ui = {
+  override: document.getElementById('link_override'),
+  style : document.getElementById('link_style'),
+  curve : document.getElementById('link_curve'),
+  out   : document.getElementById('link_outward'),
+  lane  : document.getElementById('cfg_lane_space'),
+  reset : document.getElementById('btnResetLinkCfg'),
+  note  : document.getElementById('linkPanelNote')
+};
+
+function parseLinkId(id){
+  if(!id) return null;
+  const i = id.indexOf('>');
+  if (i<0) return null;
+  return { source:id.slice(0,i), target:id.slice(i+1) };
+}
+
+function setLinkControlsEnabled(enabled){
+  ui.style.disabled = !enabled;
+  ui.curve.disabled = !enabled;
+  ui.out.disabled   = !enabled;
+}
+
+function syncLinkUIForLink(){
+  if(!linkPanel) return;
+  linkPanel.style.display = (appMode===MODES.EDIT) ? '' : 'none';
+
+  // Lane spacing is always global
+  ui.lane.value = LINK_CFG.laneSpacing;
+
+  const meta = parseLinkId(selectedLinkId);
+
+  if(!meta){
+    // No link selected → edit global defaults
+    ui.override.checked = false;
+    ui.override.disabled = true;
+    setLinkControlsEnabled(true);
+    ui.style.value = LINK_CFG.style;
+    ui.curve.value = LINK_CFG.curve;
+    ui.out.value   = LINK_CFG.outward;
+    ui.note.textContent = 'No link selected → controls edit global defaults.';
+    return;
+  }
+
+  ui.override.disabled = false;
+  const hasOverride = !!getLinkCfgObj(meta.source, meta.target);
+  ui.override.checked = hasOverride;
+
+  const eff = effectiveCfgForLink(meta.source, meta.target);
+  ui.style.value = eff.style;
+  ui.curve.value = eff.curve;
+  ui.out.value   = eff.outward;
+
+  setLinkControlsEnabled(hasOverride);
+  ui.note.textContent = hasOverride
+    ? 'Editing this link override.'
+    : 'This link uses global defaults (controls disabled until you enable override).';
+}
+
+function applyFormToGlobal(){
+  LINK_CFG.style       = ui.style.value;
+  LINK_CFG.curve       = +ui.curve.value;
+  LINK_CFG.outward     = +ui.out.value;
+  saveGlobalLinkCfg();
+}
+function applyFormToSelectedLink(){
+  const meta = parseLinkId(selectedLinkId); if(!meta) return;
+  const cfg = ensureLinkCfg(meta.source, meta.target);
+  cfg.style   = ui.style.value;
+  cfg.curve   = +ui.curve.value;
+  cfg.outward = +ui.out.value;
+  saveState();
+}
+
+function onAnyLinkControlChanged(e){
+  if (e && e.target === ui.lane){
+    LINK_CFG.laneSpacing = +ui.lane.value;
+    saveGlobalLinkCfg();
+    drawLinks();
+    return;
+  }
+  const meta = parseLinkId(selectedLinkId);
+  if (!meta){
+    applyFormToGlobal();
+  } else {
+    if (ui.override.checked){
+      applyFormToSelectedLink();
+    } // else controls are disabled so no change
+  }
+  drawLinks();
+}
+
+/* Listeners */
+if(linkPanel){
+  ui.override.addEventListener('change', ()=>{
+    const meta = parseLinkId(selectedLinkId);
+    if(!meta){ syncLinkUIForLink(); return; }
+    if(ui.override.checked){
+      ensureLinkCfg(meta.source, meta.target); // seed from current global
+      saveState();
+    }else{
+      clearLinkCfg(meta.source, meta.target);
+      saveState();
+    }
+    syncLinkUIForLink();
+    drawLinks();
+  });
+
+  [ui.style, ui.curve, ui.out].forEach(el=>{
+    el.addEventListener('input', onAnyLinkControlChanged);
+  });
+  ui.lane.addEventListener('input', onAnyLinkControlChanged);
+
+  ui.reset.addEventListener('click', ()=>{
+    const meta = parseLinkId(selectedLinkId);
+    if (meta && ui.override.checked){
+      const cfg = ensureLinkCfg(meta.source, meta.target);
+      cfg.style   = DEFAULT_LINK_CFG.style;
+      cfg.curve   = DEFAULT_LINK_CFG.curve;
+      cfg.outward = DEFAULT_LINK_CFG.outward;
+      saveState();
+      syncLinkUIForLink();
+      drawLinks();
+    } else {
+      LINK_CFG = { ...DEFAULT_LINK_CFG };
+      saveGlobalLinkCfg();
+      syncLinkUIForLink();
+      drawLinks();
+    }
+  });
+}
+
+/* ===== Link pills (Edit) ===== */
+function populateLinkPills(n){
+  if (!linksWrap) return;
+  linksWrap.innerHTML = '';
+  const entries = (n.links||[]).map(v => (typeof v==='string' ? {to:v} : v));
+  if (entries.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'note';
+    empty.textContent = 'No links yet. Shift+drag from this node to add.';
+    linksWrap.appendChild(empty);
+    return;
+  }
+  entries.forEach(entry=>{
+    const tid = entry.to;
+    const target = nodesById.get(tid);
+    const chip = document.createElement('span');
+    chip.className = 'link-chip';
+    chip.textContent = target ? target.title : `(missing: ${tid})`;
+    chip.title = target ? `${n.title} → ${target.title}` : `Broken link to ${tid}`;
+
+    const lk = linkKey(n.id, tid);
+    if (lk === selectedLinkId) chip.classList.add('selected');
+
+    chip.addEventListener('click', (ev)=>{
+      if (ev.shiftKey){
+        // remove this link
+        n.links = (n.links||[]).filter(v => (typeof v==='string' ? v !== tid : v.to !== tid));
+        if (selectedLinkId === lk) selectedLinkId = null;
+        rebuildLinks(); saveState(); refreshAll();
+        populateLinkPills(n); // refresh pills & highlight
+        syncLinkUIForLink();
+      } else {
+        // toggle selection for this pill (only one at a time)
+        selectedLinkId = (selectedLinkId === lk) ? null : lk;
+        // re-render highlights
+        linksWrap.querySelectorAll('.link-chip').forEach(el=> el.classList.remove('selected'));
+        if (selectedLinkId === lk) chip.classList.add('selected');
+        syncLinkUIForLink();
+        drawLinks();
+      }
+    });
+
+    linksWrap.appendChild(chip);
+  });
+}
+
+/* ===== Edit form (node fields) ===== */
+function populateEditForm(n){
+  if(appMode!==MODES.EDIT) return;
+  if(!n){
+    editHelp.textContent='Select a node to edit.';
+    if (linksWrap) linksWrap.innerHTML='';
+    lockEditButtons(true, true);
+    syncLinkUIForLink();
+    return;
+  }
+
+  f_id.value=n.id||'';
+  f_title.value=n.title||'';
+  f_virtue.value=n.virtue;
+  f_tier.value=n.tier;
+  f_source.value=n.source||'';
+  f_bridge.value=n.bridge||'';
+  f_text.value=n.text||'';
+  f_dc.value=n.dc??'';
+  f_test.value=n.test||'';
+  f_bonus.value=n.bonus||'';
+  f_tags.value=(n.tags||[]).join(', ');
+  f_loreUrl.value=n.loreUrl||'';
+  f_initiallyHidden.checked = !!n.initiallyHidden;
+
+  populateLinkPills(n);
+
+  const hasPrereqs = (incomingMap.get(n.id)||[]).length>0;
+  editHelp.textContent = `${(n.initiallyHidden && !hasPrereqs)?'Note: initiallyHidden has no effect without prerequisites (incoming links). ':''}${n.fixed?'Drag this transition onto another transition to swap slots.':''}`;
+  lockEditButtons(n.tier==='center', n.fixed);
+}
+function lockEditButtons(disableAddForCenter, disableDeleteForTransition){
+  document.getElementById('btnAddNode').disabled = !!disableAddForCenter;
+  document.getElementById('btnDeleteNode').disabled = !!disableDeleteForTransition;
+}
+
+/* --- ID rename (with link remap) --- */
+function renameNodeId(node, newId){
+  const oldId = node.id;
+  const id = (newId||'').trim();
+  if (!id){ editHelp.textContent='ID cannot be empty.'; return false; }
+  if (id === oldId) return true;
+  if (nodes.some(n=> n!==node && n.id===id)){ editHelp.textContent='That ID is already in use.'; return false; }
+
+  nodes.forEach(n=>{
+    if(!Array.isArray(n.links)) return;
+    n.links = n.links.map(v=>{
+      if (typeof v==='string') return (v===oldId) ? id : v;
+      return { to: v.to===oldId ? id : v.to, cfg: v.cfg ? {...v.cfg} : undefined };
+    });
+  });
+
+  node.id = id;
+
+  nodesById = new Map(nodes.map(n=>[n.id,n]));
+  selectedLinkId = null;
+  rebuildLinks();
+  refreshAll();
+  saveState();
+  syncLinkUIForLink();
+  editHelp.textContent='ID updated.';
+  return true;
+}
+if (f_id){
+  f_id.addEventListener('change', ()=>{
+    if(!selectedNode) return;
+    renameNodeId(selectedNode, f_id.value);
+  });
+}
+
+[f_title,f_virtue,f_tier,f_source,f_bridge,f_text,f_dc,f_test,f_bonus,f_tags,f_loreUrl,f_initiallyHidden].forEach(el=>{
+  if(!el) return;
+  el.addEventListener('input', ()=>{
+    if(!selectedNode) return;
+    const n=selectedNode;
+    if(el===f_title) n.title=el.value;
+    if(el===f_virtue) n.virtue=el.value;
+    if(el===f_tier) n.tier=el.value;
+    if(el===f_source) n.source=el.value;
+    if(el===f_bridge) n.bridge= el.value===''?null: parseInt(el.value,10);
+    if(el===f_text) n.text=el.value;
+    if(el===f_dc) n.dc = el.value===''?null: parseInt(el.value,10);
+    if(el===f_test) n.test=el.value;
+    if(el===f_bonus) n.bonus=el.value;
+    if(el===f_tags) n.tags = el.value.split(',').map(s=>s.trim()).filter(Boolean);
+    if(el===f_loreUrl) n.loreUrl=el.value;
+    if(el===f_initiallyHidden) n.initiallyHidden = !!el.checked;
+
+    layoutNodes(nodes);
+    refreshAll();
+    saveState();
+  });
+});
+
+document.getElementById('btnAddNode').addEventListener('click', ()=>{
+  if(!selectedNode) return;
+
+  let v=selectedNode.virtue, t=selectedNode.tier;
+  if(selectedNode.fixed){
+    const order=['shallow','mid','deep','center']; const idx=order.indexOf(selectedNode.tier);
+    if(idx<=0){ return; }
+    t = order[idx-1]; v = selectedNode.virtue;
+  }
+  if(t==='center'){ return; }
+
+  const newId = `node-${Math.random().toString(36).slice(2,8)}-${Date.now().toString(36)}`;
+  const nn={ id:newId, title:'New Node', virtue:v, tier:t, source:'—', text:'', dc:null, test:null, bonus:null, tags:[], loreUrl:null, unlocked:false, links:[], initiallyHidden:false };
+
+  if(selectedNode.staging && typeof selectedNode.staging.lane==='number'){
+    nn.staging = { dir: selectedNode.staging.dir, lane: selectedNode.staging.lane };
+  }
+
+  nodes.push(nn);
+  layoutNodes(nodes);
+  refreshAll();
+  selectNode(nn);
+  saveState();
+});
+
+document.getElementById('btnDeleteNode').addEventListener('click', ()=>{
+  if(!selectedNode || selectedNode.fixed) return;
+  const id=selectedNode.id;
+  nodes = nodes.filter(n=> n.id!==id);
+  nodes.forEach(n=>{
+    n.links = (n.links||[]).filter(v=> (typeof v==='string' ? v !== id : v.to !== id));
+  });
+  layoutNodes(nodes); refreshAll(); selectedNode=null; populateEditForm(null); saveState();
+});
+
+/* --- Transition swap helper --- */
+function swapTransitionSlots(a,b){
+  const A={boundary:a.boundary, tier:a.tier};
+  const B={boundary:b.boundary, tier:b.tier};
+
+  a.boundary=B.boundary; a.tier=B.tier;
+  b.boundary=A.boundary; b.tier=A.tier;
+
+  const pa=anchorXYBoundary(a.boundary, a.tier); a.x=pa.x; a.y=pa.y;
+  const pb=anchorXYBoundary(b.boundary, b.tier); b.x=pb.x; b.y=pb.y;
+}
+
+/* Drag & link */
+let addLinkState = null;
+let ghost = null; let ghostLink = null; let candidateSeg = null;
+let draggingFixed = false; let swapTarget = null;
+const SWAP_R_TIER = { center: 46, deep: 52, mid: 52, shallow: 52 };
+
+function createGhost(){ if(ghost) return; ghost = gNodes.append('g').attr('class','ghost-node invalid').style('display','none'); ghost.append('circle').attr('class','dot').attr('r',12).attr('fill','none').attr('stroke','#d37f7f'); }
+function showGhost(x,y,valid,isTransition=false){
+  if(!ghost){ createGhost(); }
+  ghost.style('display','')
+    .attr('transform',`translate(${x},${y})`)
+    .classed('valid', !!valid).classed('invalid', !valid)
+    .classed('transition', !!isTransition);
+}
+function hideGhost(){ if(ghost) ghost.style('display','none'); }
+function setWashHighlight(segId){ gWash.selectAll('path.edit-wash').classed('highlight', function(){ return this.getAttribute('data-seg')===segId; }); }
+
+function nearestSegmentPoint(mx,my){
+  let best=null; const THRESH=20;
+  gWashSegs.forEach(p=>{
+    const L=p.getTotalLength();
+    let bestLocal={d:Infinity,t:0,pt:null};
+    const steps=64;
+    for(let i=0;i<=steps;i++){
+      const t=i/steps; const pt=p.getPointAtLength(t*L);
+      const d=Math.hypot(mx-pt.x, my-pt.y);
+      if(d<bestLocal.d){ bestLocal={d,t,pt}; }
+    }
+    if(bestLocal.d<THRESH){
+      const kind = p.getAttribute('data-kind') || 'spiral';
+      const segId= p.getAttribute('data-seg');
+      if(kind === 'staging'){
+        const dir  = p.getAttribute('data-dir');
+        const idx  = +p.getAttribute('data-index');
+        best = { kind:'staging', segId, p:{x:bestLocal.pt.x, y:bestLocal.pt.y}, t:bestLocal.t, dir, lane: idx };
+      }else{
+        const [vi,si] = segId.split('-').map(Number);
+        const virtue  = ['Endurance','Harmony','Remembrance'][vi];
+        const tier    = ['deep','mid','shallow'][si];
+        best = { kind:'spiral', segId, p:{x:bestLocal.pt.x, y:bestLocal.pt.y}, t:bestLocal.t, virtue, tier };
+      }
+    }
+  });
+  return best;
+}
+
+function setupDragBehavior(){
+  gNodes.selectAll('g.node').on('.drag', null);
+  if (appMode !== MODES.EDIT) return;
+
+  const sel = gNodes.selectAll('g.node');
+
+  const dragBehavior = d3.drag()
+    .filter(function(){ return true; })
+    .on('start', function(ev){
+      const d = this.__data__;
+      if (ev.sourceEvent && ev.sourceEvent.shiftKey){
+        addLinkState = { from:d, to:null };
+        if(!ghostLink) ghostLink = gLinks.append('path').attr('class','ghost-link');
+        ghostLink.attr('d', `M${d.x},${d.y}L${d.x},${d.y}`);
+        return;
+      }
+      draggingFixed = !!d.fixed;
+      if(draggingFixed){
+        showGhost(d.x,d.y,true,true);
+        gNodes.selectAll('.swap-target').classed('swap-target', false);
+      } else {
+        createGhost(); showGhost(d.x,d.y,false); setWashHighlight(null);
+      }
+    })
+    .on('drag', function(ev){
+      const d = this.__data__;
+      if(addLinkState){
+        const mp = d3.pointer(ev, root.node());
+        ghostLink.attr('d', `M${addLinkState.from.x},${addLinkState.from.y}L${mp[0]},${mp[1]}`);
+        const target = nodes.find(n=> n!==addLinkState.from && Math.hypot(n.x - mp[0], n.y - mp[1]) <= 14 );
+        addLinkState.to = target || null;
+        return;
+      }
+      const [mx,my] = d3.pointer(ev, root.node());
+
+      if(draggingFixed){
+        showGhost(mx,my,true,true);
+
+        const candidates = nodes.filter(n=> n.fixed && n!==d);
+        let pick=null, best=Infinity;
+        candidates.forEach(n=>{
+          const dist=Math.hypot(n.x-mx,n.y-my);
+          if(dist<best){ best=dist; pick=n; }
+        });
+        const R = SWAP_R_TIER[d.tier] || 52;
+
+        gNodes.selectAll('.swap-target').classed('swap-target', false);
+        if(pick && best<=R){
+          swapTarget=pick;
+          gNodes.selectAll('g.node').filter(nd=>nd===pick).classed('swap-target', true);
+          if(editHelp) editHelp.textContent='Release to swap transition slots';
+        } else {
+          swapTarget=null;
+          if(editHelp) editHelp.textContent='Drag onto another transition to swap';
+        }
+        return;
+      }
+
+      const near = nearestSegmentPoint(mx,my);
+      if(near){ candidateSeg=near; showGhost(near.p.x, near.p.y, true); setWashHighlight(near.segId); }
+      else { candidateSeg=null; showGhost(mx,my,false); setWashHighlight(null); }
+      if (near && editHelp) editHelp.textContent = (near.kind==='staging') ? `Move to staging ${near.dir}/${near.lane}` : `Move to ${near.virtue} / ${near.tier}`;
+    })
+    .on('end', function(){
+      const d = this.__data__;
+      if(addLinkState){
+        if(addLinkState.to){
+          const from=addLinkState.from, to=addLinkState.to;
+          from.links = from.links || [];
+          const exists = (from.links||[]).some(v => (typeof v==='string' ? v===to.id : v.to===to.id));
+          if(!exists) from.links.push({ to: to.id });
+          selectedLinkId = linkKey(from.id, to.id);
+          rebuildLinks(); saveState(); refreshAll();
+          if (selectedNode && selectedNode.id === from.id){
+            populateLinkPills(from);
+          }
+          syncLinkUIForLink();
+        }
+        addLinkState=null; if(ghostLink){ ghostLink.remove(); ghostLink=null; }
+        hideGhost();
+        return;
+      }
+      if(draggingFixed){
+        if(swapTarget){
+          swapTransitionSlots(d, swapTarget);
+          refreshAll(); saveState();
+        }
+        gNodes.selectAll('.swap-target').classed('swap-target', false);
+        draggingFixed=false; swapTarget=null;
+        hideGhost();
+        return;
+      }
+      if(candidateSeg){
+        let segId, arr, pathEl;
+        if (candidateSeg.kind === 'staging'){
+          d.staging = { dir: candidateSeg.dir, lane: candidateSeg.lane };
+          segId = `staging-${candidateSeg.dir}-${candidateSeg.lane}`;
+          arr = nodes.filter(n => n!==d && n.staging && n.staging.dir===candidateSeg.dir && n.staging.lane===candidateSeg.lane);
+        } else {
+          d.staging = null;
+          d.virtue  = candidateSeg.virtue;
+          d.tier    = candidateSeg.tier;
+          const sIdx = virtueIndex[d.virtue];
+          const seg  = segByTier[d.tier];
+          segId = `spiral-${sIdx}-${seg}`;
+          arr = nodes.filter(n => n!==d && !n.staging && !n.fixed && n.virtue===d.virtue && n.tier===d.tier);
+        }
+        pathEl = getSegPath(segId);
+        if(pathEl){
+          const L = pathEl.getTotalLength();
+          function tOf(n){
+            const steps=32; let best={d:Infinity,t:0};
+            for(let i=0;i<=steps;i++){
+              const t=i/steps; const pt=pathEl.getPointAtLength(t*L);
+              const dd=Math.hypot(n.x-pt.x, n.y-pt.y);
+              if(dd<best.d){ best={d:dd,t}; }
+            }
+            return best.t;
+          }
+          const withT = arr.map(n=>({n,t:tOf(n)}));
+          withT.push({n:d, t:candidateSeg.t});
+          withT.sort((a,b)=> a.t-b.t);
+          withT.forEach((o,i)=>{ o.n.order=i; });
+        }
+        ensureStagingConsistency();
+        layoutNodes(nodes); refreshAll(); saveState();
+      }
+      hideGhost(); setWashHighlight(null); candidateSeg=null;
+    });
+  sel.call(dragBehavior);
+}
+svg.on('click', ()=>{ if(appMode===MODES.EDIT){ selectedNode=null; selectedLinkId=null; refreshAll(); populateEditForm(null); syncLinkUIForLink(); }});
+
+/* =========================
+   Init
+   ========================= */
+function setSubtitleDirty(dirty){ const sub=document.getElementById('subtitle'); if(!sub) return; sub.textContent = 'The Three Virtues of Promise — Endurance · Harmony · Remembrance' + (dirty?' • ● unsaved':''); }
+setMode(appMode);
+rememberVisibility();
+rebuildChips();
+refreshAll();
+
+/* Try loading last local storage snapshot (if present) */
+try{
+  const raw = localStorage.getItem('investigationWeb.v4');
+  if(raw){ const doc = JSON.parse(raw); applyPayload(doc); }
+}catch(e){ /* ignore */ }
+</script>
+</body>
+</html>

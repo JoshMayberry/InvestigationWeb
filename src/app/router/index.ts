@@ -1,9 +1,8 @@
 // src/app/router/index.ts
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import GlobalDashboard from '@app/pages/GlobalDashboard.vue';
-import {
-  routeDefinitions as investigationWebRoutes,
- } from '@features/investigation-web/router';
+import { routeDefinitions as investigationWebRoutes } from '@features/investigation-web/router';
+import { routeDefinitions as soundboardRoutes } from '@features/soundboard/router';
 import { RouteDefinition } from '@shared/types/router';
 
 const baseRoutes: Array<RouteDefinition> = [
@@ -18,6 +17,7 @@ const baseRoutes: Array<RouteDefinition> = [
 export const routeDefinitions: Array<RouteDefinition> = [
   ...baseRoutes,
   ...investigationWebRoutes,
+  ...soundboardRoutes
 ];
 
 const router = createRouter({

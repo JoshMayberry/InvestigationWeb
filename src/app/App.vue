@@ -17,13 +17,20 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+:host, main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 main {
-  flex: 1;
+  min-height: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
 }
-
 main > * {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 </style>

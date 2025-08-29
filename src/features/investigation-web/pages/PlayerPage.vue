@@ -1,36 +1,65 @@
 <template>
   <div class="player-page">
-    <h2>Navigation Web</h2>
-    <NavigationWeb :doc="doc" @node:click="onNodeClick" />
+    <EditPanel
+      class="edit-panel"
+      :node="selectedNode"
+      @update="onNodeUpdate"
+      @delete="onNodeDelete"
+    />
+    <InvestigationWeb
+      class="investigation-web"
+      :layout="layout"
+      v-model:nodes="nodes"
+      @select:node="onNodeSelect"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive } from 'vue';
-import NavigationWeb from '../components/NavigationWeb.vue';
-import type { NavDoc } from '../types';
-
+import { defineComponent } from "vue";
+import InvestigationWeb from "../components/InvestigationWeb.vue";
+import { LayoutGroup } from "../types/layout";
+import { NodeAny } from "../types/node";
+import EditPanel from "../components/EditPanel.vue";
 
 export default defineComponent({
-  name: 'PlayerPage',
-  components: { NavigationWeb },
-  data(){
-    const doc = reactive<NavDoc>({
-      version: 1,
-      layout: { kind:'dynamic', strategyId:'force', options:{ charge:-120, linkDistance:90 } },
-      linkDefaults: { style:'radial', curve:0, outward:40, laneSpacing:12 },
-      nodes: [
-        { id:'1', title:'One',   style:{ fill:'#10b981' }, links:['2','3'] },
-        { id:'2', title:'Two',   style:{ fill:'#60a5fa' }, links:['4'] },
-        { id:'3', title:'Three', style:{ fill:'#f59e0b' } },
-        { id:'4', title:'Four',  style:{ fill:'#ef4444' }, links:['1'] },
-      ],
-    });
-    return { doc };
+  name: "PlayerPage",
+  components: { InvestigationWeb, EditPanel },
+  data() {
+    const layout: LayoutGroup = {
+      type: "group",
+      kind: "row",
+      props: { gap: "40px" },
+      children: [
+        { type: "track", id: "tA", kind: "vline", props: { x: "50%", color: "red" } },
+        { type: "track", id: "tB", kind: "vline", props: { x: "50%", color: "gold" } },
+        { type: "track", id: "tC", kind: "vline", props: { x: "50%", color: "deepskyblue" } },
+      ]
+    };
+    const nodes: NodeAny[] = [
+      { id: "n1", kind: "free", x: 100, y: 100, r: 14, color: "#10b981" },
+      { id: "n2", kind: "free", x: 200, y: 200, r: 14, color: "#8b5cf6" },
+    ];
+    return {
+      layout,
+      nodes,
+      selectedNode: null as NodeAny | null,
+    };
   },
   methods: {
-    onNodeClick(n: any){ console.log('Player clicked', n); }
-  }
+    onNodeSelect(node: NodeAny) {
+      this.selectedNode = node;
+    },
+    onNodeUpdate(updatedNode: NodeAny) {
+      const idx = this.nodes.findIndex(n => n.id === updatedNode.id);
+      if (idx !== -1) this.nodes.splice(idx, 1, updatedNode);
+      this.selectedNode = updatedNode;
+    },
+    onNodeDelete(nodeId: string) {
+      this.nodes = this.nodes.filter(n => n.id !== nodeId);
+      this.selectedNode = null;
+    },
+  },
 });
 </script>
 
@@ -38,14 +67,15 @@ export default defineComponent({
 .player-page {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
 }
 
-.player-page > h2 {
+.edit-panel {
   flex: 0;
+  min-width: calc(max(300px, 10vh));
 }
 
-.player-page > * {
+.investigation-web {
   flex: 1;
 }
 

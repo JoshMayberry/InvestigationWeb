@@ -18,29 +18,34 @@
   </div>
 </template>
 
-<script>
-export default {
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
+
+export default defineComponent({
   name: "Track",
   props: {
-    item: Object,
-    sectionIdx: Number,
-    itemIdx: Number,
-    isPlaying: Boolean,
-    trackVol: Object,
-    override: Object,
-    loopOne: Object,
+    item: { type: Object as PropType<{ title: string; url: string }>, required: true },
+    isPlaying: { type: Boolean, required: true },
+    sectionIdx: { type: [Number, String], required: true },
+    subGroupIdx: { type: [Number, String], required: true },
+    itemIdx: { type: [Number, String], required: true },
+    trackVol: { type: Object as PropType<Record<string, number>>, required: true },
+    override: { type: Object as PropType<Record<string, boolean>>, required: true },
+    loopOne: { type: Object as PropType<Record<string, boolean>>, required: true }
   },
+  emits: ["play", "update:url", "update:trackVol", "update:override", "update:loopOne"],
   data() {
     return {
       url: this.item.url,
-      isOver: !!this.override[this.key],
-      vol: this.trackVol[this.key] ?? 50,
-      isLoop: !!this.loopOne[this.key],
+      isOver: false,
+      vol: 50,
+      isLoop: false,
     }
   },
   computed: {
-    key() {
-      return `${this.sectionIdx}:${this.itemIdx}`
+    key(): string {
+      // Use all indices for uniqueness
+      return `${this.sectionIdx}:${this.subGroupIdx}:${this.itemIdx}`;
     }
   },
   watch: {
@@ -50,17 +55,17 @@ export default {
     "item.url"(val) { this.url = val }
   },
   methods: {
-    onPlay() { this.$emit("play", { sectionIdx: this.sectionIdx, itemIdx: this.itemIdx }) },
-    onUrlChange() { this.$emit("update:url", { sectionIdx: this.sectionIdx, itemIdx: this.itemIdx, url: this.url }) },
+    onPlay() { this.$emit("play", { sectionIdx: this.sectionIdx, subGroupIdx: this.subGroupIdx, itemIdx: this.itemIdx }) },
+    onUrlChange() { this.$emit("update:url", { sectionIdx: this.sectionIdx, subGroupIdx: this.subGroupIdx, itemIdx: this.itemIdx, url: this.url }) },
     onOverrideChange() { this.$emit("update:override", { key: this.key, value: this.isOver }) },
-    onVolInput(e) { this.vol = +e.target.value },
-    onVolChange(e) { this.$emit("update:trackVol", { key: this.key, value: +e.target.value }) },
+    onVolInput(e: Event) { this.vol = +(e.target as HTMLInputElement).value },
+    onVolChange(e: Event) { this.$emit("update:trackVol", { key: this.key, value: +(e.target as HTMLInputElement).value }) },
     onLoopToggle() {
       this.isLoop = !this.isLoop
       this.$emit("update:loopOne", { key: this.key, value: this.isLoop })
     }
   }
-}
+});
 </script>
 
 <style scoped>

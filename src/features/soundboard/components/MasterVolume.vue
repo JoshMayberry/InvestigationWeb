@@ -6,12 +6,12 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 export default {
   name: "MasterVolume",
   props: { masterVol: { type: Number, required: true } },
   methods: {
-    onInput(e) {
+    onInput(e: any) {
       this.$emit("update:masterVol", +e.target.value)
     }
   }

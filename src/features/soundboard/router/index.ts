@@ -1,4 +1,4 @@
-import { RouteDefinition } from '@shared/types/router'
+import { RouteDefinition } from '@shared/types'
 import SoundboardPage from '../pages/SoundboardPage.vue'
 
 

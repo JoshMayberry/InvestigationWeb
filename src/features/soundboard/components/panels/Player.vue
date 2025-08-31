@@ -17,7 +17,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
-import { Group, SubGroup, Track, TrackState } from "../types";
+import { Group, SoundboardMode, SubGroup, Track, TrackState } from "../../types";
 
 export default defineComponent({
   name: "Player",
@@ -25,7 +25,8 @@ export default defineComponent({
     currentGroup: { type: [Object, null] as PropType<Group | null>, required: true },
     currentSubGroup: { type: [Object, null] as PropType<SubGroup | null>, required: true },
     currentTrack: { type: [Object, null] as PropType<Track | null>, required: true },
-    trackState: { type: String as PropType<TrackState>, required: true }
+    trackState: { type: String as PropType<TrackState>, required: true },
+    currentMode: { type: String as PropType<SoundboardMode>, required: true },
   },
   data() {
     return {
@@ -35,7 +36,7 @@ export default defineComponent({
   },
   watch: {
     trackState(newVal) {
-      if (!this.playerReady) return;
+      if (!this.playerReady || (this.currentMode === "edit")) return;
       if (newVal === "playing") {
         this.player.playVideo && this.player.playVideo();
       } else if (newVal === "paused") {
@@ -46,7 +47,7 @@ export default defineComponent({
     },
     currentTrack: {
       handler(newVal: Track | null) {
-        if (this.playerReady && (this.trackState !== "editing") && newVal && newVal.url) {
+        if (this.playerReady && (this.currentMode !== "edit") && (this.trackState !== "editing") && newVal && newVal.url) {
           const id = this.parseId(newVal.url)
           if (id) this.player.loadVideoById(id)
         }

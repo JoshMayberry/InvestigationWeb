@@ -1,11 +1,11 @@
-import { RouteDefinition } from '@shared/types/router'
-import PlayerPage from '../pages/PlayerPage.vue'
+import { RouteDefinition } from '@shared/types'
+import InvestigationWebPage from '../pages/InvestigationWebPage.vue'
 
 
 export const routeDefinitions: Array<RouteDefinition> = [
   {
-    path: '/player',
-    component: PlayerPage,
-    meta: { navigationLabel: 'Player' }
+    path: '/web',
+    component: InvestigationWebPage,
+    meta: { navigationLabel: 'Web' }
   },
 ];

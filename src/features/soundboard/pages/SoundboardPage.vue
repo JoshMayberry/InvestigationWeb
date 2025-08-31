@@ -1,49 +1,52 @@
 <template>
   <div class="soundboard-page">
-    <SidebarTree
-      :groups="groups"
-      @select="onSidebarSelect"
-      @show-player="showSidebarPlayer = true; currentMode = 'view'"
-      @edit-toggle="currentMode = $event"
+    <Drawers
+      @drawer:opened="onDrawerOpened"
+      @drawer:closed="onDrawerClosed"
+      @drawer:change="onDrawerChange"
     >
-      <template #player>
-        <Player
-          :currentGroup="currentGroup"
-          :currentSubGroup="currentSubGroup"
-          :currentTrack="currentTrack"
-          :trackState="trackState"
-          @play="onTrackStateChange({
-            state: 'playing',
-            groupIndex: currentGroupIndex!,
-            subGroupIndex: currentSubGroupIndex!,
-            trackIndex: currentTrackIndex!
-          })"
-          @next="onNext"
-        />
-      </template>
-      <template #edit>
-        <EditorPanel
-          :editSelection="editSelection"
-          :groups="groups"
-          :isDirty="isDirty"
-          @save="onSaveData"
-          @track:update="onTrackUpdate"
-          @track:remove="onTrackRemove"
-          @track:move:up="onTrackMoveUp"
-          @track:move:down="onTrackMoveDown"
-          @track:add="onTrackAdd"
-          @subgroup:remove="onSubgroupRemove"
-          @subgroup:move:up="onSubgroupMoveUp"
-          @subgroup:move:down="onSubgroupMoveDown"
-          @subgroup:add="onSubgroupAdd"
-          @group:remove="onGroupRemove"
-          @group:move:up="onGroupMoveUp"
-          @group:move:down="onGroupMoveDown"
-          @track:move:to="onTrackMoveTo"
-          @subgroup:move:to="onSubGroupMoveTo"
-        />
-      </template>
-    </SidebarTree>
+      <NavigationPanel
+        :drawer="{ icon: 'menu', label: 'Navigation' }"
+        :groups="groups"
+        @select="onFullExpand"
+      />
+      <Player
+        :drawer="{ icon: 'play_circle', label: 'Player' }"
+        :currentGroup="currentGroup"
+        :currentSubGroup="currentSubGroup"
+        :currentTrack="currentTrack"
+        :currentMode="currentMode"
+        :trackState="trackState"
+        @play="onTrackStateChange({
+          state: 'playing',
+          groupIndex: currentGroupIndex!,
+          subGroupIndex: currentSubGroupIndex!,
+          trackIndex: currentTrackIndex!,
+        })"
+        @next="onNext"
+      />
+      <EditorPanel
+        :drawer="{ icon: 'edit', label: 'Edit' }"
+        :editSelection="editSelection"
+        :groups="groups"
+        :isDirty="isDirty"
+        @save="onSaveData"
+        @track:update="onTrackUpdate"
+        @track:remove="onTrackRemove"
+        @track:move:up="onTrackMoveUp"
+        @track:move:down="onTrackMoveDown"
+        @track:add="onTrackAdd"
+        @subgroup:remove="onSubgroupRemove"
+        @subgroup:move:up="onSubgroupMoveUp"
+        @subgroup:move:down="onSubgroupMoveDown"
+        @subgroup:add="onSubgroupAdd"
+        @group:remove="onGroupRemove"
+        @group:move:up="onGroupMoveUp"
+        @group:move:down="onGroupMoveDown"
+        @track:move:to="onTrackMoveTo"
+        @subgroup:move:to="onSubGroupMoveTo"
+      />
+    </Drawers>
     <div class="left-panel">
       <MasterVolume
         :masterVol="masterVol"
@@ -72,14 +75,15 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang=ts>
+import Drawers from "@shared/components/layout/Drawers.vue";
+import NavigationPanel from "../components/panels/NavigationPanel.vue";
+import Player from "../components/panels/Player.vue";
+import EditorPanel from "../components/panels/EditorPanel.vue";
+import MasterVolume from "../components/MasterVolume.vue";
+import MainGroupsAccordian from "../components/MainGroupsAccordian.vue";
 import { defineComponent, onMounted, watch } from "vue";
 import axios from "axios";
-import MasterVolume from "../components/MasterVolume.vue"
-import MainGroupsAccordian from "../components/MainGroupsAccordian.vue"
-import SidebarTree from "../components/SidebarTree.vue"
-import Player from "../components/Player.vue"
-import EditorPanel from "../components/EditorPanel.vue";
 import { EditSelection, Group, SoundboardMode, SubGroup, Track, TrackState } from "../types";
 
 const FOLDER = "soundboard";
@@ -87,7 +91,14 @@ const FILENAME = "persona5";
 
 export default defineComponent({
   name: "SoundboardPage",
-  components: { MasterVolume, MainGroupsAccordian, SidebarTree, Player, EditorPanel },
+  components: {
+    Drawers,
+    NavigationPanel,
+    Player,
+    EditorPanel,
+    MasterVolume,
+    MainGroupsAccordian,
+  },
   data() {
     return {
       groups: [] as Group[],
@@ -227,9 +238,9 @@ export default defineComponent({
       }
       this.expandedSubGroupIndex = index
     },
-    onSidebarSelect(payload: { groupIndex: number, subGroupIndex: number }): void {
-      this.expandedGroupIndex = payload.groupIndex
-      this.expandedSubGroupIndex = payload.subGroupIndex
+    onFullExpand(payload: { node: any, indexList: number[] }): void {
+      this.expandedGroupIndex = (payload.indexList[0] === undefined ? null : payload.indexList[0]);
+      this.expandedSubGroupIndex = (payload.indexList[1] === undefined ? null : payload.indexList[1]);
     },
     onTrackStateChange(payload: {
       state: TrackState,
@@ -245,6 +256,7 @@ export default defineComponent({
     onGroupSelect({ groupIndex }: {
       groupIndex: number,
     }) {
+      console.log("@onGroupSelect")
       if (this.currentMode === "edit") {
         this.currentGroupIndex = groupIndex;
         this.currentSubGroupIndex = null;
@@ -255,6 +267,7 @@ export default defineComponent({
       groupIndex: number,
       subGroupIndex: number
     }) {
+      console.log("@onSubGroupSelect")
       if (this.currentMode === "edit") {
         this.currentGroupIndex = groupIndex;
         this.currentSubGroupIndex = subGroupIndex;
@@ -507,6 +520,30 @@ export default defineComponent({
       this.currentGroupIndex = null;
       this.currentSubGroupIndex = null;
       this.currentTrackIndex = null;
+    },
+    onDrawerOpened(payload: { index: number; config: any }) {
+      const label = (payload?.config?.label || "").toString().toLowerCase();
+      if (label === "edit") {
+        this.currentMode = "edit";
+      } else {
+        this.currentMode = "view";
+        this.clearEditSelection();
+      }
+    },
+    onDrawerClosed(payload: { index: number; config: any }) {
+      // If the edit drawer closed, return to view mode
+      const label = (payload?.config?.label || "").toString().toLowerCase();
+      if (label === "edit") {
+        this.currentMode = "view";
+        this.clearEditSelection();
+      }
+    },
+    onDrawerChange(payload: { index: number | null; config: any | null }) {
+      // Optional: keep mode in sync if needed
+      if (payload.index == null) {
+        this.currentMode = "view";
+        this.clearEditSelection();
+      }
     },
   }
 })

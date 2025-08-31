@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { EditSelection, Group } from "../types";
+import { EditSelection, Group } from "../../types";
 import { PropType } from "vue";
 
 export default {

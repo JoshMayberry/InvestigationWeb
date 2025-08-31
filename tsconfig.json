@@ -14,7 +14,7 @@
       "@app/*": ["src/app/*"],
       "@shared/*": ["src/shared/*"],
       "@features/*": ["src/features/*"],
-      "@web/*": ["src/features/investigation-web/*"], 
+      "@web/*": ["src/features/player/*"], 
       "@sound/*": ["src/features/soundboard/*"], 
       "@/*": ["src/*"]
     },

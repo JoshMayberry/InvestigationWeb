@@ -229,21 +229,7 @@ export default defineComponent({
 .sidebar li > div { font-weight: bold; cursor: pointer; }
 .sidebar li ul { margin-left: 1rem; }
 .sidebar li ul li { font-weight: normal; cursor: pointer; }
-.sidebar::-webkit-scrollbar {
-  width: 8px;
-  background: rgba(255,255,255,0.06);
-}
-.sidebar::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 8px;
-}
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-2);
-}
-.sidebar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--accent) rgba(255,255,255,0.06);
-}
+
 .sidebar-slide-enter-active, .sidebar-slide-leave-active {
   transition: opacity 0.3s, transform 0.3s;
 }

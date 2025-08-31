@@ -5,15 +5,19 @@
   <main class="p-4">
     <router-view />
   </main>
+
+  <!-- Global toasts -->
+  <Toaster />
 </template>
 
 <script setup lang="ts">
 import AppBar from '@shared/components/layout/AppBar.vue';
 import NavigationBar from '@shared/components/layout/NavigationBar.vue';
-import { onMounted, ref } from 'vue'
+import Toaster from '@shared/components/overlay/Toaster.vue';
+import { onMounted } from 'vue';
 
 onMounted(async () => {
-})
+});
 </script>
 
 <style scoped>

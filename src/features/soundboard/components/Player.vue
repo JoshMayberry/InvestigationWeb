@@ -4,8 +4,9 @@
       <div id="player"></div>
     </div>
     <div class="now">
-      Section: <span class="pill">{{ currentSection ? currentSection.title : "—" }}</span><br/>
-      Now Playing: <span class="pill">{{ currentItem ? currentItem.title : "—" }}</span>
+      Group: <span class="pill">{{ currentGroup ? currentGroup.title : "—" }}</span><br/>
+      SubGroup: <span class="pill">{{ currentSubGroup ? currentSubGroup.title : "—" }}</span><br/>
+      Now Playing: <span class="pill">{{ currentTrack ? currentTrack.title : "—" }}</span>
     </div>
     <div class="controls">
       <button class="btn" @click="$emit('play')">Play</button>
@@ -16,15 +17,15 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
-
-type Track = { title: string; url: string };
-type Group = { title: string };
+import { Group, SubGroup, Track, TrackState } from "../types";
 
 export default defineComponent({
   name: "Player",
   props: {
-    currentSection: { type: [Object, null] as PropType<Group | null>, required: true },
-    currentItem: { type: [Object, null] as PropType<Track | null>, required: true },
+    currentGroup: { type: [Object, null] as PropType<Group | null>, required: true },
+    currentSubGroup: { type: [Object, null] as PropType<SubGroup | null>, required: true },
+    currentTrack: { type: [Object, null] as PropType<Track | null>, required: true },
+    trackState: { type: String as PropType<TrackState>, required: true }
   },
   data() {
     return {
@@ -33,9 +34,19 @@ export default defineComponent({
     }
   },
   watch: {
-    currentItem: {
+    trackState(newVal) {
+      if (!this.playerReady) return;
+      if (newVal === "playing") {
+        this.player.playVideo && this.player.playVideo();
+      } else if (newVal === "paused") {
+        this.player.pauseVideo && this.player.pauseVideo();
+      } else if (newVal === "stopped") {
+        this.player.stopVideo && this.player.stopVideo();
+      }
+    },
+    currentTrack: {
       handler(newVal: Track | null) {
-        if (this.playerReady && newVal && newVal.url) {
+        if (this.playerReady && (this.trackState !== "editing") && newVal && newVal.url) {
           const id = this.parseId(newVal.url)
           if (id) this.player.loadVideoById(id)
         }

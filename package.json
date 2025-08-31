@@ -26,7 +26,8 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vue": "^3.5.17",
     "vue-material-adapter": "^6.2.0",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.6",
@@ -39,7 +40,6 @@
     "sass-embedded": "^1.89.2",
     "typescript": "^5.8.3",
     "vite": "^7.0.4",
-    "vite-plugin-express": "^1.0.3",
     "vite3-plugin-express": "^0.1.10",
     "vue-tsc": "^3.0.1"
   }

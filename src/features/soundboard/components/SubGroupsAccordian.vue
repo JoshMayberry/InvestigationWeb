@@ -1,64 +1,100 @@
 <template>
-  <div class="sub-groups">
-    <div
-      v-for="(sub, subGroupIdx) in subGroups"
-      :key="sub.id"
-      class="sub-group"
-      :class="{ playing: playingSubGroupIdx === subGroupIdx }"
-    >
-      <button
-        class="sub-group-header"
-        :aria-expanded="expandedSubGroupId === sub.id"
-        @click="expandSubGroup(sub.id)"
+  <draggable
+    class="sub-groups"
+    :list="subGroups"
+    :group="{ name: 'subgroups', pull: true, put: true }"
+    item-key="id"
+    @end="onSubGroupDragEnd"
+    :data-group-index="groupIndex"
+  >
+    <template #item="{ element: sub, index: subGroupIndex }">
+      <div
+        class="sub-group"
+        :class="{
+          playing: subGroupIndex === subGroupIndex && trackState === 'playing',
+          paused: subGroupIndex === subGroupIndex && trackState === 'paused'
+        }"
       >
-        <span>{{ sub.title }}</span>
-        <span class="material-icons">
-          {{ expandedSubGroupId === sub.id ? "expand_less" : "expand_more" }}
-        </span>
-      </button>
-      <transition name="expand">
-        <div v-show="expandedSubGroupId === sub.id" class="sub-group-content">
-          <TrackList
-            :tracks="sub.items"
-            :trackVol="trackVol"
-            :override="override"
-            :loopOne="loopOne"
-            :sectionIdx="sectionIdx"
-            :subGroupIdx="subGroupIdx"
-            :playingItemIdx="playingSubGroupIdx === subGroupIdx ? playingItemIdx : null"
-            @play="$emit('play', $event)"
-            @update:url="$emit('update:url', $event)"
-            @update:trackVol="$emit('update:trackVol', $event)"
-            @update:override="$emit('update:override', $event)"
-            @update:loopOne="$emit('update:loopOne', $event)"
-          />
-        </div>
-      </transition>
-    </div>
-  </div>
+        <button
+          class="sub-group-header"
+          :aria-expanded="expandedSubGroupIndex === subGroupIndex"
+          @click="expandSubGroup(subGroupIndex)"
+        >
+          <span>{{ sub.title }}</span>
+          <button
+            v-if="currentMode === 'edit' && expandedSubGroupIndex === subGroupIndex"
+            class="edit-btn"
+            @click.stop="$emit('subgroup:select', { subGroupIndex, groupIndex })"
+            title="Edit Sub-Group"
+          >✎</button>
+          <span class="material-icons">
+            {{ expandedSubGroupIndex === subGroupIndex ? "expand_less" : "expand_more" }}
+          </span>
+        </button>
+        <transition name="expand">
+          <div v-show="expandedSubGroupIndex === subGroupIndex" class="sub-group-content">
+            <TrackList
+              :tracks="sub.items"
+              :groupIndex="groupIndex"
+              :subGroupIndex="subGroupIndex"
+              :trackIndex="subGroupIndex === subGroupIndex ? trackIndex : null"
+              :trackState="subGroupIndex === subGroupIndex ? trackState : 'stopped'"
+              @track:state="$emit('track:state', $event)"
+              @track:update="$emit('track:update', $event)"
+              @track:select="$emit('track:select', $event)"
+              :currentMode="currentMode"
+              @track:drag="onTrackDrag"
+            />
+          </div>
+        </transition>
+      </div>
+    </template>
+  </draggable>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
+import draggable from "vuedraggable";
 import TrackList from "./TrackList.vue";
+import { TrackState, SoundboardMode } from "../types";
 
 export default defineComponent({
   name: "SubGroupsAccordion",
-  components: { TrackList },
+  components: { TrackList, draggable },
   props: {
     subGroups: { type: Array as PropType<Array<any>>, required: true },
-    expandedSubGroupId: { type: String, required: true },
-    trackVol: { type: Object as PropType<Record<string, number>>, required: true },
-    override: { type: Object as PropType<Record<string, boolean>>, required: true },
-    loopOne: { type: Object as PropType<Record<string, boolean>>, required: true },
-    sectionIdx: { type: [Number, String], required: true },
-    playingSubGroupIdx: { type: [Number, null], required: true },
-    playingItemIdx: { type: [Number, null], required: true }
+    expandedSubGroupIndex: { type: [Number, null], required: true },
+    groupIndex: { type: [Number, String], required: true },
+    subGroupIndex: { type: [Number, null], required: true },
+    trackIndex: { type: [Number, null], required: true },
+    trackState: { type: String as PropType<TrackState>, required: true },
+    currentMode: { type: String as PropType<SoundboardMode>, required: true },
   },
-  emits: ["expand:sub-group", "play", "update:url", "update:trackVol", "update:override", "update:loopOne"],
+  emits: [
+    "subgroup:expand",
+    "subgroup:select",
+    "track:state",
+    "track:update",
+    "track:select",
+    "subgroup:drag",
+    "track:drag"
+  ],
   methods: {
-    expandSubGroup(id: string) {
-      this.$emit("expand:sub-group", id)
+    expandSubGroup(index: Number) {
+      this.$emit("subgroup:expand", index)
+    },
+    onSubGroupDragEnd(evt: any) {
+      this.$emit("subgroup:drag", {
+        from: evt.from,
+        to: evt.to,
+        oldIndex: evt.oldIndex,
+        newIndex: evt.newIndex,
+        item: evt.item,
+        groupIndex: this.groupIndex
+      });
+    },
+    onTrackDrag(evt: any) {
+      this.$emit("track:drag", evt);
     }
   }
 });
@@ -80,6 +116,11 @@ export default defineComponent({
 .sub-group.playing {
   border-left: 3px solid var(--ok);
   background: rgba(52,211,153,0.06);
+}
+
+.sub-group.paused {
+  border-left: 3px solid var(--accent);
+  background: rgba(96,165,250,0.08);
 }
 
 .sub-group-header {
@@ -107,6 +148,18 @@ export default defineComponent({
 .material-icons {
   font-size: 1.5rem;
   vertical-align: middle;
+}
+.edit-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: color 0.2s;
+}
+.edit-btn:hover {
+  color: var(--ok);
 }
 .expand:enter-active, .expand:leave-active {
   transition: max-height 0.25s cubic-bezier(.4,0,.2,1), opacity 0.25s;

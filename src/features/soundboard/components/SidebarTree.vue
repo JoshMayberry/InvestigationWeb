@@ -17,6 +17,14 @@
       >
         <span class="material-icons">play_circle</span>
       </button>
+      <button
+        class="icon-btn"
+        :class="{ active: openPanel === 'edit' }"
+        @click="togglePanel('edit')"
+        aria-label="Edit Mode"
+      >
+        <span class="material-icons">edit</span>
+      </button>
     </div>
     <div ref="sidebar" class="sidebar">
       <button class="close-btn" v-if="openPanel" @click="closePanel" aria-label="Close Sidebar">
@@ -51,6 +59,13 @@
       >
         <slot name="player" />
       </div>
+      <!-- Edit Panel -->
+      <div
+        class="sidebar-panel edit-panel"
+        :class="{ visible: openPanel === 'edit' }"
+      >
+        <slot name="edit" />
+      </div>
     </div>
   </div>
 </template>
@@ -58,9 +73,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import { gsap } from "gsap";
-
-type SubGroup = { id: string; title: string };
-type Group = { id: string; title: string; subGroups: SubGroup[] };
+import { Group, SidebarOptions, SubGroup } from "../types";
 
 export default defineComponent({
   name: "SidebarTree",
@@ -70,10 +83,10 @@ export default defineComponent({
       required: true
     }
   },
-  emits: ["select", "show-player"],
+  emits: ["select", "show-player", "edit-toggle"],
   data() {
     return {
-      openPanel: null as null | "tree" | "player",
+      openPanel: null as null | SidebarOptions,
     };
   },
   mounted() {
@@ -88,14 +101,16 @@ export default defineComponent({
     selectSubGroup(group: Group, sub: SubGroup) {
       this.$emit("select", { groupId: group.id, subGroupId: sub.id });
     },
-    togglePanel(panel: "tree" | "player") {
+    togglePanel(panel: SidebarOptions) {
       if (this.openPanel === panel) {
         this.animateSidebar(false);
         this.openPanel = null;
+        if (panel === "edit") this.$emit("edit-toggle", "view");
       } else {
         this.openPanel = panel;
         this.$nextTick(() => this.animateSidebar(true));
         if (panel === "player") this.$emit("show-player");
+        if (panel === "edit") this.$emit("edit-toggle", "edit");
       }
     },
     closePanel() {
@@ -163,12 +178,12 @@ export default defineComponent({
   position: relative;
   min-width: 0;
   width: 0;
+  height: calc(100% - 2rem);
   overflow-x: hidden;
   overflow-y: auto;
   background: var(--panel);
   color: var(--text);
   box-shadow: 2px 0 16px rgba(0,0,0,0.18);
-  height: 100%;
   z-index: 10;
   padding: 0;
   transition: width 0.35s cubic-bezier(.4,0,.2,1), padding 0.35s cubic-bezier(.4,0,.2,1);

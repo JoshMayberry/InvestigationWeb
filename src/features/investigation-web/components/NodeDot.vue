@@ -66,7 +66,8 @@ export default defineComponent({
     r: { type: Number, default: 12 },
     color: { type: String, default: "#10b981" },
     label: { type: String, default: "" },
-    getSvg: { type: Function as PropType<() => SVGSVGElement|null>, default: () => null }
+    getSvg: { type: Function as PropType<() => SVGSVGElement|null>, default: () => null },
+    draggable: { type: Boolean, default: true },
   },
   emits: ["move", "select"],
   data(){
@@ -106,7 +107,7 @@ export default defineComponent({
   },
   mounted(){
     this.g = this.$refs.g as SVGGElement | null;
-    this.installDrag();
+    if (this.draggable) this.installDrag();
   },
   beforeUnmount(){
     if (this.g) d3.select(this.g).on(".drag", null);

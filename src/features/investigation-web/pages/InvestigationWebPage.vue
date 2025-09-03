@@ -1,14 +1,21 @@
 <template>
   <div class="player-page">
-    <EditPanel
-      class="edit-panel"
-      :node="selectedNode"
-      @update="onNodeUpdate"
-      @delete="onNodeDelete"
-    />
+    <Drawers>
+      <EditPanel
+        :drawer="{ icon: 'edit', label: 'Edit Node' }"
+        :node="selectedNode"
+        @update="onNodeUpdate"
+        @delete="onNodeDelete"
+      />
+    </Drawers>
     <InvestigationWeb
       class="investigation-web"
       :layout="layout"
+      :policy="policy"
+      :discoveredIds="discovered"
+      :nodeColor="nodeColor"
+      @update:nodes="nodes = $event"
+      @update:discovered="onDiscover"
       v-model:nodes="nodes"
       @select:node="onNodeSelect"
     />
@@ -21,32 +28,42 @@ import InvestigationWeb from "../components/InvestigationWeb.vue";
 import { LayoutGroup } from "../types/layout";
 import { NodeAny } from "../types/node";
 import EditPanel from "../components/EditPanel.vue";
+import Drawers from "@shared/components/layout/Drawers.vue"; // <-- import Drawers
 
 export default defineComponent({
-  name: "PlayerPage",
-  components: { InvestigationWeb, EditPanel },
+  name: "InvestigationWebPage",
+  components: { InvestigationWeb, EditPanel, Drawers }, // <-- add Drawers
   data() {
-    const layout: LayoutGroup = {
-      type: "group",
-      kind: "row",
-      props: { gap: "40px" },
-      children: [
-        { type: "track", id: "tA", kind: "vline", props: { x: "50%", color: "red" } },
-        { type: "track", id: "tB", kind: "vline", props: { x: "50%", color: "gold" } },
-        { type: "track", id: "tC", kind: "vline", props: { x: "50%", color: "deepskyblue" } },
-      ]
-    };
-    const nodes: NodeAny[] = [
+    return {
+      layout: {
+        type: "group",
+        kind: "row",
+        props: { gap: "40px" },
+        children: [
+          { type: "track", id: "tA", kind: "vline", props: { x: "50%", color: "red" } },
+          { type: "track", id: "tB", kind: "vline", props: { x: "50%", color: "gold" } },
+          { type: "track", id: "tC", kind: "vline", props: { x: "50%", color: "deepskyblue" } },
+        ]
+      } as LayoutGroup,
+      nodes: [
       { id: "n1", kind: "free", x: 100, y: 100, r: 14, color: "#10b981" },
       { id: "n2", kind: "free", x: 200, y: 200, r: 14, color: "#8b5cf6" },
-    ];
-    return {
-      layout,
-      nodes,
+    ] as NodeAny[],
       selectedNode: null as NodeAny | null,
     };
   },
+  computed: {
+    policy() {
+      return {
+        canEditStructure: this.$refs?.editPanel.isOpen,
+        canMoveNodes: this.$refs?.editPanel.isOpen,
+        canDiscover: true,
+        canInteract: true
+      };
+    },
+  },
   methods: {
+    nodeColor(n: NodeAny, ctx){ return n.color || '#10b981'; },
     onNodeSelect(node: NodeAny) {
       this.selectedNode = node;
     },

@@ -1,0 +1,101 @@
+<aside id="aside">
+    <div class="legend" id="legend">
+      <div class="row"><span class="swatch" style="background:var(--endurance)"></span> Harmony</div>
+      <div class="row"><span class="swatch" style="background:var(--harmony)"></span> Endurance</div>
+      <div class="row"><span class="swatch" style="background:var(--remembrance)"></span> Remembrance</div>
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Quick Tips</h3>
+      <div class="note">• Click nodes to unlock (Player). • Drag/scroll to pan/zoom.</div>
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Search</h3>
+      <input id="search" class="search" placeholder="Title / text / source…" />
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Filters (Source)</h3>
+      <div id="filterChips" class="filters"></div>
+    </div>
+
+    <div class="panel gm-player-only">
+      <h3>Bonuses Unlocked</h3>
+      <ol id="bonuses" class="bonuses" style="margin:10px 0 0; padding-left:16px;"></ol>
+    </div>
+
+    <div class="panel edit-only" id="editPanel" style="display:none">
+      <h3>Edit Node</h3>
+      <form class="edit-form" id="editForm">
+        <label>ID<input type="text" id="f_id" /></label>
+        <label>Title<input type="text" id="f_title" /></label>
+        <div class="row">
+          <label>Virtue<select id="f_virtue"><option>Endurance</option><option>Harmony</option><option>Remembrance</option></select></label>
+          <label>Tier<select id="f_tier"><option>shallow</option><option>mid</option><option>deep</option><option>center</option></select></label>
+        </div>
+        <div class="row">
+          <label>Source<input type="text" id="f_source" /></label>
+          <label>Bridge<input type="number" id="f_bridge" /></label>
+        </div>
+        <label>Description<textarea id="f_text" rows="4"></textarea></label>
+        <div class="row">
+          <label>DC<input type="number" id="f_dc" /></label>
+          <label>Test<input type="text" id="f_test" placeholder="e.g. Awareness" /></label>
+        </div>
+        <label>Bonus<textarea id="f_bonus" rows="2"></textarea></label>
+        <label>Tags (comma separated)<input type="text" id="f_tags" /></label>
+        <label>Lore URL<input type="url" id="f_loreUrl" /></label>
+
+        <label>Links From This Node</label>
+        <div id="f_linksWrap" class="link-pills"></div>
+        <small>Click a pill to select/deselect · <b>Shift+click</b> to remove · Shift+drag on the canvas to add a new link.</small>
+
+        <label style="margin-top:10px"><input type="checkbox" id="f_initiallyHidden" /> Initially hidden in Player mode (reveals after all prerequisites unlocked)</label>
+        <div class="actions">
+          <button type="button" id="btnAddNode">Add Node</button>
+          <button type="button" id="btnDeleteNode">Delete Node</button>
+        </div>
+        <small id="editHelp"></small>
+
+        <div class="panel edit-only" id="linkPanel" style="display:none">
+          <h3>Link Styling</h3>
+          <label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;">
+            <input type="checkbox" id="link_override">
+            This link overrides global settings
+          </label>
+
+          <div class="row">
+            <label>Style
+              <select id="link_style">
+                <option value="radial">Radial</option>
+                <option value="spiral">Spiral</option>
+                <option value="straight">Straight / trimmed</option>
+              </select>
+            </label>
+            <label>Curve
+              <input type="range" id="link_curve" min="-400" max="400" step="1" value="0">
+            </label>
+          </div>
+          <div class="row">
+            <label>Outward
+              <input type="range" id="link_outward" min="-400" max="400" step="1" value="60">
+            </label>
+            <label>Lane spacing (global)
+              <input type="range" id="cfg_lane_space" min="0" max="30" step="1" value="12">
+            </label>
+          </div>
+          <div class="actions">
+            <button type="button" id="btnResetLinkCfg">Reset</button>
+          </div>
+          <small class="note" id="linkPanelNote">
+            No link selected → controls edit global defaults. With a link selected, controls are disabled unless “This link overrides…”
+          </small>
+        </div>
+      </form>
+    </div>
+  </aside>
+  <main>
+    <svg></svg>
+    <div class="tip" id="tip"></div>
+  </main>

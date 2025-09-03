@@ -36,6 +36,7 @@ function walk(node: LayoutAny, frame: Rect, out: CompiledTrack[]) {
           (node.children || []).forEach(ch => walk(ch, frame, out));
           break;
       }
+      break; // add: prevent fallthrough from "group" into "track"
 
     case "track":
       switch (node.kind) {

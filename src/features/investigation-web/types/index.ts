@@ -7,3 +7,9 @@ export interface Rect extends Point {
     w: number
     h: number
 }
+
+export type ViewPolicy = {
+  canEditStructure: boolean;
+  canDiscover: boolean;
+  canInteract: boolean;
+};

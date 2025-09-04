@@ -545,8 +545,24 @@ export default defineComponent({
         this.clearEditSelection();
       }
     },
-  }
-})
+  },
+  provide() {
+    // Bind to this component’s methods; children can call without emit chains.
+    return {
+      soundboardCtx: {
+        actions: {
+          setTrackState: (p:any) => this.onTrackStateChange(p),
+          updateTrack:   (p:any) => this.onTrackUpdate(p),
+          dragTrack:     (e:any) => this.onTrackDrag(e),
+          dragSubGroup:  (e:any) => this.onSubGroupDrag(e),
+          selectGroup:   (p:any) => this.onGroupSelect(p),
+          selectSubGroup:(p:any) => this.onSubGroupSelect(p),
+          selectTrack:   (p:any) => this.onTrackSelect(p),
+        }
+      }
+    };
+  },
+});
 </script>
 
 <style scoped>

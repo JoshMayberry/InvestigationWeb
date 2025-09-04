@@ -51,6 +51,7 @@ import { TrackState, Track, SoundboardMode } from "../types";
 
 export default defineComponent({
   name: "TrackItem",
+  inject: { soundboardCtx: { default: null } },
   props: {
     item: { type: Object as PropType<Track>, required: true },
     trackState: { type: String as PropType<TrackState>, required: true },
@@ -60,6 +61,7 @@ export default defineComponent({
     currentMode: { type: String as PropType<SoundboardMode>, required: true }
   },
   emits: [
+    // keep for backward compatibility during migration
     "track:state",
     "track:update",
     "track:select"
@@ -67,16 +69,19 @@ export default defineComponent({
   methods: {
     onPlayPause() {
       if (this.currentMode === "edit") return;
-      if (this.trackState === "playing") {
-        this.$emit("track:state", {
-          state: "paused",
-          groupIndex: this.groupIndex,
-          subGroupIndex: this.subGroupIndex,
-          trackIndex: this.trackIndex
+      const act = (this as any).soundboardCtx?.actions;
+      if (act?.setTrackState) {
+        const next = this.trackState === "playing" ? "paused" : "playing";
+        act.setTrackState({
+          state: next as any,
+          groupIndex: Number(this.groupIndex),
+          subGroupIndex: Number(this.subGroupIndex),
+          trackIndex: Number(this.trackIndex),
         });
       } else {
+        // fallback if not provided
         this.$emit("track:state", {
-          state: "playing",
+          state: this.trackState === "playing" ? "paused" : "playing",
           groupIndex: this.groupIndex,
           subGroupIndex: this.subGroupIndex,
           trackIndex: this.trackIndex
@@ -85,16 +90,35 @@ export default defineComponent({
     },
     onFieldChange(key: string, value: any) {
       if (this.currentMode === "edit") return;
-      this.$emit("track:update", {
-        groupIndex: this.groupIndex,
-        subGroupIndex: this.subGroupIndex,
-        trackIndex: this.trackIndex,
-        key,
-        value
-      });
+      const act = (this as any).soundboardCtx?.actions;
+      if (act?.updateTrack) {
+        act.updateTrack({
+          groupIndex: Number(this.groupIndex),
+          subGroupIndex: Number(this.subGroupIndex),
+          trackIndex: Number(this.trackIndex),
+          key,
+          value
+        });
+      } else {
+        this.$emit("track:update", {
+          groupIndex: this.groupIndex,
+          subGroupIndex: this.subGroupIndex,
+          trackIndex: this.trackIndex,
+          key,
+          value
+        });
+      }
     },
     onSelectTrack() {
-      if (this.currentMode === "edit") {
+      if (this.currentMode !== "edit") return;
+      const act = (this as any).soundboardCtx?.actions;
+      if (act?.selectTrack) {
+        act.selectTrack({
+          groupIndex: Number(this.groupIndex),
+          subGroupIndex: Number(this.subGroupIndex),
+          trackIndex: Number(this.trackIndex),
+        });
+      } else {
         this.$emit("track:select", {
           groupIndex: this.groupIndex,
           subGroupIndex: this.subGroupIndex,

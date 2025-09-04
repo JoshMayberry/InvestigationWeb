@@ -15,5 +15,9 @@ export interface NodeSnap extends NodeBase {
     trackId: string
     t: number
     r: number
+    x: number // computed
+    y: number // computed
 };
 export type NodeAny = NodeFree | NodeSnap;
+
+export type NodePatch = { id: string; patch: Partial<NodeFree> | Partial<NodeSnap> };

@@ -32,6 +32,7 @@ import { Track, TrackState, SoundboardMode } from "../types";
 
 export default defineComponent({
   name: "TrackList",
+  inject: { soundboardCtx: { default: null } },
   components: { TrackItem, draggable },
   props: {
     tracks: { type: Array as PropType<Array<Track>>, required: true },
@@ -53,16 +54,28 @@ export default defineComponent({
       return "stopped";
     },
     onDragEnd(evt: any) {
-      // Notify parent of drag event (for cross-subgroup moves)
-      this.$emit("track:drag", {
-        from: evt.from,
-        to: evt.to,
-        oldIndex: evt.oldIndex,
-        newIndex: evt.newIndex,
-        item: evt.item,
-        groupIndex: this.groupIndex,
-        subGroupIndex: this.subGroupIndex
-      });
+      const act = (this as any).soundboardCtx?.actions;
+      if (act?.dragTrack) {
+        act.dragTrack({
+          from: evt.from,
+          to: evt.to,
+          oldIndex: evt.oldIndex,
+          newIndex: evt.newIndex,
+          item: evt.item,
+          groupIndex: this.groupIndex,
+          subGroupIndex: this.subGroupIndex
+        });
+      } else {
+        this.$emit("track:drag", {
+          from: evt.from,
+          to: evt.to,
+          oldIndex: evt.oldIndex,
+          newIndex: evt.newIndex,
+          item: evt.item,
+          groupIndex: this.groupIndex,
+          subGroupIndex: this.subGroupIndex
+        });
+      }
     }
   }
 });

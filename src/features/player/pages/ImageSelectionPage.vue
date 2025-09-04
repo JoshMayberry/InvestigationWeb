@@ -52,7 +52,7 @@ import Thumbnail from "@features/player/components/Thumbnail.vue";
 import EditorPanel from "@features/player/components/EditorPanel.vue";
 import FilePickerPanel from "@features/player/components/panels/FilePickerPanel.vue";
 import { toastStore } from "@shared/stores/toastStore";
-import { usePlayerPhotoStore } from "@shared/stores/playerMessage";
+import { usePlayerPhotoStore } from "@shared/stores/photos";
 import { saveDirHandle, loadDirHandle } from "@shared/utils/fsHandles";
 
 type FileItem = { name: string; url: string | null; kind: "image" | "other"; mime?: string; };

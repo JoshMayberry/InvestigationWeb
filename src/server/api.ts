@@ -14,9 +14,16 @@ app.use(bodyParser.json())
 
 const DATA_ROOT = path.resolve(__dirname, "data");
 
+function resolveFilePath(folder: string, filename: string) {
+  const dirPath = path.resolve(DATA_ROOT, folder);
+  const hasExt = path.extname(filename) !== "";
+  const fname = hasExt ? filename : filename + ".json";
+  return { dirPath, filePath: path.resolve(dirPath, fname) };
+}
+
 async function loadFile(folder: string, filename: string) {
   try {
-    const filePath = path.resolve(DATA_ROOT, folder, filename + ".json");
+    const { filePath } = resolveFilePath(folder, filename);
     const data = await fs.readFile(filePath, "utf-8");
     return JSON.parse(data);
   } catch (e) {
@@ -25,9 +32,8 @@ async function loadFile(folder: string, filename: string) {
 }
 
 async function saveFile(folder: string, filename: string, data: any) {
-  const dirPath = path.resolve(DATA_ROOT, folder);
+  const { dirPath, filePath } = resolveFilePath(folder, filename);
   await fs.mkdir(dirPath, { recursive: true });
-  const filePath = path.resolve(dirPath, filename + ".json");
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 

@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { usePlayerPhotoStore } from "@shared/stores/playerMessage";
+import { usePlayerPhotoStore } from "@shared/stores/photos";
 import FullImage from "@features/player/components/FullImage.vue";
 
 export default defineComponent({

@@ -2,7 +2,7 @@
   <AppBar />
   <NavigationBar class="mdc-top-app-bar--fixed-adjust" />
   
-  <main class="p-4">
+  <main class="p-4" style="background: black; color:white;">
     <router-view />
   </main>
 

@@ -18,7 +18,7 @@ export async function importSnapshotFile(file: File): Promise<Snapshot | null> {
     const text = await file.text();
     const json = JSON.parse(text);
     if (!isSnapshot(json)) {
-      console.warn("[snapshot] version mismatch or invalid file.");
+      console.warn("[snapshot] invalid or version mismatch");
       return null;
     }
     return json;

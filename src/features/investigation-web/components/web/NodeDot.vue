@@ -1,30 +1,27 @@
 <template>
   <g
     class="node"
-    :class="{ dim }"
-    :data-id="node.id"
+    :class="{ dim, sel: isSelected, hovered: isHovered }"
     :transform="`translate(${node.x},${node.y})`"
     ref="el"
-    @mouseenter="$emit('hover', node);"
-    @mouseleave="$emit('leave', node);"
-    @focus="$emit('hover', node);"
-    @blur="$emit('leave', node);"
+    @pointerdown="onPointerDown"
+    @mouseenter="onEnter"
+    @mouseleave="onLeave"
+    @click.stop
   >
-    <!-- selection ring -->
     <circle
-      v-if="selected"
-      class="sel"
-      :r="(node.r || 12) + 6"
-      fill="none"
-      stroke="var(--ring)"
-      stroke-width="6"
-      opacity="0.85"
+      v-if="isSelected"
+      class="halo"
+      :r="(node.r||12)+8"
+      fill="rgba(96,165,250,0.18)"
+      stroke="rgba(96,165,250,0.5)"
+      stroke-width="1.5"
       pointer-events="none"
     />
     <circle
       class="core"
       :r="node.r || 12"
-      :fill="node.color || 'var(--ok)'"
+      :fill="node.color || '#10b981'"
       stroke="#15204e"
       stroke-width="2"
     />
@@ -41,112 +38,140 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import * as d3 from "d3";
-import { clamp } from "../../utils";
+import { defineComponent, inject } from "vue";
 import type { NodeAny } from "../../types/node";
+import { RUNTIME_KEY } from "../../context/runtime";
 
-type SvgCtx = {
-  getSvg: () => SVGSVGElement | null;
-  getTransform: () => d3.ZoomTransform;
-  getSize: () => { w:number; h:number };
-};
+const MOVE_THRESHOLD = 3;
 
 export default defineComponent({
   name: "NodeDot",
-  inject: {
-    reactiveSvgCtx: { default: null },
-  },
   props: {
     node: { type: Object as () => NodeAny, required: true },
-    draggable: { type: Boolean, default: true },
-    selected: { type: Boolean, default: false },
-    clampToViewport: { type: Boolean, default: true },
-    clampPadding: { type: Number, default: 8 },
     dim: { type: Boolean, default: false },
   },
-  emits: ["move", "moveEnd", "select", "hover", "leave"],
-  data() {
+  data(){
     return {
-      dragging: false,
-      _startX: 0,
-      _startY: 0,
-      _moved: false,
+      runtime: null as any,
+      pointerDown:false,
+      moved:false,
+      startClient:{ x:0, y:0 },
     };
   },
-  mounted() {
-    this.refreshDrag();
+  computed:{
+    selCtrl(): any { return this.runtime?.controllers?.selection; },
+    hoverCtrl(): any { return this.runtime?.controllers?.hover; },
+    dragCtrl(): any { return this.runtime?.controllers?.drag; },
+    stashCtrl(): any { return this.runtime?.controllers?.stash; },
+    viewCtrl(): any { return this.runtime?.controllers?.view; },
+    isSelected(): boolean { return !!this.selCtrl?.is(this.node.id); },
+    canEdit(): boolean { return !!this.runtime?.policy?.canEditStructure; },
+    isHovered(): boolean { return !!this.hoverCtrl?.is(this.node.id); },
+    placingActive(): boolean {
+      const ghost = this.dragCtrl?.ghost;
+      if (!ghost) return false;
+      return ghost.mode === "add-free" || ghost.mode === "place-staged";
+    }
   },
-  beforeUnmount() {
-    const el = this.$refs.el as SVGGElement | undefined;
-    if (el) d3.select(el).on(".drag", null);
+  created(){
+    this.runtime = inject(RUNTIME_KEY, null);
   },
-  methods: {
-    refreshDrag() {
-      const el = this.$refs.el as SVGGElement | undefined;
-      if (!el) return;
-      const sel = d3.select(el);
-      sel.on(".drag", null); // reset idempotently
-
-      if (!this.draggable) return;
-
-      const ctx = (this as any).reactiveSvgCtx as SvgCtx | null;
-      const threshold = 3; // px
-
-      sel.call(
-        d3.drag<SVGGElement, unknown>()
-          .container(() => ctx?.getSvg() || (el as any).ownerSVGElement)
-          .on("start", (ev) => {
-            this.dragging = true;
-            this._moved = false;
-            const t = ctx?.getTransform?.();
-            const [sx, sy] = t && t.invert ? t.invert([ev.x, ev.y]) : [ev.x, ev.y];
-            this._startX = sx;
-            this._startY = sy;
-            (ev.sourceEvent as any)?.stopPropagation?.(); // don’t let zoom see this press
-            sel.raise();
-          })
-          .on("drag", (ev) => {
-            const t = ctx?.getTransform?.();
-            let x = ev.x, y = ev.y;
-            if (t && typeof t.invert === "function") [x, y] = t.invert([ev.x, ev.y]);
-
-            // movement tracking for click detection
-            if (!this._moved && (Math.abs(x - this._startX) > threshold || Math.abs(y - this._startY) > threshold)) {
-              this._moved = true;
-            }
-
-            if (this.clampToViewport) {
-              const size = ctx?.getSize?.();
-              if (size) {
-                const r = this.node.r || 12;
-                const pad = this.clampPadding;
-                x = clamp(x, r + pad, size.w - r - pad);
-                y = clamp(y, r + pad, size.h - r - pad);
-              }
-            }
-            this.$emit("move", { id: this.node.id, x, y });
-          })
-          .on("end", () => {
-            this.dragging = false;
-            // If there was effectively no movement, treat as click -> select
-            if (!this._moved) this.$emit("select", this.node);
-            this.$emit("moveEnd", { id: this.node.id });
-          })
-      );
+  methods:{
+    onEnter(){ this.hoverCtrl?.set(this.node.id); },
+    onLeave(){ this.hoverCtrl?.clear(); },
+    onPointerDown(e:PointerEvent){
+      if (!this.canEdit) return;
+      if (this.placingActive) return; // disable interaction while placing
+      e.stopPropagation();
+      e.preventDefault();
+      this.pointerDown = true;
+      this.moved = false;
+      this.startClient = { x:e.clientX, y:e.clientY };
+      window.addEventListener("pointermove", this.onMove);
+      window.addEventListener("pointerup", this.onUp, { once:true });
+      window.addEventListener("keydown", this.onEsc);
     },
-  },
-  watch: {
-    draggable() { this.refreshDrag(); },
-  },
+    onMove(e:PointerEvent){
+      if (!this.pointerDown) return;
+      const dx = e.clientX - this.startClient.x;
+      const dy = e.clientY - this.startClient.y;
+      if (!this.moved && (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD)) {
+        this.moved = true;
+        if (!this.isSelected) this.selCtrl?.set(this.node.id);
+        this.dragCtrl?.startNode(this.node.id, {
+          x:this.node.x, y:this.node.y, r:this.node.r,
+          color:this.node.color, label:this.node.label
+        });
+      }
+      if (this.moved){
+        this.dragCtrl?.updatePointer(e.clientX, e.clientY);
+      }
+    },
+    onUp(e:PointerEvent){
+      const wasMoved = this.moved;
+      const ghost = this.dragCtrl?.ghost;
+      const wasSelectedBefore = this.isSelected;
+      this.cleanup();
+      if (!wasMoved){
+        // toggle selection
+        if (wasSelectedBefore) this.selCtrl?.clear();
+        else this.selCtrl?.set(this.node.id);
+        if (ghost?.active && ghost.mode === "drag-node") this.dragCtrl?.cancel();
+        return;
+      }
+      if (!ghost?.active || ghost.mode !== "drag-node"){
+        this.dragCtrl?.cancel(); return;
+      }
+      // Outside SVG?
+      const svg = this.viewCtrl?.getSvgEl();
+      if (svg){
+        const r = svg.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom){
+          this.dragCtrl?.cancel(); return;
+        }
+      }
+      // Into stash?
+      if (this.stashCtrl?.isClientPointIn(e.clientX, e.clientY)){
+        this.runtime?.store?.moveNodeToStaging?.(ghost.sourceId);
+        if (this.selCtrl?.get() === ghost.sourceId) this.selCtrl?.clear();
+        this.dragCtrl?.cancel(); return;
+      }
+      if (ghost.invalid){
+        this.dragCtrl?.cancel(); return;
+      }
+      const id = this.node.id;
+      const before = { x: this.node.x, y: this.node.y };
+      const after = { x: ghost.x, y: ghost.y };
+      this.runtime.controllers.undo.push({
+        label: "move-node",
+        _coalesceKey: `move-node:${id}`,
+        before,
+        after,
+        do: () => this.runtime.store?.patchNode?.(id, after),
+        undo: () => this.runtime.store?.patchNode?.(id, before)
+      });
+      this.dragCtrl?.cancel();
+    },
+    onEsc(e:KeyboardEvent){
+      if (e.key === "Escape"){
+        this.dragCtrl?.cancel();
+        this.cleanup();
+      }
+    },
+    cleanup(){
+      this.pointerDown = false;
+      window.removeEventListener("pointermove", this.onMove);
+      window.removeEventListener("keydown", this.onEsc);
+    }
+  }
 });
 </script>
 
 <style scoped>
-.node { touch-action: none; transition: opacity .25s ease; }
-.node .core, .node .label { transition: opacity .25s ease; }
-.node.dim .core,
-.node.dim .label { opacity: 0.25; }
-.node:focus { outline: none; }
-.sel { filter: drop-shadow(0 0 6px rgba(96,165,250,.5)); }
+.node { cursor: pointer; user-select: none; transition: filter .15s, opacity .15s; }
+.mode-dragging .node { cursor: grabbing; }
+.node.dim .core, .node.dim .label { opacity:.25; }
+.node.hovered:not(.sel) .core { filter: drop-shadow(0 0 4px rgba(96,165,250,0.6)); }
+.halo { pointer-events:none; }
+.node.sel .core { filter: drop-shadow(0 0 6px rgba(96,165,250,0.9)); }
 </style>

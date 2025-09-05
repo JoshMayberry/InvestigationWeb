@@ -26,6 +26,14 @@
 - GM toggles entries; Player view receives the same set but cannot change it
 - Export/import snapshot keeps nodes + discovery set + layout config
 
+# Recommended next additions to context (in this order):
+1. Transform (zoom/pan) Why: High‑frequency updates; multiple components need it (NodeDot world calc, ghost, overlays). Removes onTransform prop/event wiring.
+2. Drag / Ghost state + API Why: Centralizes start/update/end logic; NodeDot only signals pointer events. Removes @move, @drag:start, @drag:end emits.
+3. Hover state Why: Tooltip + dimming reading same ref; NodeDot sets hoveredId directly (no hover/leave emits).
+4. Controllers bundle Add runtime.controllers = { selection, drag, undo? (later) }. When undo is ready, commands go through runtime.controllers.undo.issue(cmd).
+5. worldFromClient helper Put shared coordinate math in runtime for reuse in NodeDot, Ghost overlay, placement actions.
+6. Keep out of context: persistent data (nodes, staging, settings) — those stay only in Pinia store.
+
 # Roadmap
 0. Foundation
     1. Remove all unecissary files that have altready been atempted. It is ok to scrap what has been done in favor of doign it better.

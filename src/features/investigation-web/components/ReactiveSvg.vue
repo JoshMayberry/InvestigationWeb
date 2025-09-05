@@ -1,148 +1,143 @@
 <template>
-  <div ref="wrap" class="rs-wrap" :style="{ background }">
-    <svg
-      ref="svg"
-      class="rs-svg"
-      :viewBox="viewBox"
-      preserveAspectRatio="xMidYMid meet"
-    >
-      <g ref="root"><slot /></g>
+  <div class="rs-wrap" ref="wrap">
+    <svg class="rs-svg" ref="svg">
+      <g class="world" ref="world" :transform="`translate(${t.x},${t.y}) scale(${t.k})`">
+        <slot />
+      </g>
+      <g class="overlay">
+        <slot name="overlay" />
+      </g>
     </svg>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
-import * as d3 from 'd3';
+import { defineComponent, inject } from "vue";
+import * as d3 from "d3";
+import { RUNTIME_KEY } from "../context/runtime";
 
-type ZoomExtent = [number, number];
-type StartTransform = { k?: number; x?: number; y?: number };
+interface RSTransform { k:number; x:number; y:number; }
 
 export default defineComponent({
-  name: 'ReactiveSvg',
+  name: "ReactiveSvg",
+  emits: ["transform","resized","zoom"],
   props: {
-    background: {
-      type: String,
-      default: 'radial-gradient(1200px 800px at 60% -10%, #162155 0%, #0b1020 60%)'
-    },
-    zoomExtent: {
-      type: Array as unknown as PropType<ZoomExtent>,
-      default: () => [0.5, 2.5] as ZoomExtent,
-    },
-    startTransform: {
-      type: Object as PropType<StartTransform>,
-      default: () => ({ k: 1, x: 0, y: 0 }),
-    },
+    minZoom: { type:Number, default: 0.25 },
+    maxZoom: { type:Number, default: 3 },
+    zoomStep: { type:Number, default: 0.08 },
   },
-  emits: ['resized','zoom'],
-  data() {
+  data(){
     return {
-      size: { w: 1, h: 1 },
-      ro: null as ResizeObserver | null,
-      zoomBehavior: null as d3.ZoomBehavior<SVGSVGElement, unknown> | null,
-      currentTransform: d3.zoomIdentity as d3.ZoomTransform,
+      t: { k:1, x:0, y:0 } as RSTransform,
+      svgEl: null as SVGSVGElement | null,
+      worldEl: null as SVGGElement | null,
+      wrapEl: null as HTMLDivElement | null,
+      size: { w:0, h:0 },
+      resizeObs: null as ResizeObserver | null,
+      zoomBehavior: null as d3.ZoomBehavior<Element, unknown> | null,
+      runtime: null as any
     };
   },
-  computed: {
-    viewBox(): string {
-      const w = Math.max(1, Math.round(this.size.w));
-      const h = Math.max(1, Math.round(this.size.h));
-      return `0 0 ${w} ${h}`;
-    },
+  created(){ this.runtime = inject(RUNTIME_KEY, null); },
+  mounted(){
+    this.svgEl = this.$refs.svg as SVGSVGElement;
+    this.worldEl = this.$refs.world as SVGGElement;
+    this.wrapEl = this.$refs.wrap as HTMLDivElement;
+    if (this.runtime && this.svgEl){
+      this.runtime.controllers.view.setSvgEl(this.svgEl);
+      this.runtime.controllers.view.setTransform({ ...this.t });
+    }
+    this.initZoom();
+    this.observeResize();
   },
-  provide() {
+  beforeUnmount(){
+    if (this.resizeObs) this.resizeObs.disconnect();
+    if (this.svgEl && this.zoomBehavior) d3.select(this.svgEl).on(".zoom", null);
+    if (this.runtime) this.runtime.controllers.view.setSvgEl(null);
+  },
+  methods: {
+    initZoom(){
+      if (!this.svgEl || !this.worldEl) return;
+      const self = this;
+      this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+        .scaleExtent([this.minZoom, this.maxZoom])
+        .filter(function(event: any) {
+          if (event.type === "mousedown" && event.button !== 0) return false;
+          if ((event.target as HTMLElement).closest(".stash-zone")) return false;
+          return true;
+        })
+        .on("zoom", function(ev){
+          const tr = ev.transform;
+          self.t = { k: tr.k, x: tr.x, y: tr.y };
+          if (self.runtime) self.runtime.controllers.view.setTransform(self.t);
+          self.$emit("transform", { ...self.t });
+          self.$emit("zoom", { ...self.t });
+        });
+
+      d3.select(this.svgEl).call(this.zoomBehavior as any);
+    },
+    observeResize(){
+      if (!this.wrapEl) return;
+      this.resizeObs = new ResizeObserver(entries => {
+        for (const e of entries) {
+          const cr = e.contentRect;
+            this.size = { w: cr.width, h: cr.height };
+            this.$emit("resized", this.size);
+        }
+      });
+      this.resizeObs.observe(this.wrapEl);
+    },
+    zoomBy(factor:number, center?: { x:number; y:number }){
+      if (!this.svgEl || !this.zoomBehavior) return;
+      const sel = d3.select(this.svgEl);
+      if (center) {
+        const t = d3.zoomTransform(this.svgEl);
+        const k = Math.min(this.maxZoom, Math.max(this.minZoom, t.k * factor));
+        const p = [center.x, center.y];
+        const newT = d3.zoomIdentity
+          .translate(p[0], p[1])
+          .scale(k)
+          .translate(- (p[0] - t.x)/t.k, - (p[1] - t.y)/t.k);
+        sel.call(this.zoomBehavior.transform as any, newT);
+      } else {
+        sel.call(this.zoomBehavior.scaleBy as any, factor);
+      }
+    },
+    centerOn(x:number, y:number, k?:number){
+      if (!this.svgEl || !this.zoomBehavior) return;
+      const sel = d3.select(this.svgEl);
+      const targetK = k ? Math.min(this.maxZoom, Math.max(this.minZoom, k)) : this.t.k;
+      const newT = d3.zoomIdentity
+        .translate(this.size.w/2 - x*targetK, this.size.h/2 - y*targetK)
+        .scale(targetK);
+      sel.call(this.zoomBehavior.transform as any, newT);
+    },
+    getSvg(){ return this.svgEl; },
+    getSize(){ return this.size; },
+    getTransform(){ return { ...this.t }; },
+  },
+  provide(){
     return {
       reactiveSvgCtx: {
         getSvg: () => this.getSvg(),
-        getRoot: () => this.getRoot(),
         getSize: () => this.getSize(),
-        getTransform: () => this.currentTransform,
-      },
-    };
-  },
-  mounted() {
-    this._measure();
-    this._initZoom();
-    this._observe();
-  },
-  beforeUnmount() {
-    this.ro?.disconnect();
-    this.ro = null;
-  },
-  methods: {
-    getRoot(): SVGGElement | null { return this.$refs.root as SVGGElement | null; },
-    getSvg():  SVGSVGElement | null { return this.$refs.svg  as SVGSVGElement | null; },
-    getSize(): { w:number; h:number } { return { ...this.size }; },
-
-    resetZoom(duration = 0) {
-      const svg = this.getSvg(); if (!svg || !this.zoomBehavior) return;
-      const sel = d3.select(svg);
-      duration > 0
-        ? sel.transition().duration(duration).call(this.zoomBehavior.transform as any, d3.zoomIdentity)
-        : sel.call(this.zoomBehavior.transform as any, d3.zoomIdentity);
-    },
-
-    _measure() {
-      const wrap = this.$refs.wrap as HTMLDivElement | undefined;
-      if (!wrap) return;
-      const rect = wrap.getBoundingClientRect();
-      if (rect.width && rect.height) {
-        this.size.w = rect.width;
-        this.size.h = rect.height;
+        getTransform: () => this.getTransform(),
       }
-    },
-    _initZoom() {
-      const svg  = this.$refs.svg  as SVGSVGElement | undefined;
-      const root = this.$refs.root as SVGGElement   | undefined;
-      if (!svg || !root || this.zoomBehavior) return;
-
-      this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent(this.zoomExtent)
-        .on('zoom', (e) => {
-          this.currentTransform = e.transform;
-          d3.select(root).attr('transform', e.transform as any);
-          this.$emit('zoom', e.transform);
-        });
-
-      const { k = 1, x = 0, y = 0 } = this.startTransform || {};
-      d3.select(svg).call(this.zoomBehavior as any)
-        .call(this.zoomBehavior.transform as any, d3.zoomIdentity.translate(x,y).scale(k));
-    },
-    _observe() {
-      const wrap = this.$refs.wrap as HTMLDivElement | undefined;
-      if (!wrap) return;
-      this.ro = new ResizeObserver((entries) => {
-        for (const e of entries) {
-          const { width, height } = e.contentRect;
-            if (!width || !height) continue;
-          const w = Math.round(width), h = Math.round(height);
-          if (w !== Math.round(this.size.w) || h !== Math.round(this.size.h)) {
-            this.size.w = width;
-            this.size.h = height;
-            this.$emit('resized', { w: this.size.w, h: this.size.h });
-          }
-        }
-      });
-      this.ro.observe(wrap);
-    },
-  },
+    };
+  }
 });
 </script>
 
 <style scoped>
 .rs-wrap {
   position: relative;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  border: 1px solid #1b2460;
-  border-radius: 10px;
-}
-.rs-svg {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
-  display: block;
+  background: #0d142c radial-gradient(circle at 40% 35%, #142653 0%, #0d142c 70%);
+  user-select: none;
+  overflow: hidden;
 }
+.rs-svg { width:100%; height:100%; display:block; }
+.world { vector-effect: non-scaling-stroke; }
+.overlay { pointer-events:none; }
 </style>

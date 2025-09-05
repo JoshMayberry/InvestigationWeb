@@ -2,11 +2,11 @@
   <div class="bonuses-root">
     <header class="head">
       <h3>Unlocked Bonuses</h3>
-      <span class="count">{{ bonuses.length }}</span>
+      <span class="count">{{ store.bonuses.length }}</span>
     </header>
 
     <ul class="list">
-      <li v-for="b in bonuses" :key="b.id" class="item">
+      <li v-for="b in store.bonuses" :key="b.id" class="item">
         <div class="label">
           <span class="dot" />
           <span class="name">{{ b.label }}</span>
@@ -15,19 +15,17 @@
       </li>
     </ul>
 
-    <p v-if="!bonuses.length" class="empty muted">None unlocked.</p>
+    <p v-if="!store.bonuses.length" class="empty muted">None unlocked.</p>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
-import type { Bonus } from "../../types/bonus";
+import { defineComponent } from "vue";
+import { useInvestigationWebStore } from "../../stores/web";
 
 export default defineComponent({
   name: "PanelBonus",
-  props: {
-    bonuses: { type: Array as PropType<Bonus[]>, default: () => [] },
-  },
+  data(){ return { store: useInvestigationWebStore() }; }
 });
 </script>
 

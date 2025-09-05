@@ -40,23 +40,44 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+import { defineComponent } from "vue";
+import { useInvestigationWebStore } from "../../stores/web";
 
 export default defineComponent({
   name: "PanelFilters",
-  props: {
-    query: { type: String, default: "" },
-    colors: { type: Array as PropType<string[]>, default: () => [] },
-    palette: { type: Array as PropType<string[]>, default: () => [] },
-    matchCount: { type: Number, default: 0 },
-    total: { type: Number, default: 0 },
-    active: { type: Boolean, default: false },
+  data(){
+    return {
+      store: useInvestigationWebStore()
+    };
   },
-  emits: ["filter:query","filter:toggleColor","filter:clear"],
+  computed:{
+    query(): string { return this.store.filters.query; },
+    colors(): string[] { return this.store.filters.colors; },
+    palette(): string[] { return this.store.colorPalette || []; },
+    matchCount(): number { return this.store.filteredIdSet?.size || 0; },
+    total(): number { return this.store.nodeCount || 0; },
+    active(): boolean { return this.store.filtersActive; }
+  },
   methods: {
-    onQuery(v: string){ this.$emit("filter:query", v); },
-    toggleColor(c: string){ this.$emit("filter:toggleColor", c); },
-    clear(){ this.$emit("filter:clear"); },
+    onQuery(v: string){
+      if (this.store.setFilterQuery) this.store.setFilterQuery(v);
+      else this.store.filters.query = v;
+    },
+    toggleColor(c: string){
+      if (this.store.toggleFilterColor) this.store.toggleFilterColor(c);
+      else {
+        const arr = this.store.filters.colors;
+        const i = arr.indexOf(c);
+        if (i === -1) arr.push(c); else arr.splice(i,1);
+      }
+    },
+    clear(){
+      if (this.store.clearFilters) this.store.clearFilters();
+      else {
+        this.store.filters.query = "";
+        this.store.filters.colors = [];
+      }
+    },
     shortColor(c: string){
       return c.startsWith("#") && c.length === 7 ? c.slice(1) : c;
     }

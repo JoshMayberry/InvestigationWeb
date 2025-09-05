@@ -1,31 +1,44 @@
 {
-  "version": 2,
+  "version": 3,
   "nodes": [
-    {
-      "id": "n1",
-      "kind": "free",
-      "x": 120,
-      "y": 140,
-      "r": 14,
-      "color": "#10b981",
-      "label": "Alpha"
-    },
     {
       "id": "n2",
       "kind": "free",
-      "x": 260,
-      "y": 220,
+      "x": 264,
+      "y": 402,
       "r": 14,
       "color": "#8b5cf6",
       "label": "Beta"
+    },
+    {
+      "id": "n1",
+      "kind": "free",
+      "x": 388,
+      "y": 173,
+      "r": 14,
+      "color": "#10b981",
+      "label": "Alpha"
     }
   ],
+  "staging": [],
   "bonuses": [
-    { "id": "b:focus", "label": "Crystal Focus", "description": "Gain clarity on related nodes." },
-    { "id": "b:whisper", "label": "Whisper Sense", "description": "Hear faint connections." },
-    { "id": "b:map", "label": "Mental Map", "description": "Visual overlay enhancements." }
+    {
+      "id": "b:focus",
+      "label": "Crystal Focus",
+      "description": "Gain clarity on related nodes."
+    },
+    {
+      "id": "b:whisper",
+      "label": "Whisper Sense",
+      "description": "Hear faint connections."
+    },
+    {
+      "id": "b:map",
+      "label": "Mental Map",
+      "description": "Visual overlay enhancements."
+    }
   ],
   "meta": {
-    "savedAt": "2025-09-05T20:28:16.775Z"
+    "savedAt": "2025-09-08T03:38:20.210Z"
   }
 }

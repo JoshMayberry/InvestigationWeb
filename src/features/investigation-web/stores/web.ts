@@ -4,6 +4,8 @@ import type { NodeAny, NodeFree } from "../types/node";
 import type { Bonus } from "../types/bonus";
 import type { Snapshot } from "../types/snapshot";
 import { isSnapshot } from "../types/snapshot";
+import type { LinkDraftSettings, AnyLink, LinkType } from "../types/links";
+import type { CurrentEditState } from "../types/editState";
 
 const FOLDER = "investigation-web";
 const FILENAME = "whispers-in-the-weaping.json";
@@ -19,6 +21,7 @@ const defaultSettings = {
   enforceNoOverlap: false,
   nodePadding: 0,
   showPadPreview: false,
+  linkHitRadius: 10, // px radius outside visible stroke for easier selection
   defaultNode: {
     r: 14,
     color: "#10b981",
@@ -41,11 +44,22 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
     dirty: false,
     settings: { ...defaultSettings },
     filters: { query: "", colors: [] as string[] },
+    links: [] as AnyLink[],
+    linkSeq: 0,
+    linkDraft: {
+      type: "straight",
+      color: "#64748b",
+      stroke: "solid",
+      arrowHead: false,
+      pad: 0
+    } as LinkDraftSettings,
     tools: {
       addFreeNode: false,
       placeStagedId: null as string | null,
       editDefaults: false,
+      addLink: false
     },
+    currentEditState: "none" as CurrentEditState,
     drag: { nodeId: null as string | null, active: false },
   }),
   getters: {
@@ -75,12 +89,14 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
     defaultNodeTemplate(s){ return s.settings.defaultNode; }
   },
   actions: {
+    setCurrentEditState(s: CurrentEditState) { this.currentEditState = s; },
     // ---- POLICY ACTIONS ----------------------------------------------------
     setCanEditStructure(on: boolean) {
       this.policy.canEditStructure = on;
       if (!on) {
         // Leaving edit mode: clear structure-edit tools
         this.resetTools();
+        this.setCurrentEditState("none");
       }
     },
     updatePolicy(p: Partial<{ canEditStructure:boolean; canDiscover:boolean; canInteract:boolean }>) {
@@ -112,6 +128,9 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
               label: obj.defaultNode?.label ?? this.settings.defaultNode.label
             }
           });
+          Object.assign(this.settings, {
+            linkHitRadius: Number(obj.linkHitRadius) || this.settings.linkHitRadius
+           });
         }
       } catch {}
     },
@@ -174,6 +193,23 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
       this.nodes[i] = { ...this.nodes[i], ...patch };
       this.dirty = true;
     },
+    hasNode(id:string){ return this.nodes.some(n => n.id === id) || this.staging.some(n => n.id === id); },
+    renameNodeId(oldId:string, newId:string): boolean {
+      const next = newId.trim();
+      if (!next || next === oldId) return true;
+      // enforce uniqueness across nodes and staging
+      if (this.nodes.some(n => n.id === next) || this.staging.some(n => n.id === next)) return false;
+      const n = this.nodes.find(n => n.id === oldId);
+      if (!n) return false;
+      n.id = next;
+      // propagate to links endpoints
+      for (const l of this.links) {
+        if (l.from === oldId) l.from = next;
+        if (l.to === oldId) l.to = next;
+      }
+      this.dirty = true;
+      return true;
+    },
     deleteNode(id: string) {
       let i = this.nodes.findIndex(n => n.id === id);
       if (i !== -1) { this.nodes.splice(i, 1); this.dirty = true; return; }
@@ -193,6 +229,10 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
       if (on) {
         this.tools.placeStagedId = null;
         this.tools.editDefaults = false;
+        this.tools.addLink = false;
+        this.setCurrentEditState("add-free-node");
+      } else {
+        if (!this.tools.placeStagedId && !this.tools.addLink) this.setCurrentEditState("none");
       }
     },
     setPlaceStaged(id: string | null) {
@@ -200,6 +240,10 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
       if (id) {
         this.tools.addFreeNode = false;
         this.tools.editDefaults = false;
+        this.tools.addLink = false;
+        this.setCurrentEditState("place-stashed-node");
+      } else {
+        if (!this.tools.addFreeNode && !this.tools.addLink) this.setCurrentEditState("none");
       }
     },
     setEditDefaults(on: boolean) {
@@ -207,12 +251,148 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
       if (on) {
         this.tools.addFreeNode = false;
         this.tools.placeStagedId = null;
+        this.tools.addLink = false;
+        this.setCurrentEditState("none");
       }
+    },
+    setAddLink(on:boolean){
+      this.tools.addLink = on;
+      if (on) {
+        this.tools.addFreeNode = false;
+        this.tools.placeStagedId = null;
+        this.tools.editDefaults = false;
+        this.setCurrentEditState("add-link");
+      } else {
+        if (!this.tools.addFreeNode && !this.tools.placeStagedId) this.setCurrentEditState("none");
+      }
+    },
+    // 1) Close Add panel helper (call from drawer close)
+    closeAddPanel() {
+      this.resetTools();
+    },
+    // 9) Link draft setter used by PanelEdit
+    setLinkDraft(p: Partial<LinkDraftSettings>){
+      this.linkDraft = { ...this.linkDraft, ...p };
+    },
+    hasLink(id:string){ return this.links.some(l => l.id === id); },
+    renameLinkId(oldId:string, newId:string): boolean {
+      if (!newId || oldId === newId) return true;
+      if (this.links.some(l => l.id === newId)) return false; // uniqueness
+      const l = this.links.find(l => l.id === oldId);
+      if (!l) return false;
+      l.id = newId;
+      this.dirty = true;
+      return true;
+    },
+    addLink(payload: {
+      type: LinkType;
+      from: string;
+      to: string;
+      color?: string;
+      stroke?: "solid"|"dashed"|"dotted";
+      arrowHead?: boolean;
+      pad?: number;
+      midpoints?: {x:number;y:number;}[];
+      // corkscrew
+      turns?: number;
+      startRadius?: number;
+      endRadius?: number;
+      direction?: 1|-1;
+      // bezier
+      c1?: { t:number; off:number };
+      c2?: { t:number; off:number };
+      symmetric?: boolean;
+      // spline
+      controls?: { t:number; off:number }[];
+      tension?: number;
+    }){
+      const id = `L${++this.linkSeq}`;
+      let link: AnyLink;
+
+      if (payload.type === "curved"){
+        link = { id, type:"curved", from: payload.from, to: payload.to,
+          color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
+          arrowHead: payload.arrowHead ?? this.linkDraft.arrowHead, pad: payload.pad ?? this.linkDraft.pad,
+          midpoints: payload.midpoints || [], midControls: [] };
+      } else if (payload.type === "bezier"){
+        const defC1 = this.linkDraft.c1 ?? { t: 25, off: 30 };
+        const defC2 = this.linkDraft.c2 ?? { t: 75, off: -30 };
+        link = {
+          id, type:"bezier", from: payload.from, to: payload.to,
+          color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
+          arrowHead: payload.arrowHead ?? this.linkDraft.arrowHead, pad: payload.pad ?? this.linkDraft.pad,
+          c1: payload.c1 ?? defC1,
+          c2: payload.c2 ?? defC2,
+          symmetric: payload.symmetric ?? (this.linkDraft.symmetric ?? false)
+        };
+      } else if (payload.type === "spline"){
+        link = {
+          id, type:"spline", from: payload.from, to: payload.to,
+          color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
+          arrowHead: payload.arrowHead ?? this.linkDraft.arrowHead, pad: payload.pad ?? this.linkDraft.pad,
+          controls: payload.controls ?? (this.linkDraft.controls ?? [{ t: 33, off: 20 }, { t: 66, off: -10 }]),
+          tension: payload.tension ?? (this.linkDraft.tension ?? 0.25)
+        };
+      } else if (payload.type === "corkscrew"){
+        const turns = Math.round(payload.turns ?? (this.linkDraft.turns ?? 1));
+        link = {
+          id, type:"corkscrew", from: payload.from, to: payload.to,
+          color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
+          arrowHead: payload.arrowHead ?? this.linkDraft.arrowHead, pad: payload.pad ?? this.linkDraft.pad,
+          turns,
+          startRadius: payload.startRadius ?? (this.linkDraft.startRadius ?? 10),
+          endRadius: payload.endRadius ?? (this.linkDraft.endRadius ?? 60),
+          direction: payload.direction ?? (this.linkDraft.direction ?? 1)
+        };
+      } else {
+        link = {
+          id, type:"straight", from: payload.from, to: payload.to,
+          color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
+          arrowHead: payload.arrowHead ?? this.linkDraft.arrowHead, pad: payload.pad ?? this.linkDraft.pad
+        };
+      }
+      this.links.push(link);
+      return id;
+    },
+    patchLink(id: string, patch: any) {
+      const i = this.links.findIndex((l:any)=> l.id === id);
+      if (i === -1) return;
+      const before = this.links[i];
+      let next = { ...before, ...patch };
+
+      if (patch.type && patch.type !== before.type) {
+        const base = { id: before.id, from: before.from, to: before.to, color: before.color, stroke: before.stroke, arrowHead: before.arrowHead, pad: before.pad };
+        if (patch.type === "curved") {
+          next = { ...base, type:"curved", midpoints: [], midControls: [] };
+        } else if (patch.type === "bezier") {
+          next = { ...base, type:"bezier", c1: this.linkDraft.c1 ?? { t:25, off:30 }, c2: this.linkDraft.c2 ?? { t:75, off:-30 }, symmetric: this.linkDraft.symmetric ?? false };
+        } else if (patch.type === "spline") {
+          next = { ...base, type:"spline", controls: this.linkDraft.controls ?? [{ t: 33, off: 20 }, { t: 66, off: -10 }], tension: this.linkDraft.tension ?? 0.25 };
+        } else if (patch.type === "corkscrew") {
+          next = { ...base, type:"corkscrew", turns: Math.round(this.linkDraft.turns ?? 1), startRadius: this.linkDraft.startRadius ?? 10, endRadius: this.linkDraft.endRadius ?? 60, direction: this.linkDraft.direction ?? 1 };
+        } else {
+          next = { ...base, type:"straight" };
+        }
+      }
+
+      // Normalize corkscrew turns to integers even when only 'turns' is patched
+      if ((next as any).type === "corkscrew" && patch.turns !== undefined) {
+        (next as any).turns = Math.round(patch.turns);
+      }
+
+      this.links[i] = next;
+      this.dirty = true;
+    },
+    deleteLink(id:string){
+      const i = this.links.findIndex(l => l.id === id);
+      if (i >= 0) this.links.splice(i,1);
     },
     resetTools() {
       this.tools.addFreeNode = false;
       this.tools.placeStagedId = null;
       this.tools.editDefaults = false;
+      this.tools.addLink = false;
+      this.setCurrentEditState("none");
     },
 
     setSetting(key: string, val: any) {

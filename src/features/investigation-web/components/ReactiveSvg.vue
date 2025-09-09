@@ -14,7 +14,7 @@
 <script lang="ts">
 import { defineComponent, inject } from "vue";
 import * as d3 from "d3";
-import { RUNTIME_KEY } from "../context/runtime";
+import { InvestigationRuntime, RUNTIME_KEY } from "../context/runtime";
 
 interface RSTransform { k:number; x:number; y:number; }
 
@@ -34,8 +34,8 @@ export default defineComponent({
       wrapEl: null as HTMLDivElement | null,
       size: { w:0, h:0 },
       resizeObs: null as ResizeObserver | null,
-      zoomBehavior: null as d3.ZoomBehavior<Element, unknown> | null,
-      runtime: null as any
+      zoomBehavior: null as d3.ZoomBehavior<SVGSVGElement, unknown> | null,
+      runtime: null as InvestigationRuntime | null
     };
   },
   created(){ this.runtime = inject(RUNTIME_KEY, null); },

@@ -1,6 +1,7 @@
 <template>
   <g
     class="node"
+    :data-id="node.id"
     :class="{ dim, sel: isSelected, hovered: isHovered }"
     :transform="`translate(${node.x},${node.y})`"
     ref="el"
@@ -24,6 +25,17 @@
       :fill="node.color || '#10b981'"
       stroke="#15204e"
       stroke-width="2"
+    />
+    <circle
+      v-if="(node.bonuses?.length || 0) > 0"
+      class="bonus-dot"
+      :cx="(node.r||12) * 0.7"
+      :cy="-(node.r||12) * 0.7"
+      r="3.5"
+      fill="var(--ok, #10b981)"
+      stroke="rgba(255,255,255,0.9)"
+      stroke-width="1"
+      pointer-events="none"
     />
     <text
       v-if="node.label"
@@ -56,6 +68,7 @@ export default defineComponent({
       pointerDown:false,
       moved:false,
       startClient:{ x:0, y:0 },
+     wasSelectedAtDragStart: false,
     };
   },
   computed:{
@@ -64,6 +77,7 @@ export default defineComponent({
     dragCtrl(): any { return this.runtime?.controllers?.drag; },
     stashCtrl(): any { return this.runtime?.controllers?.stash; },
     viewCtrl(): any { return this.runtime?.controllers?.view; },
+    store(): any { return this.runtime?.store; },
     isSelected(): boolean { return !!this.selCtrl?.is(this.node.id); },
     canEdit(): boolean { return !!this.runtime?.policy?.canEditStructure; },
     isHovered(): boolean { return !!this.hoverCtrl?.is(this.node.id); },
@@ -71,7 +85,8 @@ export default defineComponent({
       const ghost = this.dragCtrl?.ghost;
       if (!ghost) return false;
       return ghost.mode === "add-free" || ghost.mode === "place-staged";
-    }
+    },
+    addLinkActive(): boolean { return !!this.store?.tools?.addLink; }
   },
   created(){
     this.runtime = inject(RUNTIME_KEY, null);
@@ -81,7 +96,19 @@ export default defineComponent({
     onLeave(){ this.hoverCtrl?.clear(); },
     onPointerDown(e:PointerEvent){
       if (!this.canEdit) return;
-      if (this.placingActive) return; // disable interaction while placing
+      // In Add Link mode, clicking nodes should set source/target, not toggle or drag
+      if (this.addLinkActive) {
+        e.stopPropagation();
+        e.preventDefault();
+        const lp = this.runtime?.controllers?.linkPlacement;
+        if (lp && !lp.isActive()) {
+          const d = this.store.linkDraft;
+          lp.start(d.type, d.color, d.stroke);
+        }
+        this.runtime?.controllers?.linkPlacement?.tryCommit(this.node.id, { shift: e.shiftKey });
+        return;
+      }
+      if (this.placingActive) return; // disable interaction while placing nodes
       e.stopPropagation();
       e.preventDefault();
       this.pointerDown = true;
@@ -97,7 +124,9 @@ export default defineComponent({
       const dy = e.clientY - this.startClient.y;
       if (!this.moved && (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD)) {
         this.moved = true;
-        if (!this.isSelected) this.selCtrl?.set(this.node.id);
+        this.store?.setCurrentEditState?.("drag-free-node");
+        // Preserve selection state; dragging shouldn’t change it
+        this.wasSelectedAtDragStart = this.isSelected;
         this.dragCtrl?.startNode(this.node.id, {
           x:this.node.x, y:this.node.y, r:this.node.r,
           color:this.node.color, label:this.node.label
@@ -113,9 +142,16 @@ export default defineComponent({
       const wasSelectedBefore = this.isSelected;
       this.cleanup();
       if (!wasMoved){
-        // toggle selection
-        if (wasSelectedBefore) this.selCtrl?.clear();
-        else this.selCtrl?.set(this.node.id);
+        // toggle selection (only outside Add Link)
+        if (!this.addLinkActive) {
+          if (wasSelectedBefore) {
+            this.selCtrl?.clear();
+            this.store?.setCurrentEditState?.("none");
+          } else {
+            this.selCtrl?.set(this.node.id);
+            this.store?.setCurrentEditState?.("edit-selected-node");
+          }
+        }
         if (ghost?.active && ghost.mode === "drag-node") this.dragCtrl?.cancel();
         return;
       }
@@ -134,10 +170,14 @@ export default defineComponent({
       if (this.stashCtrl?.isClientPointIn(e.clientX, e.clientY)){
         this.runtime?.store?.moveNodeToStaging?.(ghost.sourceId);
         if (this.selCtrl?.get() === ghost.sourceId) this.selCtrl?.clear();
-        this.dragCtrl?.cancel(); return;
+        this.dragCtrl?.cancel(); 
+        this.store?.setCurrentEditState?.("none");
+        return;
       }
       if (ghost.invalid){
-        this.dragCtrl?.cancel(); return;
+        this.dragCtrl?.cancel(); 
+        this.store?.setCurrentEditState?.("none");
+        return;
       }
       const id = this.node.id;
       const before = { x: this.node.x, y: this.node.y };
@@ -151,10 +191,12 @@ export default defineComponent({
         undo: () => this.runtime.store?.patchNode?.(id, before)
       });
       this.dragCtrl?.cancel();
+     this.store?.setCurrentEditState?.(this.wasSelectedAtDragStart ? "edit-selected-node" : "none");
     },
     onEsc(e:KeyboardEvent){
       if (e.key === "Escape"){
         this.dragCtrl?.cancel();
+        this.store?.setCurrentEditState?.("none");
         this.cleanup();
       }
     },
@@ -174,4 +216,5 @@ export default defineComponent({
 .node.hovered:not(.sel) .core { filter: drop-shadow(0 0 4px rgba(96,165,250,0.6)); }
 .halo { pointer-events:none; }
 .node.sel .core { filter: drop-shadow(0 0 6px rgba(96,165,250,0.9)); }
+.bonus-dot { filter: drop-shadow(0 0 4px rgba(16,185,129,0.8)); }
 </style>

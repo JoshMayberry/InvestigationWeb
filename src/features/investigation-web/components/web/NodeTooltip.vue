@@ -25,7 +25,7 @@
 import { defineComponent, inject, watch, nextTick, ref } from "vue";
 import type { NodeAny } from "../../types/node";
 import { createPopper, Instance, VirtualElement } from "@popperjs/core";
-import { RUNTIME_KEY } from "../../context/runtime";
+import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
 
 export default defineComponent({
   name: "NodeTooltip",
@@ -37,7 +37,7 @@ export default defineComponent({
     fadeMs: { type: Number, default: 140 }
   },
   setup(props){
-    const runtime = inject(RUNTIME_KEY, null);
+    const runtime = inject(RUNTIME_KEY, null) as InvestigationRuntime | null;
     const inst = ref<Instance|null>(null);
     const virt = ref<VirtualElement|null>(null);
     const displayNode = ref<NodeAny|null>(null);
@@ -52,8 +52,15 @@ export default defineComponent({
         getBoundingClientRect: () => {
           if (frozenRect.value) return frozenRect.value;
           const svg = view()?.getSvgEl();
-            if (!svg) return new DOMRect(0,0,0,0);
-          const t = view().transform;
+            if (!svg) {
+              console.warn("No SVG element");
+              return new DOMRect(0,0,0,0);
+            }
+          const t = view()?.transform;
+          if (!t) {
+            console.warn("No view transform");
+            return new DOMRect(0,0,0,0);
+          }
           const sx = node.x * t.k + t.x;
           const sy = node.y * t.k + t.y;
           const r = node.r || 12;

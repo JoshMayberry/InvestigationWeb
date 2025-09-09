@@ -21,18 +21,20 @@
 - Track color optional: trackColor(track, ctx)
 - Tooltips: slot or function prop so pages fully control content
 
+## Links model
+- New Link model (straight, curved, spiral). Curved stores midpoints; spiral stores param set (placeholder).
+- Store gains links[], addLink / patchLink / deleteLink; tools.addLink flag & linkDraft settings (type, color, stroke).
+- LinkPlacementController: 2 steps (pick source, pick target). Ghost shows provisional line/path from source to pointer (or to target). Commit on second click. Shift keeps tool active for next link; otherwise tool auto clears and selects new link.
+- Selection: keep node selection unchanged now; after link commit we just log (TODO select link). (Can extend SelectionController later to handle link selection.)
+- Tooltip suppression: if link placement active AND Shift held, hide tooltips.
+- Node placement: Shift while clicking keeps Add Free mode active (same UX as links).
+- Validation: forbid duplicate link (same from/to irrespective of order unless you want directional). Self-link disallowed initially.
+- Undo not yet wired for links (add easily by wrapping addLink in undo.push later).
+
 ## Discovery model
 - Keep discovery in a separate set keyed by node id (not on the node struct)
 - GM toggles entries; Player view receives the same set but cannot change it
 - Export/import snapshot keeps nodes + discovery set + layout config
-
-# Recommended next additions to context (in this order):
-1. Transform (zoom/pan) Why: High‑frequency updates; multiple components need it (NodeDot world calc, ghost, overlays). Removes onTransform prop/event wiring.
-2. Drag / Ghost state + API Why: Centralizes start/update/end logic; NodeDot only signals pointer events. Removes @move, @drag:start, @drag:end emits.
-3. Hover state Why: Tooltip + dimming reading same ref; NodeDot sets hoveredId directly (no hover/leave emits).
-4. Controllers bundle Add runtime.controllers = { selection, drag, undo? (later) }. When undo is ready, commands go through runtime.controllers.undo.issue(cmd).
-5. worldFromClient helper Put shared coordinate math in runtime for reuse in NodeDot, Ghost overlay, placement actions.
-6. Keep out of context: persistent data (nodes, staging, settings) — those stay only in Pinia store.
 
 # Roadmap
 0. Foundation

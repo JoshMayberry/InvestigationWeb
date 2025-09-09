@@ -14,13 +14,17 @@
       class="iw-canvas"
       @resized="onResize"
     >
+      <defs>
+        <marker id="iw-arrow-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <!-- Use context-stroke so arrow color matches path/line stroke -->
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
+        </marker>
+      </defs>
+
+     <WebLinks />
+
       <g class="nodes">
-        <NodeDot
-          v-for="n in nodes"
-          :key="n.id"
-          :node="n"
-          :dim="filtersActive && !filteredIdsSet.has(n.id)"
-        />
+        <NodeDot v-for="n in nodes" :key="n.id" :node="n" :dim="filtersActive && !filteredIdsSet.has(n.id)" />
       </g>
 
       <g v-if="settings.enforceNoOverlap && settings.showPadPreview" class="pad-preview">
@@ -34,41 +38,12 @@
         />
       </g>
 
-      <g v-if="dragGhost?.active" class="ghost-layer">
-        <g class="ghost-node" :transform="`translate(${dragGhost.x},${dragGhost.y})`" pointer-events="none">
-          <circle
-            :r="dragGhost.r"
-            :fill="dragGhost.invalid ? 'rgba(239,68,68,0.30)' : dragGhost.color"
-            :stroke="dragGhost.invalid ? '#ef4444' : dragGhost.color"
-            stroke-width="2"
-            :stroke-dasharray="dragGhost.invalid ? '4 4' : null"
-          />
-          <text
-            v-if="dragGhost.label"
-            class="ghost-label"
-            y="-18"
-            text-anchor="middle"
-            font-size="11"
-            :fill="dragGhost.invalid ? '#ffc9c9' : '#c8d3ff'"
-            fill-opacity="0.75"
-          >{{ dragGhost.label }}</text>
-        </g>
-      </g>
+     <NodeGhost />
+     <LinkGhost />
 
       <template #overlay>
-        <rect
-          v-if="policy.canEditStructure && dragGhost?.mode === 'drag-node'"
-          class="stash-zone"
-          :x="overlayRect.x"
-          :y="overlayRect.y"
-          :width="overlayRect.w"
-          :height="overlayRect.h"
-          :fill="dragGhost?.mode === 'drag-node' ? 'rgba(96,165,250,0.15)' : 'rgba(96,165,250,0.08)'"
-          stroke="rgba(96,165,250,0.45)"
-          stroke-dasharray="4 4"
-          rx="3"
-        />
-      </template>
+       <rect v-if="policy.canEditStructure && dragGhost?.mode === 'drag-node'" class="stash-zone" :x="overlayRect.x" :y="overlayRect.y" :width="overlayRect.w" :height="overlayRect.h" :fill="dragGhost?.mode === 'drag-node' ? 'rgba(96,165,250,0.15)' : 'rgba(96,165,250,0.08)'" stroke="rgba(96,165,250,0.45)" stroke-dasharray="4 4" rx="3" />
+     </template>
     </ReactiveSvg>
 
     <!-- Tooltip (kept mounted to prevent flicker) -->
@@ -85,19 +60,22 @@ import { defineComponent, inject } from "vue";
 import ReactiveSvg from "../ReactiveSvg.vue";
 import NodeDot from "./NodeDot.vue";
 import NodeTooltip from "./NodeTooltip.vue";
+import WebLinks from "./WebLinks.vue";
+import LinkGhost from "./LinkGhost.vue";
+import NodeGhost from "./NodeGhost.vue";
 import type { NodeAny } from "../../types/node";
-import { RUNTIME_KEY } from "../../context/runtime";
+import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
 import { useInvestigationWebStore } from "../../stores/web";
 import { makeOverlapValidator } from "../../context/validators/overlap";
 
 export default defineComponent({
   name: "InvestigationWeb",
-  components: { ReactiveSvg, NodeDot, NodeTooltip },
+  components: { ReactiveSvg, NodeDot, NodeTooltip, WebLinks, LinkGhost, NodeGhost },
   data(){
     const store = useInvestigationWebStore();
     return {
       store,
-      runtime: inject(RUNTIME_KEY, null),
+      runtime: inject(RUNTIME_KEY, null) as InvestigationRuntime | null,
       overlayRect: { x:0, y:0, w:120, h:0 },
       canvasSize: { w:0, h:0 },
       shiftDown:false,
@@ -117,16 +95,25 @@ export default defineComponent({
     dragGhost(): any { return this.runtime?.controllers.drag.ghost; },
     nodePlacement(): any { return this.runtime?.controllers.nodePlacement; },
     placingMode(): string { return this.nodePlacement?.activeMode() || "none"; },
+    editState(): string { return this.store.currentEditState; },
     showTooltip(): boolean {
+      // hide tooltip when link placement active & Shift
+      const lp = this.runtime?.controllers.linkPlacement;
+      if (lp?.isActive() && this.shiftDown) return false;
       return !this.policy.canEditStructure || this.shiftDown;
-    }
+    },
+    lpGhost(): any { return this.runtime?.controllers.linkPlacement.ghost; },
+    sourceNodeForLink(): NodeAny | null {
+      const id = this.lpGhost?.sourceId;
+      return id ? this.nodes.find(n => n.id === id) || null : null;
+    },
   },
   watch:{
-    "settings.enforceNoOverlap": { handler(){ this.installValidator(); } },
-    "settings.nodePadding": { handler(){ this.installValidator(); } },
-    nodes: { handler(){ this.installValidator(); }, deep:true },
-
-    // NEW: react to tool toggles to start/cancel placement session
+    // Cancel link placement when tool toggled off
+    "store.tools.addLink"(on:boolean){
+      const lp = this.runtime?.controllers.linkPlacement;
+      if (!on && lp?.isActive()) lp.cancel();
+    },
     "store.tools.addFreeNode"(on:boolean){
       if (!this.policy.canEditStructure) return;
       if (!on) {
@@ -139,7 +126,17 @@ export default defineComponent({
       if (!this.policy.canEditStructure) return;
       if (!id && this.placingMode === "place-staged") this.nodePlacement.cancel();
       // Start lazily on pointer move when we have pointer coords.
-    }
+    },
+    hoveredId(id:string|null){
+      const lp = this.runtime?.controllers.linkPlacement;
+      if (this.store.tools.addLink && lp?.isActive()) {
+        lp.hoverNode(id);
+      }
+    },
+    "settings.enforceNoOverlap": { handler(){ this.installValidator(); } },
+    "settings.nodePadding": { handler(){ this.installValidator(); } },
+    nodes: { handler(){ this.installValidator(); }, deep:true },
+
   },
   mounted(){
     window.addEventListener("keydown", this._onKey);
@@ -154,10 +151,10 @@ export default defineComponent({
     this.detachSvgListeners();
   },
   methods:{
-    view(){ return this.runtime.controllers.view; },
-    drag(){ return this.runtime.controllers.drag; },
-    sel(){ return this.runtime.controllers.selection; },
-    hover(){ return this.runtime.controllers.hover; },
+    view(){ return this.runtime?.controllers.view; },
+    drag(){ return this.runtime?.controllers.drag; },
+    sel(){ return this.runtime?.controllers.selection; },
+    hover(){ return this.runtime?.controllers.hover; },
     attachSvgListeners(){
       const svg = (this.$refs.rs as any)?.getSvg?.();
       if (svg) {
@@ -177,10 +174,10 @@ export default defineComponent({
     installValidator(){
       if (!this.runtime) return;
       if (!this.settings.enforceNoOverlap){
-        this.drag().setValidator(()=>({ valid:true }));
+        this.drag()?.setValidator(()=>({ valid:true }));
         return;
       }
-      this.drag().setValidator(
+      this.drag()?.setValidator(
         makeOverlapValidator(
           () => this.nodes.map(n => ({ id:n.id, x:n.x, y:n.y, r:n.r })),
           this.settings.nodePadding
@@ -188,7 +185,7 @@ export default defineComponent({
       );
     },
     worldFromClient(clientX:number, clientY:number){
-      return this.view().worldFromClient(clientX, clientY);
+      return this.view()?.worldFromClient(clientX, clientY);
     },
     paddingRadius(n:NodeAny){ return (n.r || 14) + this.settings.nodePadding; },
     onResize(sz:{w:number;h:number}) {
@@ -202,59 +199,73 @@ export default defineComponent({
         w: this.overlayRect.w,
         h: this.canvasSize.h
       };
-      this.runtime.controllers.stash.setRect(this.overlayRect);
+      this.runtime?.controllers.stash.setRect(this.overlayRect);
     },
     onContextMenu(){
-      if (this.store.tools.addFreeNode || this.store.tools.placeStagedId || this.dragGhost?.active) {
-        this.drag().cancel();
+      if (this.store.tools.addFreeNode || this.store.tools.placeStagedId || this.store.tools.addLink || this.dragGhost?.active) {
+        // Cancel link placement too
+        if (this.store.tools.addLink) this.runtime?.controllers.linkPlacement.cancel();
+        this.drag()?.cancel();
         this.store.resetTools();
       }
     },
     onSvgClick(e:MouseEvent){
       if (!this.policy.canEditStructure) return;
-      if ((e.target as Element).closest(".node")) return;
+      const targetNodeEl = (e.target as Element).closest(".node") as SVGGElement | null;
+      const lp = this.runtime?.controllers.linkPlacement;
 
-      // If tool active but placement not started yet (no pointer move), start now.
-      if (!this.nodePlacement.isActive()) {
-        if (this.store.tools.placeStagedId) {
-          const staged = this.store.staging.find(n => n.id === this.store.tools.placeStagedId);
-          if (staged){
-            this.nodePlacement.startStaged(
-              this.store.tools.placeStagedId,
-              { r:staged.r, color:staged.color, label:staged.label },
-              e.clientX, e.clientY
-            );
+      // Link tool active
+      if (this.store.tools.addLink){
+        if (lp && !lp.isActive()){
+          const d = this.store.linkDraft;
+          lp.start(d.type, d.color, d.stroke);
+        }
+        if (targetNodeEl && lp){
+          const nodeId = targetNodeEl.getAttribute("data-id");
+          if (nodeId){
+            const committed = lp.tryCommit(nodeId, { shift: e.shiftKey });
+            if (committed && !e.shiftKey){
+              this.store.setAddLink(false);
+            }
           }
-        } else if (this.store.tools.addFreeNode) {
+        }
+        return; // ignore empty-space clicks while adding links
+      }
+
+      // Node placement flow
+      if (this.store.tools.addFreeNode){
+        if (this.nodePlacement?.isActive()){
+          if (this.dragGhost?.active && this.dragGhost.invalid) return;
+          const ok = this.nodePlacement.commitAt(e.clientX, e.clientY);
+          if (ok && !e.shiftKey) this.store.setAddFreeNode(false);
+          return;
+        } else {
           const d = this.store.settings.defaultNode;
           this.nodePlacement.startFree(
             { r:d.r, color:d.color, label:d.label },
             e.clientX, e.clientY
           );
+          const ok = this.nodePlacement.commitAt(e.clientX, e.clientY);
+          if (ok && !e.shiftKey) this.store.setAddFreeNode(false);
+          return;
         }
-      }
-
-      // Commit if active
-      if (this.nodePlacement.isActive()) {
-        if (this.dragGhost?.active && this.dragGhost.invalid) return;
-        const committed = this.nodePlacement.commitAt(e.clientX, e.clientY);
-        if (committed) {
-          if (this.placingMode === "add-free") this.store.setAddFreeNode(false);
-          if (this.placingMode === "place-staged") this.store.setPlaceStaged(null);
-        }
-        return;
       }
 
       // Background (no placement mode) clears selection
-      this.sel().clear();
+      this.sel()?.clear();
     },
     onSvgPointerMove(e:PointerEvent){
       if (!this.policy.canEditStructure) return;
 
+      // Link placement pointer update (independent)
+      const lp = this.runtime?.controllers.linkPlacement;
+      if (this.store.tools.addLink && lp?.isActive()){
+        lp.pointerMove(e.clientX, e.clientY);
+      }
+
       const addFree = this.store.tools.addFreeNode;
       const placeId = this.store.tools.placeStagedId;
 
-      // If neither tool is on, ensure placement canceled
       if (!addFree && !placeId){
         if (this.nodePlacement.isActive()) this.nodePlacement.cancel();
         return;
@@ -307,9 +318,67 @@ export default defineComponent({
         if (this.nodePlacement.isActive()){
           this.nodePlacement.cancel();
         }
+        if (this.store.tools.addLink) {
+          this.runtime?.controllers.linkPlacement.cancel();
+          this.store.setAddLink(false);
+        }
         if (this.store.tools.addFreeNode) this.store.setAddFreeNode(false);
         if (this.store.tools.placeStagedId) this.store.setPlaceStaged(null);
       }
+    },
+    getNode(id:string){ return this.nodes.find(n => n.id === id); },
+    onLinkPointerDown(id:string){
+      // 4) Select link for editing
+      if (this.store.tools.addLink) return; // ignore during add
+      this.sel()?.set(id);
+      // keep currentEditState as-is; PanelEdit detects selectedLink
+    },
+    // 6,7) compute padded endpoints between two nodes
+    lineBind(fromId:string, toId:string, pad:number){
+      const a = this.getNode(fromId); const b = this.getNode(toId);
+      if (!a || !b) return {};
+      const res = this._trimmedLine(a.x, a.y, a.r || 12, b.x, b.y, b.r || 12, pad || 0);
+      return { x1: res.x1, y1: res.y1, x2: res.x2, y2: res.y2 };
+    },
+    ghostLineBind(){
+      const src = this.sourceNodeForLink!;
+      const tgtId = this.lpGhost.targetHoverId;
+      if (tgtId){
+        const b = this.getNode(tgtId);
+        if (b){
+          const res = this._trimmedLine(src.x, src.y, src.r || 12, b.x, b.y, b.r || 12, this.store.linkDraft.pad || 0);
+          return { x1: res.x1, y1: res.y1, x2: res.x2, y2: res.y2 };
+        }
+      }
+      // fallback to pointer (trim only source end)
+      const pad = this.store.linkDraft.pad || 0;
+      const tmp = this._trimOneEnd(src.x, src.y, src.r || 12, this.lpGhost.pointer.x, this.lpGhost.pointer.y, pad);
+      return { x1: tmp.x1, y1: tmp.y1, x2: tmp.x2, y2: tmp.y2 };
+    },
+    _trimmedLine(ax:number, ay:number, ar:number, bx:number, by:number, br:number, pad:number){
+      const dx = bx - ax, dy = by - ay;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len, uy = dy / len;
+      const aOff = ar + pad;
+      const bOff = br + pad;
+      return {
+        x1: ax + ux * aOff,
+        y1: ay + uy * aOff,
+        x2: bx - ux * bOff,
+        y2: by - uy * bOff,
+      };
+    },
+    _trimOneEnd(ax:number, ay:number, ar:number, bx:number, by:number, pad:number){
+      const dx = bx - ax, dy = by - ay;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len, uy = dy / len;
+      const aOff = ar + pad;
+      return {
+        x1: ax + ux * aOff,
+        y1: ay + uy * aOff,
+        x2: bx,
+        y2: by,
+      };
     },
   }
 });
@@ -331,4 +400,7 @@ export default defineComponent({
   stroke-width:1;
   stroke-dasharray:4 4;
 }
+
+/* 3) Minor Add panel button styles already in PanelAdd; ghost styles here */
+.ghost-link { pointer-events:none; }
 </style>

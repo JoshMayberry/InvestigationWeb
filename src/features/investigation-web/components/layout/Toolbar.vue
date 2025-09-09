@@ -24,7 +24,7 @@ import { defineComponent, inject } from "vue";
 import { useInvestigationWebStore } from "../../stores/web";
 import { exportSnapshot } from "../../utils/snapshotFiles";
 import type { Snapshot } from "../../types/snapshot";
-import { RUNTIME_KEY } from "../../context/runtime";
+import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
 import Tooltip from "../ui/Tooltip.vue";
 
 export default defineComponent({
@@ -34,7 +34,7 @@ export default defineComponent({
     return {
       fileEl: null as HTMLInputElement | null,
       store: useInvestigationWebStore(),
-      runtime: inject(RUNTIME_KEY, null)
+      runtime: inject(RUNTIME_KEY, null) as InvestigationRuntime | null
     };
   },
   computed:{
@@ -53,15 +53,19 @@ export default defineComponent({
       return label ? `Redo: ${label}` : "Redo";
     },
     hint(): string {
-      const policy = this.store.policy;
-      const tools = this.store.tools;
-      const selId = this.runtime?.controllers?.selection.get();
-      if (selId) return `Selected: ${selId}`;
-      if (!policy.canEditStructure) return "View mode";
-      if (tools.editDefaults) return "Editing new node defaults";
-      if (tools.placeStagedId) return "Placing staged node: click to place";
-      if (tools.addFreeNode) return "Add Free Node: click to place";
-      return "Click a node to select";
+      const state = this.store.currentEditState;
+      switch (state) {
+        case "add-link": return "Add Link: click first node, then second. Hold Shift to keep adding";
+        case "add-free-node": return "Add Node: click to place. Hold Shift to keep adding";
+        case "place-stashed-node": return "Placing staged node: click to place";
+        case "drag-free-node": return "Dragging node";
+        case "edit-selected-node":
+          return this.runtime?.controllers?.selection.get()
+            ? `Selected: ${this.runtime?.controllers?.selection.get()}`
+            : "Edit";
+        default:
+          return this.store.policy.canEditStructure ? "Click a node to select" : "View mode";
+      }
     }
   },
   mounted(){ this.fileEl = this.$refs.fileEl as HTMLInputElement | null; },

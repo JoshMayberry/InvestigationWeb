@@ -3,6 +3,8 @@ export interface NodeBase {
     r: number
     color?: string
     label?: string
+    // Free-form bonuses per node
+    bonuses?: { title: string; description?: string }[]
 }
 
 export interface NodeFree extends NodeBase {

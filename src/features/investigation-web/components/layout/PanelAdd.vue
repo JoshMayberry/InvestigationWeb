@@ -1,60 +1,64 @@
 <template>
   <div class="add-panel">
-    <h3>Add</h3>
-    <div class="tools">
-      <button
-        class="tool-btn"
-        :class="{ on: store.tools.addFreeNode }"
-        @click="toggleAddFree"
-      >Add Free Node</button>
-
-      <button
-        class="tool-btn"
-        :class="{ on: store.tools.editDefaults }"
-        @click="toggleEditDefaults"
-      >Customize New Node Defaults</button>
+    <h3 class="title">Add</h3>
+    <div class="row">
+      <button class="btn" :class="{ active: store.tools.addFreeNode }" @click="toggleFree">Add Node</button>
+      <button class="btn" :class="{ active: store.tools.addLink }" @click="toggleLink">Add Link</button>
     </div>
-    <p class="muted small" v-if="store.tools.addFreeNode">Click on empty space to place a new node.</p>
-    <p class="muted small" v-else-if="store.tools.editDefaults">Edit panel shows default node template.</p>
-    <p class="muted small" v-else>Select a tool.</p>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, inject, onBeforeUnmount } from "vue";
 import { useInvestigationWebStore } from "../../stores/web";
+import { RUNTIME_KEY, type InvestigationRuntime } from "../../context/runtime";
 
 export default defineComponent({
   name: "PanelAdd",
-  data(){ return { store: useInvestigationWebStore() }; },
+  setup(){
+    const store = useInvestigationWebStore();
+    const runtime = inject(RUNTIME_KEY, null) as InvestigationRuntime | null;
+    onBeforeUnmount(() => {
+      if (store.tools.addLink) runtime?.controllers.linkPlacement.cancel();
+      store.closeAddPanel();
+    });
+    return { store, runtime };
+  },
   methods:{
-    toggleAddFree(){ this.store.setAddFreeNode(!this.store.tools.addFreeNode); },
-    toggleEditDefaults(){ this.store.setEditDefaults(!this.store.tools.editDefaults); }
+    toggleFree(){
+      const on = !this.store.tools.addFreeNode;
+      this.store.setAddFreeNode(on);
+      if (on) {
+        this.store.setAddLink(false);
+        this.runtime?.controllers.selection.clear();
+      }
+    },
+    toggleLink(){
+      const on = !this.store.tools.addLink;
+      this.store.setAddLink(on);
+      if (on) {
+        this.store.setAddFreeNode(false);
+        this.store.setPlaceStaged(null);
+        this.runtime?.controllers.selection.clear();
+      }
+    }
   }
 });
 </script>
 
 <style scoped>
-.add-panel { display:flex; flex-direction:column; gap:12px; color:var(--text); }
-h3 { margin:0 0 4px; font-size:14px; }
-.tools { display:flex; flex-wrap:wrap; gap:8px; }
-.tool-btn {
-  background: rgba(255,255,255,0.07);
-  border:1px solid rgba(255,255,255,0.14);
+.title { margin:0 0 8px; font-size:13px; letter-spacing:.5px; color: var(--accent); }
+.row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   color: var(--text);
-  padding:6px 12px;
-  font-size:12px;
-  border-radius:6px;
-  cursor:pointer;
-  transition: background .18s, border-color .18s;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .18s, border-color .18s, color .18s, box-shadow .18s;
 }
-.tool-btn.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color:#0b1020;
-  font-weight:600;
-  box-shadow:0 0 0 1px var(--accent) inset;
-}
-.muted { color: var(--muted); }
-.small { font-size:11px; line-height:1.3; }
+.btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+.btn.active { background: var(--accent); color: #0b1020; border-color: var(--accent); box-shadow: 0 2px 10px -2px rgba(0,0,0,.5); }
 </style>

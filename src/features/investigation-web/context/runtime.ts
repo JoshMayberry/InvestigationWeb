@@ -8,6 +8,7 @@ import { createNodePlacementController } from "./controllers/nodePlacementContro
 import { createStashController } from "./controllers/stashController";
 import { createShortcutsController } from "./controllers/shortcutsController";
 import { createUndoController } from "./controllers/undoController";
+import { createLinkPlacementController } from "./controllers/linkPlacementController";
 
 export const RUNTIME_KEY = "investigationRuntime";
 
@@ -21,6 +22,7 @@ export interface InvestigationRuntime {
     stash: ReturnType<typeof createStashController>;
     shortcuts: ReturnType<typeof createShortcutsController>;
     undo: ReturnType<typeof createUndoController>;
+    linkPlacement: ReturnType<typeof createLinkPlacementController>;
   };
   store: any;
   policy: ViewPolicy;
@@ -29,22 +31,22 @@ export interface InvestigationRuntime {
 }
 
 export function createInvestigationRuntime(store: any | null, policy: ViewPolicy): InvestigationRuntime {
+  // Define mutable holder BEFORE passing to controllers (fix TDZ error)
+  let storeHolder: any = store;
+
   const selection = createSelectionController();
   const hover = createHoverController();
   const view = createViewController();
   const drag = createDragController(view);
   const stash = createStashController(view);
   const shortcuts = createShortcutsController();
-
-  // single mutable holder for current store
-  let storeHolder:any = store;
-
-  const undo = createUndoController(() => (storeHolder?.settings?.undoCoalesceMs ?? 300));
   const nodePlacement = createNodePlacementController(drag, selection, view, storeHolder);
+  const linkPlacement = createLinkPlacementController(view, storeHolder, { set: (id: string) => selection.set(id) });
+  const undo = createUndoController(() => (storeHolder?.settings?.undoCoalesceMs ?? 300));
 
-  function assertStore(op:string){
+  function assertStore(op: string) {
     if (!storeHolder) {
-      console.error(`[runtime] store is null during ${op}. Call runtime.setStore(store) after Pinia store init.`);
+      console.error(`[runtime] store is null during ${op}. Call runtime.setStore(store) after Pinia init.`);
       return false;
     }
     return true;
@@ -52,41 +54,38 @@ export function createInvestigationRuntime(store: any | null, policy: ViewPolicy
 
   shortcuts.register("escape", () => {
     if (drag.isActive()) drag.cancel();
+    if (linkPlacement.isActive()) linkPlacement.cancel();
   });
-
-  // Undo / redo shortcuts
   shortcuts.register("ctrl+z", () => undo.undo());
   shortcuts.register("ctrl+shift+z", () => undo.redo());
   shortcuts.register("ctrl+y", () => undo.redo());
-
-  // Delete selected
   shortcuts.register("delete", () => {
     if (!assertStore("delete")) return;
     const id = selection.get();
     if (!id) return;
-    storeHolder.deleteNode(id);
+    storeHolder.deleteLink?.(id);
+    storeHolder.deleteNode?.(id);
     selection.clear();
   });
 
-  // Arrow key nudges (1px)
-  function nudge(dx:number, dy:number){
+  function nudge(dx: number, dy: number) {
     if (!assertStore("nudge")) return;
     const id = selection.get();
     if (!id) return;
-    const node = storeHolder.nodes?.find((n:any)=>n.id===id);
+    const node = storeHolder.nodes?.find((n: any) => n.id === id);
     if (!node) return;
     const before = { x: node.x, y: node.y };
     const after = { x: node.x + dx, y: node.y + dy };
     undo.push({
-      label:"move-node-nudge",
-      do: ()=> storeHolder.patchNode(id, after),
-      undo: ()=> storeHolder.patchNode(id, before)
+      label: "move-node-nudge",
+      do: () => storeHolder.patchNode(id, after),
+      undo: () => storeHolder.patchNode(id, before)
     });
   }
-  shortcuts.register("arrowup", ()=> nudge(0,-1));
-  shortcuts.register("arrowdown", ()=> nudge(0,1));
-  shortcuts.register("arrowleft", ()=> nudge(-1,0));
-  shortcuts.register("arrowright", ()=> nudge(1,0));
+  shortcuts.register("arrowup", () => nudge(0, -1));
+  shortcuts.register("arrowdown", () => nudge(0, 1));
+  shortcuts.register("arrowleft", () => nudge(-1, 0));
+  shortcuts.register("arrowright", () => nudge(1, 0));
 
   const runtime = reactive<InvestigationRuntime>({
     controllers: {
@@ -97,7 +96,8 @@ export function createInvestigationRuntime(store: any | null, policy: ViewPolicy
       nodePlacement,
       stash,
       shortcuts,
-      undo
+      undo,
+      linkPlacement
     },
     store: storeHolder,
     policy,
@@ -106,6 +106,7 @@ export function createInvestigationRuntime(store: any | null, policy: ViewPolicy
       storeHolder = s;
       runtime.store = s;
       nodePlacement.setStore(s);
+      linkPlacement.setStore(s);
     }
   });
 

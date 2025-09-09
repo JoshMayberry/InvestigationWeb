@@ -24,20 +24,19 @@
         <input type="checkbox" :checked="s.showPadPreview" @change="set('showPadPreview', $event)" />
         <span>Show padding areas</span>
       </label>
+      <p class="hint muted">Overlap prevention uses padding added to combined radii.</p>
     </div>
+
     <label class="row">
       <span style="flex:1">Undo merge window (ms)</span>
-      <input
-        class="num"
-        type="number"
-        min="50"
-        max="5000"
-        step="50"
-        :value="s.undoCoalesceMs"
-        @change="setNum('undoCoalesceMs', $event)"
-      />
+      <input class="num" type="number" min="50" max="5000" step="50" :value="s.undoCoalesceMs" @change="setNum('undoCoalesceMs', $event)" />
     </label>
-    <p class="hint muted">Overlap prevention uses padding added to combined radii.</p>
+
+    <label class="row">
+      <span style="flex:1">Link hit radius (px)</span>
+      <input class="num" type="number" min="0" max="48" step="1" :value="s.linkHitRadius ?? 10" @change="setNum('linkHitRadius', $event)" />
+    </label>
+
   </div>
 </template>
 

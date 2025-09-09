@@ -22,13 +22,16 @@ import Drawers from "@shared/components/layout/Drawers.vue";
 import PanelStaging from "./PanelStaging.vue";
 import PanelAdd from "./PanelAdd.vue";
 import { useInvestigationWebStore } from "../../stores/web";
-import { RUNTIME_KEY } from "../../context/runtime";
+import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
 
 export default defineComponent({
   name: "DrawersRight",
   components: { Drawers, PanelStaging, PanelAdd },
   data(){
-    return { store: useInvestigationWebStore(), runtime: inject(RUNTIME_KEY, null) };
+    return {
+      store: useInvestigationWebStore(),
+      runtime: inject(RUNTIME_KEY, null) as InvestigationRuntime | null
+    };
   },
   computed:{
     open(): boolean { return this.store.policy.canEditStructure; },

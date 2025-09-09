@@ -26,11 +26,14 @@
 <script lang="ts">
 import { defineComponent, inject } from "vue";
 import { useInvestigationWebStore } from "../../stores/web";
-import { RUNTIME_KEY } from "../../context/runtime";
+import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
 
 export default defineComponent({
   name: "PanelStaging",
-  data(){ return { store: useInvestigationWebStore(), runtime: inject(RUNTIME_KEY, null) }; },
+  data(){ return {
+    store: useInvestigationWebStore(),
+    runtime: inject(RUNTIME_KEY, null) as InvestigationRuntime | null,
+  }; },
   methods:{
     add(){ this.store.addStaged(); },
     del(id:string){

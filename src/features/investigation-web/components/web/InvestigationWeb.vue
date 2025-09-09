@@ -24,7 +24,12 @@
      <WebLinks />
 
       <g class="nodes">
-        <NodeDot v-for="n in nodes" :key="n.id" :node="n" :dim="filtersActive && !filteredIdsSet.has(n.id)" />
+        <NodeDot
+          v-for="n in nodes"
+          :key="n.id"
+          :node="n"
+          :dim="(filtersActive && !filteredIdsSet.has(n.id)) || (discoveryPreviewActive && !discoveryVisibleSet.has(n.id))"
+        />
       </g>
 
       <g v-if="settings.enforceNoOverlap && settings.showPadPreview" class="pad-preview">
@@ -90,6 +95,11 @@ export default defineComponent({
     },
     filteredIdsSet(): Set<string> { return this.store.filteredIdSet; },
     filtersActive(): boolean { return this.store.filtersActive; },
+
+    // NEW: discovery sets and preview flag
+    discoveryVisibleSet(): Set<string> { return this.store.visibleByDiscoveryIdSet; },
+    discoveryPreviewActive(): boolean { return !!(this.runtime?.policy?.canDiscover); },
+
     settings(): any { return this.store.settings; },
     policy(): any { return this.runtime?.policy || this.store.policy; },
     dragGhost(): any { return this.runtime?.controllers.drag.ghost; },

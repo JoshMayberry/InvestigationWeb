@@ -80,6 +80,7 @@ export default defineComponent({
     store(): any { return this.runtime?.store; },
     isSelected(): boolean { return !!this.selCtrl?.is(this.node.id); },
     canEdit(): boolean { return !!this.runtime?.policy?.canEditStructure; },
+    canDiscover(): boolean { return !!this.runtime?.policy?.canDiscover; },
     isHovered(): boolean { return !!this.hoverCtrl?.is(this.node.id); },
     placingActive(): boolean {
       const ghost = this.dragCtrl?.ghost;
@@ -95,6 +96,13 @@ export default defineComponent({
     onEnter(){ this.hoverCtrl?.set(this.node.id); },
     onLeave(){ this.hoverCtrl?.clear(); },
     onPointerDown(e:PointerEvent){
+      // Discovery mode: toggle discovered state (respect mode rules)
+      if (this.canDiscover && !this.canEdit) {
+        e.stopPropagation();
+        e.preventDefault();
+        this.runtime?.store?.toggleDiscover?.(this.node.id);
+        return;
+      }
       if (!this.canEdit) return;
       // In Add Link mode, clicking nodes should set source/target, not toggle or drag
       if (this.addLinkActive) {

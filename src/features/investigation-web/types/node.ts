@@ -3,8 +3,8 @@ export interface NodeBase {
     r: number
     color?: string
     label?: string
-    // Free-form bonuses per node
     bonuses?: { title: string; description?: string }[]
+    discovered?: boolean
 }
 
 export interface NodeFree extends NodeBase {
@@ -15,8 +15,7 @@ export interface NodeFree extends NodeBase {
 export interface NodeSnap extends NodeBase {
     kind: 'snap'
     trackId: string
-    t: number
-    r: number
+    trackPosition: number // track position
     x: number // computed
     y: number // computed
 };

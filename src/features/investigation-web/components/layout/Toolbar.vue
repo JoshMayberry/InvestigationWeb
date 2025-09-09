@@ -63,6 +63,12 @@ export default defineComponent({
           return this.runtime?.controllers?.selection.get()
             ? `Selected: ${this.runtime?.controllers?.selection.get()}`
             : "Edit";
+        case "add-track": return "Click to place p1, then click to place p2. Hold Ctrl to snap to 15°. Hold Shift to keep adding. Hold Alt to ignore grid.";
+        case "drag-track-end": return "Dragging track endpoint. Hold Alt to ignore grid.";
+        case "drag-track": return "Dragging whole track. Hold Alt to ignore grid.";
+        case "add-free-node": return "Click to place node. Hold Shift to keep adding. Hold Alt to ignore grid.";
+        case "drag-free-node": return "Dragging node. Hold Alt to ignore grid.";
+
         default:
           return this.store.policy.canEditStructure ? "Click a node to select" : "View mode";
       }

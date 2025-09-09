@@ -37,6 +37,17 @@
       stroke-width="1"
       pointer-events="none"
     />
+    <circle
+      v-if="node.locked"
+      class="lock-dot"
+      :cx="-(node.r||12) * 0.7"
+      :cy="-(node.r||12) * 0.7"
+      r="3.5"
+      fill="#f59e0b"
+      stroke="rgba(255,255,255,0.9)"
+      stroke-width="1"
+      pointer-events="none"
+    />
     <text
       v-if="node.label"
       class="label"
@@ -98,12 +109,17 @@ export default defineComponent({
     onPointerDown(e:PointerEvent){
       // Discovery mode: toggle discovered state (respect mode rules)
       if (this.canDiscover && !this.canEdit) {
-        e.stopPropagation();
-        e.preventDefault();
+        e.stopPropagation(); e.preventDefault();
         this.runtime?.store?.toggleDiscover?.(this.node.id);
         return;
       }
       if (!this.canEdit) return;
+      if (this.node.locked) { // do not drag locked nodes
+        e.stopPropagation();
+        // toggle selection only
+        if (this.isSelected) this.selCtrl?.clear(); else this.selCtrl?.set(this.node.id);
+        return;
+      }
       // In Add Link mode, clicking nodes should set source/target, not toggle or drag
       if (this.addLinkActive) {
         e.stopPropagation();

@@ -72,3 +72,18 @@
     3. Add svg tracks that follow the lines in an SVG to lay out a track
 5. GM/Player Sync
     1. Work on making the Player view (another tab) sync with the GM view.
+
+
+TODO
+
+The grid is still not showing up when the settings window is open.
+I think we need a new enum like with editState- but what our current mode is. The mode that we are in is determiend by which left drawer is open. So, we would have the following modes:
+- view (no drawer open)
+- edit
+- discovery
+- filter
+- bonus
+- setting
+The current mode will be stored in pina.
+
+All logic that has to do with "only during this mode" anywhere shoulduse this current mode instead of whatever method they use now. This will be more reliable and easier to scale and work with.

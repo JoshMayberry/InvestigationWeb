@@ -9,6 +9,7 @@ import { createStashController } from "./controllers/stashController";
 import { createShortcutsController } from "./controllers/shortcutsController";
 import { createUndoController } from "./controllers/undoController";
 import { createLinkPlacementController } from "./controllers/linkPlacementController";
+import { createTrackPlacementController } from "./controllers/trackPlacementController";
 
 export const RUNTIME_KEY = "investigationRuntime";
 
@@ -23,6 +24,7 @@ export interface InvestigationRuntime {
     shortcuts: ReturnType<typeof createShortcutsController>;
     undo: ReturnType<typeof createUndoController>;
     linkPlacement: ReturnType<typeof createLinkPlacementController>;
+    trackPlacement: ReturnType<typeof createTrackPlacementController>;
   };
   store: any;
   policy: ViewPolicy;
@@ -42,6 +44,7 @@ export function createInvestigationRuntime(store: any | null, policy: ViewPolicy
   const shortcuts = createShortcutsController();
   const nodePlacement = createNodePlacementController(drag, selection, view, storeHolder);
   const linkPlacement = createLinkPlacementController(view, storeHolder, { set: (id: string) => selection.set(id) });
+  const trackPlacement = createTrackPlacementController(view, storeHolder);
   const undo = createUndoController(() => (storeHolder?.settings?.undoCoalesceMs ?? 300));
 
   function assertStore(op: string) {
@@ -97,7 +100,8 @@ export function createInvestigationRuntime(store: any | null, policy: ViewPolicy
       stash,
       shortcuts,
       undo,
-      linkPlacement
+      linkPlacement,
+      trackPlacement,
     },
     store: storeHolder,
     policy,
@@ -107,6 +111,7 @@ export function createInvestigationRuntime(store: any | null, policy: ViewPolicy
       runtime.store = s;
       nodePlacement.setStore(s);
       linkPlacement.setStore(s);
+      trackPlacement.setStore(s);
     }
   });
 

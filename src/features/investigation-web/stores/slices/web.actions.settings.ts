@@ -9,6 +9,10 @@ export const defaultSettings = {
   linkHitRadius: 10,
   defaultNode: { r: 14, color: "#10b981", label: "New" },
   undoCoalesceMs: 300,
+  preventTrackCrossing: false,
+  enableGrid: false,
+  gridSize: 16,
+  gridAlwaysVisible: false,
 };
 
 export const settingsActions = {
@@ -32,7 +36,11 @@ export const settingsActions = {
           color: obj.defaultNode?.color ?? this.settings.defaultNode.color,
           label: obj.defaultNode?.label ?? this.settings.defaultNode.label
         },
-        linkHitRadius: Number(obj.linkHitRadius) || this.settings.linkHitRadius
+        linkHitRadius: Number(obj.linkHitRadius) || this.settings.linkHitRadius,
+        preventTrackCrossing: !!obj.preventTrackCrossing,
+        enableGrid: !!obj.enableGrid,
+        gridSize: Number(obj.gridSize) || this.settings.gridSize,
+        gridAlwaysVisible: !!obj.gridAlwaysVisible,
       });
     } catch {}
   },

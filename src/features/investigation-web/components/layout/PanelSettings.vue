@@ -37,17 +37,42 @@
       <input class="num" type="number" min="0" max="48" step="1" :value="s.linkHitRadius ?? 10" @change="setNum('linkHitRadius', $event)" />
     </label>
 
+    <label class="row">
+      <input type="checkbox" :checked="s.preventTrackCrossing" @change="set('preventTrackCrossing', $event)" />
+      <span>Prevent track crossing</span>
+    </label>
+
+    <div class="group">
+      <label class="row">
+        <input type="checkbox" :checked="s.enableGrid" @change="set('enableGrid', $event)" />
+        <span>Enable grid (snap unless Alt)</span>
+      </label>
+      <div class="row" v-if="s.enableGrid">
+        <span style="flex:1">Grid size</span>
+        <input class="num" type="number" min="4" max="200" step="2" :value="s.gridSize" @change="setNum('gridSize', $event)" />
+      </div>
+      <label class="row" v-if="s.enableGrid">
+        <input type="checkbox" :checked="s.gridAlwaysVisible" @change="set('gridAlwaysVisible', $event)" />
+        <span>Always show grid in Edit mode</span>
+      </label>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, onMounted, onBeforeUnmount } from "vue";
 import { useInvestigationWebStore } from "../../stores/web";
 
 export default defineComponent({
   name: "PanelSettings",
   data(){ return { store: useInvestigationWebStore() }; },
   computed:{ s():any { return this.store.settings; } },
+  setup() {
+    const store = useInvestigationWebStore();
+    onMounted(()=> store.setPanelOpen("settings", true));
+    onBeforeUnmount(()=> store.setPanelOpen("settings", false));
+    return {};
+  },
   methods:{
     set(key:string, e:Event){
       const v = (e.target as HTMLInputElement).checked;

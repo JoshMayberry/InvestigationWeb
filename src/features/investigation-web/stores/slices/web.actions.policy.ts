@@ -27,8 +27,13 @@ export const policyActions = {
   },
   setAddLink(this:any, on:boolean){
     this.tools.addLink = on;
-    if (on) { this.tools.addFreeNode = false; this.tools.placeStagedId = null; this.tools.editDefaults = false; this.setCurrentEditState("add-link"); }
-    else if (!this.tools.addFreeNode && !this.tools.placeStagedId) this.setCurrentEditState("none");
+    if (on) { this.tools.addFreeNode = false; this.tools.placeStagedId = null; this.tools.editDefaults = false; this.tools.addTrack = false; this.setCurrentEditState("add-link"); }
+    else if (!this.tools.addFreeNode && !this.tools.placeStagedId && !this.tools.addTrack) this.setCurrentEditState("none");
+  },
+  setAddTrack(this:any, on:boolean){
+    this.tools.addTrack = on;
+    if (on) { this.tools.addFreeNode = false; this.tools.placeStagedId = null; this.tools.editDefaults = false; this.tools.addLink = false; this.setCurrentEditState("add-track"); }
+    else if (!this.tools.addFreeNode && !this.tools.placeStagedId && !this.tools.addLink) this.setCurrentEditState("none");
   },
   closeAddPanel(this:any){ this.resetTools(); },
   resetTools(this:any){
@@ -36,6 +41,11 @@ export const policyActions = {
     this.tools.placeStagedId = null;
     this.tools.editDefaults = false;
     this.tools.addLink = false;
+    this.tools.addTrack = false;
     this.setCurrentEditState("none");
+  },
+  setPanelOpen(this:any, key: "settings", on: boolean) {
+    if (!this.panels) this.panels = { settingsOpen: false };
+    if (key === "settings") this.panels.settingsOpen = !!on;
   },
 };

@@ -4,6 +4,7 @@
     <div class="row">
       <button class="btn" :class="{ active: store.tools.addFreeNode }" @click="toggleFree">Add Node</button>
       <button class="btn" :class="{ active: store.tools.addLink }" @click="toggleLink">Add Link</button>
+      <button class="btn" :class="{ active: store.tools.addTrack }" @click="toggleTrack">Add Track</button>
     </div>
   </div>
 </template>
@@ -29,15 +30,32 @@ export default defineComponent({
       const on = !this.store.tools.addFreeNode;
       this.store.setAddFreeNode(on);
       if (on) {
+        // Cancel any active link ghost when switching tools
+        this.runtime?.controllers.linkPlacement.cancel();
         this.store.setAddLink(false);
+        this.store.setPlaceStaged(null);
         this.runtime?.controllers.selection.clear();
       }
     },
     toggleLink(){
       const on = !this.store.tools.addLink;
+      // Always reset ghost state first so re-enabling starts fresh
+      this.runtime?.controllers.linkPlacement.cancel();
       this.store.setAddLink(on);
       if (on) {
         this.store.setAddFreeNode(false);
+        this.store.setPlaceStaged(null);
+        this.runtime?.controllers.selection.clear();
+      }
+    },
+    toggleTrack(){
+      const on = !this.store.tools.addTrack;
+      this.store.setAddTrack(on);
+      if (on) {
+        // Cancel any active link ghost when switching tools
+        this.runtime?.controllers.linkPlacement.cancel();
+        this.store.setAddFreeNode(false);
+        this.store.setAddLink(false);
         this.store.setPlaceStaged(null);
         this.runtime?.controllers.selection.clear();
       }

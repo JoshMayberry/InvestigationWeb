@@ -8,6 +8,7 @@ import { nodeActions } from "./slices/web.actions.nodes";
 import { linkActions } from "./slices/web.actions.links";
 import { snapshotActions } from "./slices/web.actions.snapshot";
 import { discoveryActions } from "./slices/web.actions.discovery";
+import { trackActions } from "./slices/web.actions.tracks";
 
 export const useInvestigationWebStore = defineStore("investigationWeb", {
   state: () => createInitialState(),
@@ -18,6 +19,7 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
     ...filterActions,
     ...nodeActions,
     ...linkActions,
+    ...trackActions,
     ...snapshotActions,
     ...discoveryActions,
   }

@@ -49,9 +49,15 @@ export default defineComponent({
     },
     onChange(p:{ index:number|null }){
       const idx = p.index;
-      if (idx !== 1) this.store.setAddFreeNode(false);
+      if (idx !== 1) {
+        // Leaving the Add panel or closing the drawer -> clear all add modes
+        this.runtime?.controllers.linkPlacement.cancel();
+        this.store.setAddLink(false);
+        this.store.setAddTrack(false);
+        this.store.setAddFreeNode(false);
+        this.store.setEditDefaults(false);
+      }
       if (idx !== 0) this.store.setPlaceStaged(null);
-      if (idx !== 1) this.store.setEditDefaults(false);
     }
   }
 });

@@ -45,6 +45,14 @@ export const linkActions = {
         turns, startRadius: payload.startRadius ?? (this.linkDraft.startRadius ?? 10),
         endRadius: payload.endRadius ?? (this.linkDraft.endRadius ?? 60),
         direction: payload.direction ?? (this.linkDraft.direction ?? 1) };
+    } else if (payload.type === "spiral"){
+      const turns = Math.round(payload.turns ?? (this.linkDraft.turns ?? 1));
+      link = { id, type:"spiral", from: payload.from, to: payload.to,
+        color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
+        arrowHead: payload.arrowHead ?? this.linkDraft.arrowHead, pad: payload.pad ?? this.linkDraft.pad,
+        turns, startRadius: payload.startRadius ?? (this.linkDraft.startRadius ?? 10),
+        endRadius: payload.endRadius ?? (this.linkDraft.endRadius ?? 60),
+        direction: payload.direction ?? (this.linkDraft.direction ?? 1) };
     } else {
       link = { id, type:"straight", from: payload.from, to: payload.to,
         color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
@@ -61,9 +69,11 @@ export const linkActions = {
       else if (patch.type === "bezier") next = { ...base, type:"bezier", c1: this.linkDraft.c1 ?? { t:25, off:30 }, c2: this.linkDraft.c2 ?? { t:75, off:-30 }, symmetric: this.linkDraft.symmetric ?? false };
       else if (patch.type === "spline") next = { ...base, type:"spline", controls: this.linkDraft.controls ?? [{ t: 33, off: 20 }, { t: 66, off: -10 }], tension: this.linkDraft.tension ?? 0.25 };
       else if (patch.type === "corkscrew") next = { ...base, type:"corkscrew", turns: Math.round(this.linkDraft.turns ?? 1), startRadius: this.linkDraft.startRadius ?? 10, endRadius: this.linkDraft.endRadius ?? 60, direction: this.linkDraft.direction ?? 1 };
+      else if (patch.type === "spiral") next = { ...base, type:"spiral", turns: Math.round(this.linkDraft.turns ?? 1), startRadius: this.linkDraft.startRadius ?? 10, endRadius: this.linkDraft.endRadius ?? 60, direction: this.linkDraft.direction ?? 1 };
       else next = { ...base, type:"straight" };
     }
     if ((next as any).type === "corkscrew" && patch.turns !== undefined) (next as any).turns = Math.round(patch.turns);
+    if ((next as any).type === "spiral" && patch.turns !== undefined) (next as any).turns = Math.round(patch.turns);
     this.links[i] = next; this.dirty = true;
   },
   deleteLink(this:any, id:string){

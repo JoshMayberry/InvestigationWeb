@@ -25,6 +25,7 @@ export interface DragController {
   isActive(): boolean;
   isInvalid(): boolean;
   kind(): GhostMode;
+  setSnapper(fn: (x:number,y:number)=>{x:number;y:number} | null): void;
 }
 
 export function createDragController(view:ViewController): DragController {
@@ -35,6 +36,7 @@ export function createDragController(view:ViewController): DragController {
   });
 
   let validator:(g:GhostState)=>{ valid:boolean; reason?:string } = () => ({ valid:true });
+  let snapper: ((x:number,y:number)=>{x:number;y:number}) | null = null;
 
   function validate(){
     if (!ghost.active) return;
@@ -47,6 +49,10 @@ export function createDragController(view:ViewController): DragController {
     validator = fn || (()=>({ valid:true }));
     validate();
   }
+
+  function setSnapper(fn:any){ snapper = typeof fn === "function" ? fn : null; }
+
+  function applySnap(w:{x:number;y:number}){ return snapper ? snapper(w.x, w.y) : w; }
 
   function startNode(nodeId:string, node:{ x:number; y:number; r:number; color?:string; label?:string }){
     ghost.active = true;
@@ -63,7 +69,8 @@ export function createDragController(view:ViewController): DragController {
     ghost.active = true;
     ghost.mode = p.mode;
     ghost.sourceId = null;
-    ghost.x = p.x; ghost.y = p.y;
+    const w = applySnap({ x:p.x, y:p.y });
+    ghost.x = w.x; ghost.y = w.y;
     ghost.r = p.r ?? 14;
     ghost.color = p.color || "#10b981";
     ghost.label = p.label || "";
@@ -73,7 +80,8 @@ export function createDragController(view:ViewController): DragController {
   function updatePointer(clientX:number, clientY:number){
     if (!ghost.active) return;
     const w = view.worldFromClient(clientX, clientY);
-    ghost.x = w.x; ghost.y = w.y;
+    const s = applySnap(w);
+    ghost.x = s.x; ghost.y = s.y;
     validate();
   }
 
@@ -95,6 +103,7 @@ export function createDragController(view:ViewController): DragController {
     cancel,
     isActive: () => ghost.active,
     isInvalid: () => ghost.active && ghost.invalid,
-    kind: () => ghost.mode
+    kind: () => ghost.mode,
+    setSnapper,
   };
 }

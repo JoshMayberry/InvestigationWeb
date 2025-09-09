@@ -23,6 +23,11 @@
       <span class="pill">{{ radiusVal }}</span>
     </label>
 
+    <label class="row">
+      <input type="checkbox" :checked="(mode==='selected' ? !!node?.locked : false)" @change="onChange('locked', ($event.target as HTMLInputElement).checked)" />
+      <span>Locked (disable dragging)</span>
+    </label>
+
     <template v-if="mode==='selected'">
       <div class="block-title sm">Bonuses</div>
       <div class="bonus-list">
@@ -107,7 +112,7 @@ export default defineComponent({
       const ok = this.store.renameNodeId(oldId, next);
       if (ok && next !== oldId) this.selection?.set(next);
     },
-    onChange(key:"label"|"color"|"r", value:any){
+    onChange(key:"label"|"color"|"r"|"locked", value:any){
       if (this.mode === "defaults"){
         this.store.updateDefaultNode({ [key]: value } as any);
         return;

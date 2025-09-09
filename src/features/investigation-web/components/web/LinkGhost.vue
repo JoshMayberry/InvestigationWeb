@@ -16,16 +16,17 @@
 <script lang="ts">
 import { defineComponent, inject } from "vue";
 import { RUNTIME_KEY } from "../../context/runtime";
+import { useInvestigationWebStore } from "../../stores/web";
 
 export default defineComponent({
   name: "LinkGhost",
   data(){
     return {
-      runtime: inject(RUNTIME_KEY, null) as any
+      runtime: inject(RUNTIME_KEY, null) as any,
+      store: useInvestigationWebStore()
     };
   },
   computed:{
-    store(): any { return this.runtime?.store; },
     nodes(): any[] { return this.store?.nodes || []; },
     lpGhost(): any { return this.runtime?.controllers?.linkPlacement?.ghost; },
     source(): any | null {
@@ -36,7 +37,7 @@ export default defineComponent({
       const id = this.lpGhost?.targetHoverId;
       return id ? this.nodes.find((n:any)=>n.id===id) || null : null;
     },
-    active(): boolean { return !!(this.lpGhost?.active && this.lpGhost?.step === 1 && this.source); },
+    active(): boolean { return !!(this.lpGhost?.active && this.source); }, // allow live pointer after source
     color(): string { return this.lpGhost?.valid ? this.lpGhost?.color : "#ef4444"; },
     opacity(): number { return this.lpGhost?.valid ? 0.65 : 0.9; },
     dash(): string | undefined {
@@ -48,14 +49,13 @@ export default defineComponent({
       return this.lpGhost?.valid && arrow ? "url(#iw-arrow-head)" : undefined;
     },
     bind(): any {
-      if (!this.active) return {};
+      if (!this.active || !this.source) return {};
       const pad = this.store?.linkDraft?.pad || 0;
-      const a = this.source!;
+      const a = this.source;
       if (this.target) {
-        const b = this.target!;
+        const b = this.target;
         return this.trimmed(a.x, a.y, a.r || 12, b.x, b.y, b.r || 12, pad);
       }
-      // fallback to pointer (trim source end)
       return this.trimOne(a.x, a.y, a.r || 12, this.lpGhost.pointer.x, this.lpGhost.pointer.y, pad);
     }
   },
@@ -65,24 +65,14 @@ export default defineComponent({
       const len = Math.hypot(dx, dy) || 1;
       const ux = dx / len, uy = dy / len;
       const aOff = ar + pad, bOff = br + pad;
-      return {
-        x1: ax + ux * aOff,
-        y1: ay + uy * aOff,
-        x2: bx - ux * bOff,
-        y2: by - uy * bOff
-      };
+      return { x1: ax + ux * aOff, y1: ay + uy * aOff, x2: bx - ux * bOff, y2: by - uy * bOff };
     },
     trimOne(ax:number, ay:number, ar:number, bx:number, by:number, pad:number){
       const dx = bx - ax, dy = by - ay;
       const len = Math.hypot(dx, dy) || 1;
       const ux = dx / len, uy = dy / len;
       const aOff = ar + pad;
-      return {
-        x1: ax + ux * aOff,
-        y1: ay + uy * aOff,
-        x2: bx,
-        y2: by
-      };
+      return { x1: ax + ux * aOff, y1: ay + uy * aOff, x2: bx, y2: by };
     }
   }
 });

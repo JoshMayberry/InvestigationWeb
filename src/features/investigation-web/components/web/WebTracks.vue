@@ -26,15 +26,20 @@
 
 <script lang="ts">
 import { defineComponent, inject } from "vue";
+import { useInvestigationWebStore } from "../../stores/web";
 import { RUNTIME_KEY } from "../../context/runtime";
 
 export default defineComponent({
   name: "WebTracks",
-  data(){ return { runtime: inject(RUNTIME_KEY, null) as any }; },
+  data(){
+    return {
+      runtime: inject(RUNTIME_KEY, null) as any,
+      store: useInvestigationWebStore()
+    };
+  },
   computed:{
-    store(): any { return this.runtime?.store; },
-    tracks(): any[] { return this.store?.tracks || []; },
-    policy(): any { return this.runtime?.policy || this.store?.policy || {}; },
+    tracks(): any[] { return this.store.tracks || []; },
+    policy(): any { return this.store.policy || {}; },
     selCtrl(): any { return this.runtime?.controllers?.selection; },
     isSelId(): string | null { return this.selCtrl?.get?.() || null; },
   },

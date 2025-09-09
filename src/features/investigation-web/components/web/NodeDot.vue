@@ -64,6 +64,7 @@
 import { defineComponent, inject } from "vue";
 import type { NodeAny } from "../../types/node";
 import { RUNTIME_KEY } from "../../context/runtime";
+import { useInvestigationWebStore } from "../../stores/web";
 
 const MOVE_THRESHOLD = 3;
 
@@ -76,10 +77,11 @@ export default defineComponent({
   data(){
     return {
       runtime: null as any,
+      store: useInvestigationWebStore(), // NEW
       pointerDown:false,
       moved:false,
       startClient:{ x:0, y:0 },
-     wasSelectedAtDragStart: false,
+      wasSelectedAtDragStart: false,
     };
   },
   computed:{
@@ -88,21 +90,17 @@ export default defineComponent({
     dragCtrl(): any { return this.runtime?.controllers?.drag; },
     stashCtrl(): any { return this.runtime?.controllers?.stash; },
     viewCtrl(): any { return this.runtime?.controllers?.view; },
-    store(): any { return this.runtime?.store; },
+    canEdit(): boolean { return !!this.store?.policy?.canEditStructure; },
+    canDiscover(): boolean { return !!this.store?.policy?.canDiscover; },
     isSelected(): boolean { return !!this.selCtrl?.is(this.node.id); },
-    canEdit(): boolean { return !!this.runtime?.policy?.canEditStructure; },
-    canDiscover(): boolean { return !!this.runtime?.policy?.canDiscover; },
     isHovered(): boolean { return !!this.hoverCtrl?.is(this.node.id); },
     placingActive(): boolean {
       const ghost = this.dragCtrl?.ghost;
-      if (!ghost) return false;
-      return ghost.mode === "add-free" || ghost.mode === "place-staged";
+      return !!ghost && (ghost.mode === "add-free" || ghost.mode === "place-staged");
     },
     addLinkActive(): boolean { return !!this.store?.tools?.addLink; }
   },
-  created(){
-    this.runtime = inject(RUNTIME_KEY, null);
-  },
+  created(){ this.runtime = inject(RUNTIME_KEY, null); },
   methods:{
     onEnter(){ this.hoverCtrl?.set(this.node.id); },
     onLeave(){ this.hoverCtrl?.clear(); },
@@ -110,7 +108,7 @@ export default defineComponent({
       // Discovery mode: toggle discovered state (respect mode rules)
       if (this.canDiscover && !this.canEdit) {
         e.stopPropagation(); e.preventDefault();
-        this.runtime?.store?.toggleDiscover?.(this.node.id);
+        this.store?.toggleDiscover?.(this.node.id);
         return;
       }
       if (!this.canEdit) return;
@@ -166,7 +164,6 @@ export default defineComponent({
       const wasSelectedBefore = this.isSelected;
       this.cleanup();
       if (!wasMoved){
-        // toggle selection (only outside Add Link)
         if (!this.addLinkActive) {
           if (wasSelectedBefore) {
             this.selCtrl?.clear();
@@ -180,28 +177,25 @@ export default defineComponent({
         return;
       }
       if (!ghost?.active || ghost.mode !== "drag-node"){
-        this.dragCtrl?.cancel(); return;
+        this.dragCtrl?.cancel(); this.store?.setCurrentEditState?.("none"); return;
       }
-      // Outside SVG?
       const svg = this.viewCtrl?.getSvgEl();
       if (svg){
         const r = svg.getBoundingClientRect();
         if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom){
-          this.dragCtrl?.cancel(); return;
+          this.dragCtrl?.cancel(); this.store?.setCurrentEditState?.("none"); return;
         }
       }
-      // Into stash?
+      // stash drop
       if (this.stashCtrl?.isClientPointIn(e.clientX, e.clientY)){
-        this.runtime?.store?.moveNodeToStaging?.(ghost.sourceId);
+        this.store?.moveNodeToStaging?.(ghost.sourceId);
         if (this.selCtrl?.get() === ghost.sourceId) this.selCtrl?.clear();
-        this.dragCtrl?.cancel(); 
+        this.dragCtrl?.cancel();
         this.store?.setCurrentEditState?.("none");
         return;
       }
       if (ghost.invalid){
-        this.dragCtrl?.cancel(); 
-        this.store?.setCurrentEditState?.("none");
-        return;
+        this.dragCtrl?.cancel(); this.store?.setCurrentEditState?.("none"); return;
       }
       const id = this.node.id;
       const before = { x: this.node.x, y: this.node.y };
@@ -211,11 +205,11 @@ export default defineComponent({
         _coalesceKey: `move-node:${id}`,
         before,
         after,
-        do: () => this.runtime.store?.patchNode?.(id, after),
-        undo: () => this.runtime.store?.patchNode?.(id, before)
+        do: () => this.store?.patchNode?.(id, after),
+        undo: () => this.store?.patchNode?.(id, before)
       });
       this.dragCtrl?.cancel();
-     this.store?.setCurrentEditState?.(this.wasSelectedAtDragStart ? "edit-selected-node" : "none");
+      this.store?.setCurrentEditState?.(this.wasSelectedAtDragStart ? "edit-selected-node" : "none");
     },
     onEsc(e:KeyboardEvent){
       if (e.key === "Escape"){

@@ -39,13 +39,14 @@ export default defineComponent({
     },
     toggleLink(){
       const on = !this.store.tools.addLink;
-      // Always reset ghost state first so re-enabling starts fresh
-      this.runtime?.controllers.linkPlacement.cancel();
+      // Always cancel current ghost so we restart fresh if re-enabled
+      this.runtime?.controllers?.linkPlacement?.cancel();
       this.store.setAddLink(on);
       if (on) {
         this.store.setAddFreeNode(false);
+        this.store.setAddTrack(false);
         this.store.setPlaceStaged(null);
-        this.runtime?.controllers.selection.clear();
+        this.runtime?.controllers?.selection?.clear?.();
       }
     },
     toggleTrack(){

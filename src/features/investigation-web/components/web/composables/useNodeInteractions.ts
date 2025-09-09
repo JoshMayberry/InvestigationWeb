@@ -1,6 +1,6 @@
 export function useNodeInteractions({ runtime, store }:{ runtime:any; store:any }){
   function onClick(e:MouseEvent): boolean {
-    if (!runtime?.policy?.canEditStructure) return false;
+    if (!store?.policy?.canEditStructure) return false;
     const np = runtime.controllers.nodePlacement;
 
     // placing staged
@@ -32,7 +32,7 @@ export function useNodeInteractions({ runtime, store }:{ runtime:any; store:any 
     return false;
   }
   function onPointerMove(e:PointerEvent){
-    if (!runtime?.policy?.canEditStructure) return;
+    if (!store?.policy?.canEditStructure) return;
     const np = runtime.controllers.nodePlacement;
     const addFree = store.tools.addFreeNode;
     const placeId = store.tools.placeStagedId;
@@ -63,7 +63,7 @@ export function useNodeInteractions({ runtime, store }:{ runtime:any; store:any 
     }
   }
   function onPointerLeave(e:PointerEvent){
-    if (!runtime?.policy?.canEditStructure) return;
+    if (!store?.policy?.canEditStructure) return;
     const svg:any = (e.currentTarget as any) || null;
     if (runtime.controllers.nodePlacement.isActive()) {
       // best-effort cancel; view containment check is in original impl

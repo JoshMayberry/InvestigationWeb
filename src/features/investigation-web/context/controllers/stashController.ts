@@ -7,6 +7,7 @@ export interface StashController {
   rect: StashRect;
   setRect(r:StashRect): void;
   isClientPointIn(clientX:number, clientY:number): boolean;
+  isInside(x:number, y:number): boolean;
 }
 
 export function createStashController(view:ViewController): StashController {
@@ -14,6 +15,10 @@ export function createStashController(view:ViewController): StashController {
 
   function setRect(r:StashRect){
     rect.x=r.x; rect.y=r.y; rect.w=r.w; rect.h=r.h;
+  }
+
+  function isInside(x:number, y:number){
+    return x >= rect.x && y >= rect.y && x <= rect.x + rect.w && y <= rect.y + rect.h;
   }
 
   function isClientPointIn(clientX:number, clientY:number){
@@ -25,5 +30,5 @@ export function createStashController(view:ViewController): StashController {
     return lx >= (r.width - rect.w) && lx <= r.width && ly >= rect.y && ly <= rect.y + rect.h;
   }
 
-  return { rect, setRect, isClientPointIn };
+  return { rect, setRect, isClientPointIn, isInside };
 }

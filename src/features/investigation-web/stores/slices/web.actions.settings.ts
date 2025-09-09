@@ -13,6 +13,7 @@ export const defaultSettings = {
   enableGrid: false,
   gridSize: 16,
   gridAlwaysVisible: false,
+  stashZoneWidth: 120,
 };
 
 export const settingsActions = {
@@ -41,6 +42,7 @@ export const settingsActions = {
         enableGrid: !!obj.enableGrid,
         gridSize: Number(obj.gridSize) || this.settings.gridSize,
         gridAlwaysVisible: !!obj.gridAlwaysVisible,
+        stashZoneWidth: Number(obj.stashZoneWidth) || this.settings.stashZoneWidth,
       });
     } catch {}
   },

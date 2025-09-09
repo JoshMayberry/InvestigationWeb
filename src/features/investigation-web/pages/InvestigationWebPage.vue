@@ -2,7 +2,7 @@
   <div class="iw-page" v-if="store">
     <Toolbar />
     <div class="layout">
-      <DrawersLeft @mode:edit="onEditMode" />
+      <DrawersLeft />
       <InvestigationWeb class="canvas" />
       <DrawersRight />
     </div>
@@ -22,8 +22,7 @@ export default defineComponent({
   name: "InvestigationWebPage",
   components: { InvestigationWeb, DrawersLeft, DrawersRight, Toolbar },
   data() {
-    const placeholderPolicy = { canEditStructure:false, canDiscover:false, canInteract:true };
-    const runtime = createInvestigationRuntime(null, placeholderPolicy);
+    const runtime = createInvestigationRuntime(null);
     return {
       store: null as ReturnType<typeof useInvestigationWebStore> | null,
       runtime,
@@ -32,22 +31,14 @@ export default defineComponent({
   },
   provide() { return { [RUNTIME_KEY]: this.runtime }; },
   created() {
-    this.store = useInvestigationWebStore();
+    const store = useInvestigationWebStore();
+    this.store = store;
     this.runtime.setStore(this.store);
-    this.runtime.setPolicy(this.store.policy);
     this.store.initSettingsFromLocal();
     this.store.$subscribe((_m, state) => { this.isDirty = state.dirty; });
+    this.store.setMode?.("view");
   },
   mounted() { this.store?.load(); },
-  methods: {
-    onEditMode(open:boolean){
-      this.store?.setCanEditStructure(open);
-      if (!open) {
-        this.runtime.controllers.selection.clear();
-        this.store?.resetTools();
-      }
-    },
-  }
 });
 </script>
 

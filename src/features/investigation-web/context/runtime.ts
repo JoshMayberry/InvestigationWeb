@@ -1,5 +1,4 @@
 import { reactive } from "vue";
-import type { ViewPolicy } from "../types";
 import { createSelectionController } from "./controllers/selectionController";
 import { createHoverController } from "./controllers/hoverController";
 import { createViewController } from "./controllers/viewController";
@@ -26,13 +25,10 @@ export interface InvestigationRuntime {
     linkPlacement: ReturnType<typeof createLinkPlacementController>;
     trackPlacement: ReturnType<typeof createTrackPlacementController>;
   };
-  store: any;
-  policy: ViewPolicy;
-  setPolicy(p: ViewPolicy): void;
   setStore(store: any): void;
 }
 
-export function createInvestigationRuntime(store: any | null, policy: ViewPolicy): InvestigationRuntime {
+export function createInvestigationRuntime(store: any | null): InvestigationRuntime {
   // Define mutable holder BEFORE passing to controllers (fix TDZ error)
   let storeHolder: any = store;
 
@@ -103,12 +99,8 @@ export function createInvestigationRuntime(store: any | null, policy: ViewPolicy
       linkPlacement,
       trackPlacement,
     },
-    store: storeHolder,
-    policy,
-    setPolicy(p) { runtime.policy = p; },
     setStore(s) {
       storeHolder = s;
-      runtime.store = s;
       nodePlacement.setStore(s);
       linkPlacement.setStore(s);
       trackPlacement.setStore(s);

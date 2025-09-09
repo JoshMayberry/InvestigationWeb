@@ -56,6 +56,14 @@
         <span>Always show grid in Edit mode</span>
       </label>
     </div>
+
+    <div class="group">
+      <label class="row">
+        <span style="flex:1">Staging zone width (px)</span>
+        <input class="num" type="number" min="40" max="400" step="2" :value="s.stashZoneWidth" @change="setNum('stashZoneWidth', $event)" />
+      </label>
+      <p class="hint muted">Right-side drop zone for moving nodes into Staging.</p>
+    </div>
   </div>
 </template>
 

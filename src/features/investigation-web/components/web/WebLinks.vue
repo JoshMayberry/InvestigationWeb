@@ -10,14 +10,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, inject } from "vue";
-import { RUNTIME_KEY } from "../../context/runtime";
+import { defineComponent } from "vue";
+import { useInvestigationWebStore } from "../../stores/web";
 import { getLinkType } from "../links/registry";
 
 export default defineComponent({
   name: "WebLinks",
-  data(){ return { runtime: inject(RUNTIME_KEY, null) as any }; },
-  computed:{ store(): any { return this.runtime?.store; } },
+  data(){ return { store: useInvestigationWebStore() }; },
   methods:{ getType(t:string){ return getLinkType(t); } }
 });
 </script>

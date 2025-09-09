@@ -1,11 +1,12 @@
 import { computed, inject } from "vue";
+import { useInvestigationWebStore } from "../../stores/web";
 import { RUNTIME_KEY } from "../../context/runtime";
 
 export function useLinkCommon() {
   const runtime: any = inject(RUNTIME_KEY, null);
-  const store = computed(() => runtime?.store);
-  const nodes = computed<any[]>(() => store.value?.nodes || []);
-  const settings = computed<any>(() => store.value?.settings || {});
+  const store = useInvestigationWebStore();
+  const nodes = computed<any[]>(() => store.nodes || []);
+  const settings = computed<any>(() => store.settings || {});
   const selection = computed<any>(() => runtime?.controllers?.selection);
   const hover = computed<any>(() => runtime?.controllers?.hover);
 
@@ -19,7 +20,7 @@ export function useLinkCommon() {
   function isSel(id: string) { return selection.value?.id === id; }
   function isHover(id: string) { return hover.value?.id === id; }
   function onLinkPointerDown(id: string) {
-    if (store.value?.tools?.addLink) return;
+    if (store?.tools?.addLink) return;
     selection.value?.set?.(id);
   }
   function onEnter(id: string) { hover.value?.set?.(id); }

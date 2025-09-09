@@ -17,7 +17,7 @@
       </defs>
 
       <GridOverlay
-        :show="policy.canEditStructure && settings.enableGrid && (settings.gridAlwaysVisible || gridActive)"
+        :show="showGrid"
         :gridSize="settings.gridSize || 16"
       />
 
@@ -101,18 +101,30 @@ export default defineComponent({
     filteredIdsSet(): Set<string> { return this.store.filteredIdSet; },
     filtersActive(): boolean { return this.store.filtersActive; },
     discoveryVisibleSet(): Set<string> { return this.store.visibleByDiscoveryIdSet; },
-    discoveryPreviewActive(): boolean { return !!(this.runtime?.policy?.canDiscover); },
+    discoveryPreviewActive(): boolean { return !!this.store.policy?.canDiscover; },
     settings(): any { return this.store.settings; },
-    policy(): any { return this.runtime?.policy || this.store.policy; },
+    policy(): any { return this.store.policy; },
     dragGhost(): any { return this.runtime?.controllers?.drag?.ghost; },
     placingMode(): string { return this.runtime?.controllers?.nodePlacement?.activeMode?.() || "none"; },
+    currentMode(): string {
+      return this.store?.currentMode || "view";
+    },
     gridActive(): boolean {
       const placing = this.placingMode === "add-free";
       const draggingNode = this.dragGhost?.mode === "drag-node";
       const trackPlacing = this.store.tools.addTrack || !!this.runtime?.controllers?.trackPlacement?.ghost?.active;
       const draggingTrack = ["drag-track","drag-track-end"].includes(this.store.currentEditState);
-      const settingsPanelOpen = !!this.store.panels?.settingsOpen;
-      return settingsPanelOpen || placing || draggingNode || trackPlacing || draggingTrack || !!this.settings.gridAlwaysVisible;
+      // const settingsPanelOpen = !!this.store.panels?.settingsOpen;
+      // return settingsPanelOpen || placing || draggingNode || trackPlacing || draggingTrack || !!this.settings.gridAlwaysVisible;
+      // Interaction-driven activation during editing
+      return placing || draggingNode || trackPlacing || draggingTrack || !!this.settings.gridAlwaysVisible;
+    },
+    showGrid(): boolean {
+      if (!this.settings.enableGrid) return false;
+      // Always show in Settings mode
+      if (this.currentMode === "setting") return true;
+      // Otherwise, only when editing and active/forced
+      return !!this.policy.canEditStructure && (this.settings.gridAlwaysVisible || this.gridActive);
     },
     showTooltip(): boolean {
       const lp = this.runtime?.controllers?.linkPlacement;

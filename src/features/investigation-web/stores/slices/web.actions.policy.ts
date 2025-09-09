@@ -1,3 +1,5 @@
+import type { UIMode } from "../../types/mode";
+
 export const policyActions = {
   setCurrentEditState(this:any, s: "none" | "add-free-node" | "add-link" | "place-stashed-node" | "drag-free-node" | "edit-selected-node") {
     this.currentEditState = s;
@@ -47,5 +49,10 @@ export const policyActions = {
   setPanelOpen(this:any, key: "settings", on: boolean) {
     if (!this.panels) this.panels = { settingsOpen: false };
     if (key === "settings") this.panels.settingsOpen = !!on;
+  },
+
+  // NEW: app-wide UI mode (left drawer)
+  setMode(this:any, mode: UIMode) {
+    this.currentMode = mode; // ensure state has currentMode; default set from page init
   },
 };

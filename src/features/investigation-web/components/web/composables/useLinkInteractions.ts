@@ -12,7 +12,7 @@ export function useLinkInteractions({ runtime, store }:{ runtime:any; store:any 
   }
 
   function onClick(e:MouseEvent): boolean {
-    if (!runtime?.policy?.canEditStructure) return false;
+    if (!store?.policy?.canEditStructure) return false;
     if (!store.tools.addLink) return false;
 
     const lp = runtime.controllers.linkPlacement;

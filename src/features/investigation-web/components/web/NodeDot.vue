@@ -65,6 +65,7 @@ import { defineComponent, inject } from "vue";
 import type { NodeAny } from "../../types/node";
 import { RUNTIME_KEY } from "../../context/runtime";
 import { useInvestigationWebStore } from "../../stores/web";
+import { projectPointToTrack } from "../../stores/util/trackGeometry"; // ADDED
 
 const MOVE_THRESHOLD = 3;
 
@@ -77,11 +78,18 @@ export default defineComponent({
   data(){
     return {
       runtime: null as any,
-      store: useInvestigationWebStore(), // NEW
+      store: useInvestigationWebStore(),
       pointerDown:false,
       moved:false,
       startClient:{ x:0, y:0 },
       wasSelectedAtDragStart: false,
+      snapDragging: false,
+      snapDragTrack: null as any,
+      snapDragT: 0,
+      // added placeholders used during snap drag
+      storeRef: null as any,
+      view: null as any,
+      thresh: () => 32
     };
   },
   computed:{
@@ -146,13 +154,32 @@ export default defineComponent({
       const dy = e.clientY - this.startClient.y;
       if (!this.moved && (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD)) {
         this.moved = true;
-        this.store?.setCurrentEditState?.("drag-free-node");
-        // Preserve selection state; dragging shouldn’t change it
+        if (this.node.kind === "snap") {
+          this.store?.setCurrentEditState?.("drag-snap-node");
+        } else {
+          this.store?.setCurrentEditState?.("drag-free-node");
+        }
         this.wasSelectedAtDragStart = this.isSelected;
         this.dragCtrl?.startNode(this.node.id, {
           x:this.node.x, y:this.node.y, r:this.node.r,
           color:this.node.color, label:this.node.label
         });
+        // Snap validator only for snap nodes
+        if (this.node.kind === "snap") {
+          this.storeRef = this.store;
+          this.view = this.viewCtrl;
+          this.thresh = () => this.storeRef.settings.snapPlacementThreshold || this.storeRef.settings.slideTrackThreshold || 32;
+          this.dragCtrl?.setValidator((g:any)=>{
+            let best = Infinity;
+            for (const t of this.storeRef.tracks){
+              const proj = projectPointToTrack(t, g.x, g.y);
+              if (proj.dist < best) best = proj.dist;
+            }
+            return { valid: best <= this.thresh() };
+          });
+        } else {
+          this.dragCtrl?.setValidator(()=>({ valid:true }));
+        }
       }
       if (this.moved){
         this.dragCtrl?.updatePointer(e.clientX, e.clientY);
@@ -200,6 +227,36 @@ export default defineComponent({
       const id = this.node.id;
       const before = { x: this.node.x, y: this.node.y };
       const after = { x: ghost.x, y: ghost.y };
+      // INSERT inside onUp before undo push for snap nodes:
+      if (this.node.kind === "snap"){
+        const afterPos = { x: ghost.x, y: ghost.y };
+        let proj = null as any;
+        for (const t of this.store.tracks){
+          const p = projectPointToTrack(t, afterPos.x, afterPos.y);
+            if (!proj || p.dist < proj.dist) proj = { ...p, track: t };
+        }
+        if (proj){
+          const segCount = Math.max(1, (proj.track.segments||1));
+          const segIdx = Math.min(segCount-1, Math.floor(proj.t * segCount));
+          this.node.trackSegment = segIdx;
+          
+          const moveThresh = 64;
+          const oldTrack = this.node.trackId;
+          const newTrack = proj.track.id;
+          if (newTrack !== oldTrack && proj.dist <= moveThresh){
+            this.node.trackId = newTrack;
+            this.store._recalcSnapTrackLayout(oldTrack);
+            this.store._recalcSnapTrackLayout(newTrack, proj.t, this.node.id);
+          } else {
+            this.store._recalcSnapTrackLayout(oldTrack, proj.t, this.node.id);
+          }
+        }
+        // keep selection if it was selected at start
+        if (this.wasSelectedAtDragStart) this.selCtrl?.set(this.node.id);
+        this.dragCtrl?.cancel();
+        this.store?.setCurrentEditState?.("edit-selected-node");
+        return;
+      }
       this.runtime.controllers.undo.push({
         label: "move-node",
         _coalesceKey: `move-node:${id}`,
@@ -209,19 +266,36 @@ export default defineComponent({
         undo: () => this.store?.patchNode?.(id, before)
       });
       this.dragCtrl?.cancel();
+      if (this.wasSelectedAtDragStart) {
+        this.selCtrl?.set(this.node.id);
+        this.store.suppressClearSelectionUntil = Date.now() + 150;
+      }
       this.store?.setCurrentEditState?.(this.wasSelectedAtDragStart ? "edit-selected-node" : "none");
     },
     onEsc(e:KeyboardEvent){
       if (e.key === "Escape"){
         this.dragCtrl?.cancel();
+        this.dragCtrl?.setValidator(()=>({ valid:true }));
         this.store?.setCurrentEditState?.("none");
         this.cleanup();
       }
+    },
+    projectT(ev:PointerEvent, track:any){
+      const w = this.viewCtrl.worldFromClient(ev.clientX, ev.clientY);
+      const dx = track.p2.x - track.p1.x;
+      const dy = track.p2.y - track.p1.y;
+      const len2 = dx*dx + dy*dy || 1;
+      let t = ((w.x - track.p1.x)*dx + (w.y - track.p1.y)*dy)/len2;
+      if (t < 0) t = 0; else if (t > 1) t = 1;
+      return t;
     },
     cleanup(){
       this.pointerDown = false;
       window.removeEventListener("pointermove", this.onMove);
       window.removeEventListener("keydown", this.onEsc);
+      if (this.snapDragging){
+        window.removeEventListener("pointermove", this.onSnapMove);
+      }
     }
   }
 });

@@ -201,7 +201,10 @@ export default defineComponent({
       // background clears selection
       const el = e.target as Element | null;
       const isBg = !el || (!el.closest(".node") && !el.closest(".track") && !el.closest(".link"));
-      if (isBg) this.runtime?.controllers?.selection?.clear?.();
+      if (isBg) {
+        if (Date.now() < (this.store.suppressClearSelectionUntil || 0)) return; // suppress after drag
+        this.runtime?.controllers?.selection?.clear?.();
+      }
     },
     _onMove(e: PointerEvent){
       this._tracks.onPointerMove(e);

@@ -2,7 +2,8 @@
   <div class="add-panel">
     <h3 class="title">Add</h3>
     <div class="row">
-      <button class="btn" :class="{ active: store.tools.addFreeNode }" @click="toggleFree">Add Node</button>
+      <button class="btn" :class="{ active: store.tools.addFreeNode }" @click="toggleFree">Add Free Node</button>
+      <button class="btn" :class="{ active: store.tools.addSnapNode }" @click="toggleSnap">Add Snap Node</button>
       <button class="btn" :class="{ active: store.tools.addLink }" @click="toggleLink">Add Link</button>
       <button class="btn" :class="{ active: store.tools.addTrack }" @click="toggleTrack">Add Track</button>
     </div>
@@ -28,37 +29,50 @@ export default defineComponent({
   methods:{
     toggleFree(){
       const on = !this.store.tools.addFreeNode;
+      this.runtime?.controllers?.linkPlacement?.cancel();
       this.store.setAddFreeNode(on);
-      if (on) {
-        // Cancel any active link ghost when switching tools
-        this.runtime?.controllers.linkPlacement.cancel();
+      if (on){
+        this.store.setAddSnapNode(false);
         this.store.setAddLink(false);
+        this.store.setAddTrack(false);
         this.store.setPlaceStaged(null);
-        this.runtime?.controllers.selection.clear();
+        this.store.setPlaceStagedSnap(null);
+      }
+    },
+    toggleSnap(){
+      const on = !this.store.tools.addSnapNode;
+      this.runtime?.controllers?.linkPlacement?.cancel();
+      this.store.setAddSnapNode(on);
+      if (on){
+        this.store.setAddFreeNode(false);
+        this.store.setAddLink(false);
+        this.store.setAddTrack(false);
+        this.store.setPlaceStaged(null);
+        this.store.setPlaceStagedSnap(null); // resets staged snap toggle first
       }
     },
     toggleLink(){
       const on = !this.store.tools.addLink;
-      // Always cancel current ghost so we restart fresh if re-enabled
       this.runtime?.controllers?.linkPlacement?.cancel();
       this.store.setAddLink(on);
-      if (on) {
+      if (on){
         this.store.setAddFreeNode(false);
+        this.store.setAddSnapNode(false);
         this.store.setAddTrack(false);
         this.store.setPlaceStaged(null);
-        this.runtime?.controllers?.selection?.clear?.();
+        this.store.setPlaceStagedSnap(null);
       }
     },
     toggleTrack(){
       const on = !this.store.tools.addTrack;
       this.store.setAddTrack(on);
-      if (on) {
-        // Cancel any active link ghost when switching tools
+      if (on){
         this.runtime?.controllers.linkPlacement.cancel();
         this.store.setAddFreeNode(false);
+        this.store.setAddSnapNode(false);
         this.store.setAddLink(false);
         this.store.setPlaceStaged(null);
-        this.runtime?.controllers.selection.clear();
+        this.store.setPlaceStagedSnap(null);
       }
     }
   }

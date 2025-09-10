@@ -39,6 +39,15 @@
       <span class="pill">{{ padVal }}</span>
     </label>
 
+    <!-- Connected Nodes -->
+    <div class="block-title sm">Nodes</div>
+    <div class="pill-row" v-if="linkNodes.length">
+      <span class="pill hdr">From</span>
+      <button v-if="linkNodes[0]" class="pill link" @click="selectNode(linkNodes[0].id)">{{ linkNodes[0].id }}</button>
+      <span class="pill hdr">To</span>
+      <button v-if="linkNodes[1]" class="pill link" @click="selectNode(linkNodes[1].id)">{{ linkNodes[1].id }}</button>
+    </div>
+
     <!-- Type-specific editor (small and isolated) -->
     <component
       v-if="typeDef.editor"
@@ -56,7 +65,7 @@ import { defineComponent, inject, computed } from "vue";
 import { useInvestigationWebStore } from "../../../stores/web";
 import type { InvestigationRuntime } from "../../../context/runtime";
 import { RUNTIME_KEY } from "../../../context/runtime";
-import { getLinkType, listLinkTypes } from "../../links/registry";
+import { getPathType, listPathTypes } from "../../paths/registry";
 
 export default defineComponent({
   name: "EditPageLink",
@@ -81,17 +90,25 @@ export default defineComponent({
       if (!id) return null;
       return this.store.links.find((l:any)=> l.id === id) || null;
     },
-    typeList(): { id:string; label:string }[] { return listLinkTypes().map(t => ({ id:t.id, label:t.label })); },
+    typeList(): { id:string; label:string }[] { return listPathTypes().map(t => ({ id:t.id, label:t.label })); },
     typeVal(): string {
       return this.mode==='draft'
         ? (this.store.linkDraft.type ?? 'straight')
         : (this.link?.type || 'straight');
     },
-    typeDef(): any { return getLinkType(this.typeVal); },
+    typeDef(): any { return getPathType(this.typeVal); },
     colorVal(): string { return this.mode==='draft' ? (this.store.linkDraft.color || "#93c5fd") : (this.link?.color || "#93c5fd"); },
     strokeVal(): string { return this.mode==='draft' ? (this.store.linkDraft.stroke || "solid") : (this.link?.stroke || "solid"); },
     arrowVal(): boolean { return this.mode==='draft' ? !!this.store.linkDraft.arrowHead : !!this.link?.arrowHead; },
     padVal(): number { return this.mode==='draft' ? (this.store.linkDraft.pad || 0) : (this.link?.pad || 0); },
+    linkNodes(): any[] {
+      if (this.mode === 'draft') return [];
+      if (!this.link) return [];
+      return [
+        this.store.nodes.find((n:any)=> n.id === this.link.from) || null,
+        this.store.nodes.find((n:any)=> n.id === this.link.to) || null
+      ];
+    }
   },
   methods:{
     onId(next:string){
@@ -102,7 +119,7 @@ export default defineComponent({
     },
     onType(next:string){
       if (this.mode === "draft"){
-        const def = getLinkType(next);
+        const def = getPathType(next);
         const defaults = def.defaults || {};
         this.store.setLinkDraft({ type: next, ...defaults } as any);
         return;
@@ -135,6 +152,7 @@ export default defineComponent({
         undo: ()=> this.store.patchLink(id, { [key]: before } as any),
       });
     },
+    selectNode(id:string){ this.selection?.set?.(id); }
   }
 });
 </script>
@@ -162,4 +180,16 @@ label > span { font-size:12px; color: var(--muted); }
 .muted.small { font-size:11px; color: var(--muted); }
 :deep(select.sel) { background:#0f172a; color:var(--text); border-color:rgba(255,255,255,0.2); }
 :deep(select.sel option) { background:#0f172a; color:var(--text); }
+.pill-row { display:flex; align-items:center; gap:8px; }
+.pill.hdr { opacity:.6; font-size:12px; }
+.pill.link {
+  flex:1;
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  color: var(--text);
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:12px;
+  cursor:pointer;
+}
 </style>

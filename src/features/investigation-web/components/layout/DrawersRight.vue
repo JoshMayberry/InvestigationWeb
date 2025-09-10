@@ -40,16 +40,12 @@ export default defineComponent({
     dragging(){ return !!this.runtime?.controllers?.drag?.isActive?.(); }
   },
   mounted(){
-    // When the drawer closes (leaving edit mode), clear all add tools and cancel ghost
-    this.$watch(() => this.open, (on:boolean) => {
-      if (on) return;
-      this.runtime?.controllers?.linkPlacement?.cancel?.();
-      this.store.setAddLink(false);
-      this.store.setAddTrack(false);
-      this.store.setAddFreeNode(false);
-      this.store.setEditDefaults(false);
-      this.store.setPlaceStaged(null);
-    });
+    this.$watch(()=> this.open, (on)=>{
+      if (!on) {
+        this.store.resetTools();
+        this.runtime?.controllers?.linkPlacement?.cancel?.();
+      }
+    }, { immediate:true });
   },
   methods:{
     enter(el:Element, done:()=>void){

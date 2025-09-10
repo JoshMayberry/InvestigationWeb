@@ -2,7 +2,7 @@
   <div class="staging-root staging-panel">
     <div class="head">
       <h3>Staging ({{ store.staging.length }})</h3>
-      <button class="mini" @click="add">+ Free Node</button>
+      <button class="mini" @click="add">+ Node</button>
     </div>
     <p v-if="!store.staging.length" class="muted small">Drag nodes here to stash them.</p>
     <ul class="list">
@@ -14,7 +14,12 @@
             class="place"
             :class="{ on: store.tools.placeStagedId === n.id }"
             @click="togglePlace(n.id)"
-          >{{ store.tools.placeStagedId === n.id ? 'Cancel' : 'Place' }}</button>
+          >{{ store.tools.placeStagedId === n.id ? 'Cancel' : 'Place Free' }}</button>
+          <button
+            class="place"
+            :class="{ on: store.tools.placeStagedSnapId === n.id }"
+            @click="togglePlaceSnap(n.id)"
+          >{{ store.tools.placeStagedSnapId === n.id ? 'Cancel' : 'Place Snap' }}</button>
           <button class="del" @click="del(n.id)">×</button>
         </div>
       </li>
@@ -44,6 +49,10 @@ export default defineComponent({
     togglePlace(id:string){
       if (this.store.tools.placeStagedId === id) this.store.setPlaceStaged(null);
       else this.store.setPlaceStaged(id);
+    },
+    togglePlaceSnap(id:string){
+      if (this.store.tools.placeStagedSnapId === id) this.store.setPlaceStagedSnap(null);
+      else this.store.setPlaceStagedSnap(id);
     }
   }
 });

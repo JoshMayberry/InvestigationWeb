@@ -16,9 +16,9 @@ export interface NodeFree extends NodeBase {
 export interface NodeSnap extends NodeBase {
     kind: 'snap'
     trackId: string
-    trackPosition: number // track position
-    x: number // computed
-    y: number // computed
+    trackOrder: number
+    trackPosition: number
+    trackSegment?: number   // NEW explicit segment index (0-based)
 };
 export type NodeAny = NodeFree | NodeSnap;
 

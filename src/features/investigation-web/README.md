@@ -72,3 +72,6 @@
     3. Add svg tracks that follow the lines in an SVG to lay out a track
 5. GM/Player Sync
     1. Work on making the Player view (another tab) sync with the GM view.
+6. Details
+    1. A node's label should be able to be repositiond
+    2. Simulation nodes that decide where they go on their own.

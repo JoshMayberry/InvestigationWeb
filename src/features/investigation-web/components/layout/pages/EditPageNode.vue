@@ -62,6 +62,24 @@
       </div>
     </template>
 
+    <!-- Track + Snap Neighbors (only for snap nodes) -->
+    <template v-if="mode==='selected' && node && node.kind==='snap'">
+      <div class="block-title sm">Track</div>
+      <div class="pill-row">
+        <span class="pill hdr">Track</span>
+        <button class="pill link" @click="selectTrack(node.trackId)">{{ node.trackId }}</button>
+      </div>
+      <div class="pill-row" v-if="mode==='selected' && node && node.kind==='snap' && track">
+        <span class="pill hdr">Segment</span>
+        <select class="sel small"
+          :value="(node.trackSegment ?? inferSegment)"
+          @change="changeSegment(($event.target as HTMLSelectElement).value)"
+          :disabled="(track.segments||1)===1">
+          <option v-for="s in track.segments || 1" :key="s-1" :value="s-1">#{{ s }}</option>
+        </select>
+      </div>
+    </template>
+
     <div v-if="mode==='selected'" class="actions">
       <button class="secondary" @click="setAsDefaults">Set As Default</button>
       <button class="danger" @click="deleteNode">Delete</button>
@@ -104,6 +122,15 @@ export default defineComponent({
     },
     incomingLinks(): any[] { return this.mode==='selected' && this.node ? this.store.links.filter((l:any)=>l.to===this.node.id) : []; },
     outgoingLinks(): any[] { return this.mode==='selected' && this.node ? this.store.links.filter((l:any)=>l.from===this.node.id) : []; },
+    track(): any | null {
+      if (!this.node || this.node.kind !== 'snap') return null;
+      return this.store.tracks.find((t:any)=> t.id === this.node.trackId) || null;
+    },
+    inferSegment(): number {
+      if (!this.node || this.node.kind!=='snap' || !this.track) return 0;
+      const segs = Math.max(1, this.track.segments||1);
+      return Math.min(segs-1, Math.floor(this.node.trackPosition * segs));
+    },
   },
   methods:{
     onId(next:string){
@@ -178,6 +205,13 @@ export default defineComponent({
     },
     duplicateNode(){ if (this.node) this.store.duplicateNodeToStaging(this.node.id); },
     selectLink(id:string){ this.selection?.set(id); },
+    selectTrack(id:string){ this.selection?.set(id); },
+    selectNode(id:string){ this.selection?.set(id); },
+    changeSegment(v:string){
+      if (!this.node || this.node.kind!=='snap' || !this.track) return;
+      const seg = Math.max(0, Math.min((this.track.segments||1)-1, Number(v)|0));
+      this.store.setSnapNodeSegment(this.node.id, seg);
+    },
   }
 });
 </script>

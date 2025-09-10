@@ -64,6 +64,34 @@
       </label>
       <p class="hint muted">Right-side drop zone for moving nodes into Staging.</p>
     </div>
+
+    <div class="group">
+      <label class="row">
+        <input type="checkbox" :checked="s.slideAlongTracks" @change="set('slideAlongTracks', $event)" />
+        <span>Free nodes slide along nearby tracks</span>
+      </label>
+      <div class="row" v-if="s.slideAlongTracks">
+        <span style="flex:1">Slide threshold (px)</span>
+        <input class="num" type="number" min="4" max="120" step="2"
+          :value="s.slideTrackThreshold"
+          @change="setNum('slideTrackThreshold', $event)" />
+      </div>
+      <p class="hint muted" v-if="s.slideAlongTracks">When dragging a free node within this distance, its position projects onto the closest track.</p>
+    </div>
+
+    <div class="group">
+      <label class="row">
+        <input type="checkbox" :checked="s.snapPreviewLayout" @change="set('snapPreviewLayout', $event)" />
+        <span>Snap node live layout preview</span>
+      </label>
+      <div class="row">
+        <span style="flex:1">Snap placement threshold (px)</span>
+        <input class="num" type="number" min="4" max="160" step="2"
+          :value="s.snapPlacementThreshold"
+          @change="setNum('snapPlacementThreshold', $event)" />
+      </div>
+      <p class="hint muted">Distance within which a snap node (add/drag) is considered on a track. When enabled, live preview repositions existing snap nodes on that track.</p>
+    </div>
   </div>
 </template>
 

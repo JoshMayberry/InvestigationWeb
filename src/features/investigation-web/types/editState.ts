@@ -1,10 +1,13 @@
 export type CurrentEditState =
   | "none"
   | "add-free-node"
+  | "add-snap-node"
   | "add-link"
   | "add-track"
   | "place-stashed-node"
+  | "place-stashed-snap-node"
   | "drag-free-node"
+  | "drag-snap-node"
   | "drag-track"
   | "drag-track-end"
   | "edit-selected-node";

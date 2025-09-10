@@ -2,10 +2,13 @@ import type { Bonus } from "./bonus";
 import type { NodeAny } from "./node";
 
 export type Snapshot = {
-  version: 3;
+  version: 4;
   nodes: any[];
   staging: any[];
   bonuses: any[];
+  tracks: any[];
+  trackSeq?: number;
+  trackDraft?: any;
   meta?: {
     savedAt?: string;
     note?: string;
@@ -21,8 +24,9 @@ export type Snapshot = {
 
 export function isSnapshot(x: any): x is Snapshot {
   return !!x &&
-    x.version === 3 &&
+    x.version === 4 &&
     Array.isArray(x.nodes) &&
     Array.isArray(x.staging) &&
+    Array.isArray(x.tracks) &&
     Array.isArray(x.bonuses);
 }

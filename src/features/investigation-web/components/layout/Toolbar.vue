@@ -55,20 +55,20 @@ export default defineComponent({
     hint(): string {
       const state = this.store.currentEditState;
       switch (state) {
-        case "add-link": return "Add Link: click first node, then second. Hold Shift to keep adding";
-        case "add-free-node": return "Add Node: click to place. Hold Shift to keep adding";
-        case "place-stashed-node": return "Placing staged node: click to place";
-        case "drag-free-node": return "Dragging node";
+        case "add-link": return "Add Link: click first node, then second. Shift = keep adding";
+        case "add-free-node": return "Add Free Node: click to place. Shift = keep adding";
+        case "add-snap-node": return "Add Snap Node: click a track to insert evenly. Shift = keep adding";
+        case "place-stashed-node": return "Place Staged Free Node: click to place";
+        case "place-stashed-snap-node": return "Place Staged Snap Node: click a track to insert";
+        case "drag-free-node": return "Dragging free node. Alt = ignore grid";
+        case "drag-snap-node": return "Reordering snap node along track";
+        case "add-track": return "Add Track: click start, click end. Ctrl = 15° snap. Shift = keep. Alt = ignore grid";
+        case "drag-track-end": return "Dragging track endpoint. Alt = ignore grid";
+        case "drag-track": return "Dragging track. Alt = ignore grid";
         case "edit-selected-node":
           return this.runtime?.controllers?.selection.get()
             ? `Selected: ${this.runtime?.controllers?.selection.get()}`
             : "Edit";
-        case "add-track": return "Click to place p1, then click to place p2. Hold Ctrl to snap to 15°. Hold Shift to keep adding. Hold Alt to ignore grid.";
-        case "drag-track-end": return "Dragging track endpoint. Hold Alt to ignore grid.";
-        case "drag-track": return "Dragging whole track. Hold Alt to ignore grid.";
-        case "add-free-node": return "Click to place node. Hold Shift to keep adding. Hold Alt to ignore grid.";
-        case "drag-free-node": return "Dragging node. Hold Alt to ignore grid.";
-
         default:
           return this.store.policy.canEditStructure ? "Click a node to select" : "View mode";
       }

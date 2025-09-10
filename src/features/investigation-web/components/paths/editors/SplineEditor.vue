@@ -33,82 +33,97 @@
 import { defineComponent, inject } from "vue";
 import { useInvestigationWebStore } from "../../../stores/web";
 import { RUNTIME_KEY } from "../../../context/runtime";
-
 export default defineComponent({
-  name: "SplineEditor",
-  props: { mode: { type:String, required:true }, link: { type:Object, required:false } },
+  name:"SplineEditor",
+  props:{ mode:{type:String,required:true}, link:{type:Object,required:false}, track:{type:Object,required:false} },
   data(){ return { store: useInvestigationWebStore(), runtime: inject(RUNTIME_KEY, null) as any }; },
   computed:{
-    ctrlDraft(): any[] { return this.store.linkDraft.controls ?? []; },
-    ctrls(): {t:number; off:number}[] {
+    isTrack(): boolean { return !!this.track; },
+    targetId(): string | null { return this.isTrack ? (this.track as any)?.id : (this.link as any)?.id || null; },
+    ctrlDraft(): any[] { return this.isTrack ? (this.store.trackDraft.controls??[]) : (this.store.linkDraft.controls??[]); },
+    ctrls(): any[] {
       if (this.mode==='draft') return this.ctrlDraft;
-      if (!this.link || (this.link as any).type!=='spline') return [];
-      return (this.link as any).controls || [];
+      if (!this.targetId) return [];
+      return this.isTrack ? ((this.track as any).controls||[]) : ((this.link as any).controls||[]);
     },
     tension(): number {
-      if (this.mode==='draft') return this.store.linkDraft.tension ?? 0.25;
-      if ((this.link as any)?.type==='spline') return (this.link as any).tension ?? 0.25;
-      return 0.25;
+      if (this.mode==='draft') return this.isTrack ? (this.store.trackDraft.tension ?? 0.25) : (this.store.linkDraft.tension ?? 0.25);
+      return this.isTrack ? ((this.track as any).tension ?? 0.25): ((this.link as any).tension ?? 0.25);
     },
     undo(): any { return this.runtime?.controllers?.undo; },
   },
   methods:{
     num(v:any){ return Number(v); },
+    setDraft(patch:any){
+      if (this.isTrack) this.store.setTrackDraft(patch); else this.store.setLinkDraft(patch);
+    },
+    patchItem(id:string, patch:any){
+      if (this.isTrack) this.store.patchTrack(id, patch); else this.store.patchLink(id, patch);
+    },
     set(key:'tension', val:number){
-      if (this.mode==='draft'){ this.store.setLinkDraft({ [key]: val } as any); return; }
-      const id = (this.link as any)?.id; if (!id) return;
-      const before = (this.link as any)[key]; const after = val;
-      this.undo.push({ label:`spline-${key}`, _coalesceKey:`spline:${id}:${key}`, before:{ [key]:before }, after:{ [key]:after },
-        do:()=> this.store.patchLink(id, { [key]: after }), undo:()=> this.store.patchLink(id, { [key]: before }) });
+      if (this.mode==='draft'){ this.setDraft({ [key]: val }); return; }
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = { [key]: this.tension };
+      const after = { [key]: val };
+      this.undo.push({ label:`spline-${key}`, _coalesceKey:`spline:${id}:${key}`, before, after,
+        do:()=> this.patchItem(id, after), undo:()=> this.patchItem(id, before) });
+      this.patchItem(id, after);
     },
     addCtrl(){
       if (this.mode==='draft'){
-        const arr = (this.store.linkDraft.controls ?? []).slice();
-        arr.push({ t: 50, off: 0 });
-        this.store.setLinkDraft({ controls: arr }); return;
+        const arr = this.ctrlDraft.slice(); arr.push({ t:50, off:0 }); this.setDraft({ controls: arr }); return;
       }
-      const id = (this.link as any)?.id; if (!id) return;
-      const before = ((this.link as any).controls || []).slice();
-      const after = [...before, { t: 50, off: 0 }];
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = this.ctrls.slice();
+      const after = [...before, { t:50, off:0 }];
       this.undo.push({ label:"spline-add-ctrl", before:{ controls: before }, after:{ controls: after },
-        do:()=> this.store.patchLink(id, { controls: after }),
-        undo:()=> this.store.patchLink(id, { controls: before }) });
+        do:()=> this.patchItem(id, { controls: after }),
+        undo:()=> this.patchItem(id, { controls: before }) });
+      this.patchItem(id, { controls: after });
     },
     removeCtrl(i:number){
       if (this.mode==='draft'){
-        const arr = (this.store.linkDraft.controls ?? []).slice();
-        arr.splice(i,1);
-        this.store.setLinkDraft({ controls: arr }); return;
+        const arr = this.ctrlDraft.slice(); arr.splice(i,1); this.setDraft({ controls: arr }); return;
       }
-      const id = (this.link as any)?.id; if (!id) return;
-      const before = ((this.link as any).controls || []).slice(); const after = before.slice(); after.splice(i,1);
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = this.ctrls.slice();
+      const after = before.slice(); after.splice(i,1);
       this.undo.push({ label:"spline-remove-ctrl", before:{ controls: before }, after:{ controls: after },
-        do:()=> this.store.patchLink(id, { controls: after }),
-        undo:()=> this.store.patchLink(id, { controls: before }) });
+        do:()=> this.patchItem(id, { controls: after }),
+        undo:()=> this.patchItem(id, { controls: before }) });
+      this.patchItem(id, { controls: after });
     },
     clearCtrls(){
-      if (this.mode==='draft'){ this.store.setLinkDraft({ controls: [] }); return; }
-      const id = (this.link as any)?.id; if (!id) return;
-      const before = ((this.link as any).controls || []).slice(); const after:any[] = [];
+      if (this.mode==='draft'){ this.setDraft({ controls: [] }); return; }
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = this.ctrls.slice();
+      const after:any[] = [];
       this.undo.push({ label:"spline-clear-ctrls", before:{ controls: before }, after:{ controls: after },
-        do:()=> this.store.patchLink(id, { controls: after }),
-        undo:()=> this.store.patchLink(id, { controls: before }) });
+        do:()=> this.patchItem(id, { controls: after }),
+        undo:()=> this.patchItem(id, { controls: before }) });
+      this.patchItem(id, { controls: after });
     },
     setCtrl(i:number, key:'t'|'off', v:number){
       if (this.mode==='draft'){
-        const arr = (this.store.linkDraft.controls ?? []).slice();
+        const arr = this.ctrlDraft.slice();
         const cur = arr[i] ?? { t:50, off:0 };
         arr[i] = { ...cur, [key]: v };
-        this.store.setLinkDraft({ controls: arr });
+        this.setDraft({ controls: arr });
         return;
       }
-      const id = (this.link as any)?.id; if (!id) return;
-      const before = ((this.link as any).controls || []).slice();
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = this.ctrls.slice();
       const after = before.slice();
       after[i] = { ...after[i], [key]: v };
       this.undo.push({ label:"spline-edit-ctrl", _coalesceKey:`spline:${id}:${i}:${key}`, before:{ controls: before }, after:{ controls: after },
-        do:()=> this.store.patchLink(id, { controls: after }),
-        undo:()=> this.store.patchLink(id, { controls: before }) });
+        do:()=> this.patchItem(id, { controls: after }),
+        undo:()=> this.patchItem(id, { controls: before }) });
+      this.patchItem(id, { controls: after });
     },
   }
 });

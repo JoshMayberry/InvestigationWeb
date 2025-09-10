@@ -3,6 +3,7 @@
     <NodeDot
       v-for="n in nodes"
       :key="n.id"
+      v-show="!hideWhileDrag(n)"
       :node="n"
       :dim="(filtersActive && !filteredIdsSet.has(n.id)) || (discoveryPreviewActive && !discoveryVisibleSet.has(n.id))"
     />
@@ -21,8 +22,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, inject } from "vue";
 import NodeDot from "./NodeDot.vue";
+import { RUNTIME_KEY } from "../../context/runtime";
 
 export default defineComponent({
   name: "NodeLayer",
@@ -35,9 +37,22 @@ export default defineComponent({
     discoveryPreviewActive: { type: Boolean, required: true },
     discoveryVisibleSet: { type: Object, required: true },
   },
+  data(){
+    return {
+      runtime: inject(RUNTIME_KEY, null) as any
+    };
+  },
+  computed:{
+    dragGhost(): any { return this.runtime?.controllers?.drag?.ghost || null; }
+  },
   methods: {
     paddingRadius(n: any) {
       return (n.r || 14) + (this.settings.nodePadding || 0);
+    },
+    hideWhileDrag(n:any){
+      const g = this.dragGhost;
+      if (!g || !g.active) return false;
+      return g.mode === "drag-node" && g.sourceId === n.id;
     }
   }
 });

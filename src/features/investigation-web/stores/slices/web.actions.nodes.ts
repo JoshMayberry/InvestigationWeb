@@ -1,4 +1,5 @@
 import { newId } from "../util/newId";
+import { projectPointToTrack, pointAtTrackPosition } from "../util/trackGeometry"; // ADDED
 
 export const nodeActions = {
   addNode(this:any, p: any) {
@@ -52,5 +53,115 @@ export const nodeActions = {
     if (i !== -1) { this.nodes.splice(i, 1); this.dirty = true; return; }
     i = this.staging.findIndex((n:any)=> n.id === id);
     if (i !== -1) { this.staging.splice(i, 1); this.dirty = true; }
+  },
+  addSnapNode(this:any, p:{ trackId:string; proto?: any; tHint?: number; segmentHint?: number }) {
+    const base = this.settings.defaultNode;
+    const track = this.tracks.find((t:any)=> t.id===p.trackId);
+    const segCount = Math.max(1, track?.segments || 1);
+    let segIdx = typeof p.segmentHint === "number" ? p.segmentHint : (p.tHint!=null ? Math.min(segCount-1, Math.floor(p.tHint * segCount)) : 0);
+    segIdx = Math.max(0, Math.min(segCount-1, segIdx));
+    const n = {
+      id: p.proto?.id || newId(),
+      kind: "snap",
+      trackId: p.trackId,
+      trackOrder: 0,
+      trackPosition: 0.5,
+      trackSegment: segIdx, // NEW
+      x: 0, y: 0,
+      r: p.proto?.r ?? base.r, color: p.proto?.color ?? base.color, label: p.proto?.label ?? base.label,
+    };
+    this.nodes.push(n);
+    this.dirty = true;
+    this._recalcSnapTrackLayout(p.trackId, p.tHint, n.id, segIdx);
+    return n;
+  },
+  placeSnapFromStaging(this:any, stagedId:string, trackId:string, tHint?:number){
+    const i = this.staging.findIndex((n:any)=> n.id===stagedId);
+    if (i === -1) return null;
+    const [staged] = this.staging.splice(i,1);
+    const snap = this.addSnapNode({ trackId, proto: staged, tHint });
+    this.tools.placeStagedSnapId = null;
+    this.dirty = true;
+    return snap;
+  },
+  setSnapNodeSegment(this:any, id:string, segment:number){
+    const n = this.nodes.find((x:any)=> x.id===id && x.kind==="snap");
+    if (!n) return;
+    const track = this.tracks.find((t:any)=> t.id===n.trackId); if (!track) return;
+    const segs = Math.max(1, track.segments || 1);
+    const clamped = Math.max(0, Math.min(segs-1, segment|0));
+    if (n.trackSegment === clamped) return;
+    n.trackSegment = clamped;
+    this._recalcSnapTrackLayout(n.trackId);
+  },
+  _recalcSnapTrackLayout(this:any, trackId:string, optionalTHint?:number, newIdForHint?:string, newSegmentHint?:number){
+    const track = this.tracks.find((t:any)=> t.id===trackId);
+    if (!track) return;
+    const snaps = this.nodes.filter((n:any)=> n.kind==="snap" && n.trackId===trackId);
+    if (!snaps.length) return;
+    const segCount = Math.max(1, track.segments || 1);
+    // Projection for ordering if needed
+    const projected = snaps.map(n=>{
+      const proj = projectPointToTrack(track, n.x, n.y);
+      return { n, t: proj.t };
+    });
+
+    // Optional override for new node insertion
+    if (optionalTHint!=null && newIdForHint){
+      const target = projected.find(e=> e.n.id===newIdForHint);
+      if (target){
+        target.t = optionalTHint;
+        if (typeof newSegmentHint === "number"){
+          target.n.trackSegment = Math.max(0, Math.min(segCount-1, newSegmentHint));
+        } else {
+          target.n.trackSegment = Math.min(segCount-1, Math.floor(optionalTHint * segCount));
+        }
+      }
+    }
+
+    // Ensure every node has a valid trackSegment
+    for (const e of projected){
+      if (typeof e.n.trackSegment !== "number" || e.n.trackSegment < 0 || e.n.trackSegment >= segCount){
+        e.n.trackSegment = Math.min(segCount-1, Math.floor(e.t * segCount));
+      }
+    }
+
+    // Group by segment
+    const groups: Record<number, typeof projected> = {};
+    for (let i=0;i<segCount;i++) groups[i] = [];
+    for (const e of projected) groups[e.n.trackSegment].push(e);
+
+    let globalOrder = 0;
+    for (let seg=0; seg<segCount; seg++){
+      const list = groups[seg];
+      if (!list.length) continue;
+      // Sort inside segment by t to keep relative ordering
+      list.sort((a,b)=> a.t - b.t);
+      const segT0 = seg / segCount;
+      const segT1 = (seg+1)/segCount;
+      const count = list.length;
+      for (let i=0;i<count;i++){
+        const localPos = (i+1)/(count+1);
+        const pos = segT0 + (segT1 - segT0)*localPos;
+        const pt = pointAtTrackPosition(track, pos);
+        const n = list[i].n;
+        n.trackOrder = globalOrder++;
+        n.trackPosition = pos;
+        n.x = pt.x; n.y = pt.y;
+      }
+    }
+  },
+  recalcAllSnapLayouts(this:any){
+    const trackIds = Array.from(new Set(this.nodes.filter((n:any)=> n.kind==="snap").map((n:any)=> n.trackId)));
+    for (const tid of trackIds) this._recalcSnapTrackLayout(tid);
+  },
+  setSnapGhost(this:any, g: Partial<{ active:boolean; x:number; y:number; trackId:string|null; t:number; valid:boolean; staged:boolean }>) {
+    Object.assign(this.snapPlacement, g);
+  },
+  clearSnapGhost(this:any){
+    this.snapPlacement.active = false;
+    this.snapPlacement.trackId = null;
+    this.snapPlacement.valid = false;
+    this.snapPlacement.staged = false;
   },
 };

@@ -1,50 +1,4 @@
-<template>
-  <g v-if="getNode(l.from) && getNode(l.to)">
-    <path
-      v-if="d"
-      :d="d"
-      class="hit"
-      stroke="rgba(0,0,0,0)"
-      fill="none"
-      :stroke-width="hitWidth"
-      vector-effect="non-scaling-stroke"
-      pointer-events="stroke"
-      @pointerdown.stop="onLinkPointerDown(l.id)"
-      @mouseenter="onEnter(l.id)"
-      @mouseleave="onLeave()"
-    />
-    <path
-      v-if="d"
-      :d="d"
-      :class="{ sel: isSel(l.id), hovered: isHover(l.id) }"
-      :style="{ color: l.color }"
-      stroke="currentColor"
-      fill="none"
-      :stroke-dasharray="dash(l.stroke)"
-      stroke-width="2"
-      stroke-opacity="0.9"
-      vector-effect="non-scaling-stroke"
-      :marker-end="l.arrowHead ? 'url(#iw-arrow-head)' : undefined"
-    />
-  </g>
-</template>
-
-<script lang="ts">
-import { defineComponent, computed } from "vue";
-import { useLinkCommon } from "../common";
-
-export default defineComponent({
-  name: "SpiralCanvas",
-  props: { l: { type: Object, required: true } },
-  setup(props){
-    const c = useLinkCommon();
-    const d = computed(()=> spiralPath(props.l, c.getNode));
-    function dash(s: string) { return s === "dashed" ? "6 4" : (s === "dotted" ? "2 4" : undefined); }
-    return { ...c, d, dash };
-  }
-});
-
-function spiralPath(l:any, getNode:(id:string)=>any): string | null {
+export function spiralPath(l:any, getNode:(id:string)=>any): string | null {
   const a = getNode(l.from); 
   const b = getNode(l.to);
   if (!a || !b) return null;
@@ -101,8 +55,3 @@ function spiralPath(l:any, getNode:(id:string)=>any): string | null {
   for (let i=1;i<pts.length;i++){ d += ` L ${pts[i].x} ${pts[i].y}`; }
   return d;
 }
-</script>
-
-<style scoped>
-.hit { cursor: pointer; }
-</style>

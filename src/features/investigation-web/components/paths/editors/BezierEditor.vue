@@ -39,44 +39,66 @@ import { useInvestigationWebStore } from "../../../stores/web";
 import { RUNTIME_KEY } from "../../../context/runtime";
 export default defineComponent({
   name: "BezierEditor",
-  props: { mode: { type:String, required:true }, link: { type:Object, required:false } },
+  props: { mode:{type:String,required:true}, link:{type:Object,required:false}, track:{type:Object,required:false} },
   data(){ return { store: useInvestigationWebStore(), runtime: inject(RUNTIME_KEY, null) as any }; },
   computed:{
-    beSym(): boolean { return this.mode==='draft' ? !!this.store.linkDraft.symmetric : !!(this.link as any)?.symmetric; },
-    c1(): any { return this.mode==='draft' ? (this.store.linkDraft.c1 ?? { t:25, off:30 }) : ((this.link as any)?.c1 ?? { t:25, off:30 }); },
-    c2(): any { return this.mode==='draft' ? (this.store.linkDraft.c2 ?? { t:75, off:-30 }) : ((this.link as any)?.c2 ?? { t:75, off:-30 }); },
+    isTrack(): boolean { return !!this.track; },
+    targetId(): string | null { return this.isTrack ? (this.track as any)?.id : (this.link as any)?.id || null; },
+    beSym(): boolean {
+      if (this.mode==='draft') return this.isTrack ? !!this.store.trackDraft.symmetric : !!this.store.linkDraft.symmetric;
+      return !!(this.isTrack ? (this.track as any)?.symmetric : (this.link as any)?.symmetric);
+    },
+    c1(): any {
+      const fallback = { t:25, off:30 };
+      if (this.mode==='draft') return (this.isTrack ? this.store.trackDraft.c1 : this.store.linkDraft.c1) ?? fallback;
+      return (this.isTrack ? (this.track as any)?.c1 : (this.link as any)?.c1) ?? fallback;
+    },
+    c2(): any {
+      const fallback = { t:75, off:-30 };
+      if (this.mode==='draft') return (this.isTrack ? this.store.trackDraft.c2 : this.store.linkDraft.c2) ?? fallback;
+      return (this.isTrack ? (this.track as any)?.c2 : (this.link as any)?.c2) ?? fallback;
+    },
     undo(): any { return this.runtime?.controllers?.undo; },
   },
   methods:{
     num(v:any){ return Number(v); },
     bool(v:any){ return !!v; },
+    setDraft(patch:any){
+      if (this.isTrack) this.store.setTrackDraft(patch); else this.store.setLinkDraft(patch);
+    },
+    patchItem(id:string, patch:any){
+      if (this.isTrack) this.store.patchTrack(id, patch); else this.store.patchLink(id, patch);
+    },
     set(key:'symmetric', val:any){
-      if (this.mode==='draft'){ this.store.setLinkDraft({ [key]: val } as any); return; }
-      const id = (this.link as any)?.id; if (!id) return;
-      const before = (this.link as any)[key];
-      const after = val;
-      this.undo.push({ label:`bezier-${key}`, _coalesceKey:`bezier:${id}:${key}`, before:{ [key]:before }, after:{ [key]:after },
-        do:()=> this.store.patchLink(id, { [key]: after }), undo:()=> this.store.patchLink(id, { [key]: before }) });
+      if (this.mode==='draft'){ this.setDraft({ [key]: val }); return; }
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = { [key]: this.beSym };
+      const after = { [key]: val };
+      this.undo.push({ label:`bezier-${key}`, _coalesceKey:`bezier:${id}:${key}`, before, after,
+        do:()=> this.patchItem(id, after), undo:()=> this.patchItem(id, before) });
+      this.patchItem(id, after);
     },
     setC(which:1|2, key:'t'|'off', val:number){
       if (this.mode==='draft'){
-        const patch:any = {};
-        if (which===1) patch.c1 = { ...(this.store.linkDraft.c1 ?? { t:25, off:30 }), [key]: val };
-        else patch.c2 = { ...(this.store.linkDraft.c2 ?? { t:75, off:-30 }), [key]: val };
-        this.store.setLinkDraft(patch);
+        const prop = which===1 ? 'c1':'c2';
+        const base = which===1 ? this.c1 : this.c2;
+        this.setDraft({ [prop]: { ...base, [key]: val } });
         return;
       }
-      const id = (this.link as any)?.id; if (!id) return;
-      const cur = which===1 ? (this.link as any).c1 : (this.link as any).c2;
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const prop = which===1 ? 'c1':'c2';
+      const cur = which===1 ? this.c1 : this.c2;
       const next = { ...cur, [key]: val };
-      const field = which===1 ? "c1" : "c2";
       this.undo.push({
-        label:`bezier-${field}-${key}`,
-        _coalesceKey:`bezier:${id}:${field}:${key}`,
-        before:{ [field]: cur }, after:{ [field]: next },
-        do: ()=> this.store.patchLink(id, { [field]: next }),
-        undo: ()=> this.store.patchLink(id, { [field]: cur }),
+        label:`bezier-${prop}-${key}`,
+        _coalesceKey:`bezier:${id}:${prop}:${key}`,
+        before:{ [prop]: cur }, after:{ [prop]: next },
+        do: ()=> this.patchItem(id, { [prop]: next }),
+        undo: ()=> this.patchItem(id, { [prop]: cur })
       });
+      this.patchItem(id, { [prop]: next });
     },
   }
 });

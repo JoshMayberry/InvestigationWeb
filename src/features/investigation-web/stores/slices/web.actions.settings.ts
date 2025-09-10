@@ -14,6 +14,10 @@ export const defaultSettings = {
   gridSize: 16,
   gridAlwaysVisible: false,
   stashZoneWidth: 120,
+  slideAlongTracks: false,
+  slideTrackThreshold: 28,
+  snapPlacementThreshold: 32,          // px distance within which snap placement / drag is valid
+  snapPreviewLayout: false,            // live re-layout preview while placing/dragging snap nodes
 };
 
 export const settingsActions = {
@@ -43,6 +47,10 @@ export const settingsActions = {
         gridSize: Number(obj.gridSize) || this.settings.gridSize,
         gridAlwaysVisible: !!obj.gridAlwaysVisible,
         stashZoneWidth: Number(obj.stashZoneWidth) || this.settings.stashZoneWidth,
+        slideAlongTracks: !!obj.slideAlongTracks,
+        slideTrackThreshold: Number(obj.slideTrackThreshold) || this.settings.slideTrackThreshold,
+        snapPlacementThreshold: Number(obj.snapPlacementThreshold) || this.settings.snapPlacementThreshold,
+        snapPreviewLayout: !!obj.snapPreviewLayout,
       });
     } catch {}
   },

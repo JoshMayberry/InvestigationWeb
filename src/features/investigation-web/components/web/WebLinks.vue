@@ -3,7 +3,7 @@
     <component
       v-for="l in store.links"
       :key="l.id"
-      :is="getType(l.type).canvas"
+      :is="getType(l.type).linkCanvas"
       :l="l"
     />
   </g>
@@ -12,12 +12,12 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { useInvestigationWebStore } from "../../stores/web";
-import { getLinkType } from "../links/registry";
+import { getPathType } from "../paths/registry";
 
 export default defineComponent({
   name: "WebLinks",
   data(){ return { store: useInvestigationWebStore() }; },
-  methods:{ getType(t:string){ return getLinkType(t); } }
+  methods:{ getType(t:string){ return getPathType(t); } }
 });
 </script>
 

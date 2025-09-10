@@ -4,6 +4,7 @@
 
     <EditPageLink v-if="store.tools.addLink" mode="draft" />
     <EditPageNode v-else-if="store.tools.addFreeNode" mode="defaults" />
+    <EditPageTrack v-else-if="store.tools.addTrack" mode="draft" />
 
     <EditPageNode v-else-if="selectedNode" mode="selected" :node-id="selectedNode.id" />
     <EditPageLink v-else-if="selectedLink" mode="selected" :link-id="selectedLink.id" />

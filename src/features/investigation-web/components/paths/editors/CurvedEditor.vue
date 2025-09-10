@@ -30,73 +30,81 @@ import { useInvestigationWebStore } from "../../../stores/web";
 import { RUNTIME_KEY } from "../../../context/runtime";
 export default defineComponent({
   name: "CurvedEditor",
-  props: { mode: { type:String, required:true }, link: { type:Object, required:false } },
+  props: { mode:{type:String,required:true}, link:{type:Object,required:false}, track:{type:Object,required:false} },
   data(){ return { store: useInvestigationWebStore(), runtime: inject(RUNTIME_KEY, null) as any }; },
   computed:{
+    isTrack(): boolean { return !!this.track; },
+    targetId(): string | null {
+      if (this.isTrack) return (this.track as any).id;
+      return this.link ? (this.link as any).id : null;
+    },
     ctrls(): {t:number; off:number}[] {
-      if (this.mode!=='selected' || !this.link) return [];
-      return (this.link as any).midControls || [];
+      if (this.mode!=='selected' || !this.targetId) return [];
+      return (this.isTrack ? (this.track as any).midControls : (this.link as any).midControls) || [];
     },
     undo(): any { return this.runtime?.controllers?.undo; },
   },
   methods:{
     num(v:any){ return Number(v); },
+    baseDraft(): any { return this.isTrack ? this.store.trackDraft : this.store.linkDraft; },
+    setDraft(patch:any){
+      if (this.isTrack) this.store.setTrackDraft(patch); else this.store.setLinkDraft(patch);
+    },
+    patchItem(id:string, patch:any){
+      if (this.isTrack) this.store.patchTrack(id, patch); else this.store.patchLink(id, patch);
+    },
     addCtrl(){
       if (this.mode==='draft'){
-        const arr = (this.store.linkDraft.midControls ?? []).slice();
-        arr.push({ t: 50, off: 25 });
-        this.store.setLinkDraft({ midControls: arr });
-        return;
+        const arr = (this.baseDraft().midControls ?? []).slice();
+        arr.push({ t:50, off:25 });
+        this.setDraft({ midControls: arr }); return;
       }
-      if (!this.link) return;
-      const id = (this.link as any).id;
-      const before = ((this.link as any).midControls || []).slice();
-      const after = [...before, { t: 50, off: 25 }];
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = (this.ctrls || []).slice();
+      const after = [...before, { t:50, off:25 }];
       this.undo.push({ label:"curved-add-ctrl", before:{ midControls: before }, after:{ midControls: after },
-        do:()=> this.store.patchLink(id, { midControls: after }),
-        undo:()=> this.store.patchLink(id, { midControls: before }) });
+        do:()=> this.patchItem(id, { midControls: after }),
+        undo:()=> this.patchItem(id, { midControls: before }) });
     },
     removeCtrl(i:number){
       if (this.mode==='draft'){
-        const arr = (this.store.linkDraft.midControls ?? []).slice();
-        arr.splice(i,1);
-        this.store.setLinkDraft({ midControls: arr });
-        return;
+        const arr = (this.baseDraft().midControls ?? []).slice(); arr.splice(i,1);
+        this.setDraft({ midControls: arr }); return;
       }
-      if (!this.link) return;
-      const id = (this.link as any).id;
-      const before = ((this.link as any).midControls || []).slice();
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = (this.ctrls || []).slice();
       const after = before.slice(); after.splice(i,1);
       this.undo.push({ label:"curved-remove-ctrl", before:{ midControls: before }, after:{ midControls: after },
-        do:()=> this.store.patchLink(id, { midControls: after }),
-        undo:()=> this.store.patchLink(id, { midControls: before }) });
+        do:()=> this.patchItem(id, { midControls: after }),
+        undo:()=> this.patchItem(id, { midControls: before }) });
     },
     clearCtrls(){
-      if (this.mode==='draft'){ this.store.setLinkDraft({ midControls: [] }); return; }
-      if (!this.link) return;
-      const id = (this.link as any).id;
-      const before = ((this.link as any).midControls || []).slice();
+      if (this.mode==='draft'){ this.setDraft({ midControls: [] }); return; }
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = (this.ctrls || []).slice();
       const after:any[] = [];
       this.undo.push({ label:"curved-clear-ctrls", before:{ midControls: before }, after:{ midControls: after },
-        do:()=> this.store.patchLink(id, { midControls: after }),
-        undo:()=> this.store.patchLink(id, { midControls: before }) });
+        do:()=> this.patchItem(id, { midControls: after }),
+        undo:()=> this.patchItem(id, { midControls: before }) });
     },
     setCtrl(i:number, key:'t'|'off', val:number){
       if (this.mode==='draft'){
-        const arr = (this.store.linkDraft.midControls ?? []).slice();
+        const arr = (this.baseDraft().midControls ?? []).slice();
         const cur = arr[i] ?? { t:50, off:25 };
         arr[i] = { ...cur, [key]: val };
-        this.store.setLinkDraft({ midControls: arr });
-        return;
+        this.setDraft({ midControls: arr }); return;
       }
-      if (!this.link) return;
-      const id = (this.link as any).id;
-      const before = ((this.link as any).midControls || []).slice();
+      if (!this.targetId) return;
+      const id = this.targetId;
+      const before = (this.ctrls || []).slice();
       const after = before.slice();
       after[i] = { ...after[i], [key]: val };
       this.undo.push({ label:"curved-edit-ctrl", _coalesceKey:`curved:${id}:${i}:${key}`, before:{ midControls: before }, after:{ midControls: after },
-        do:()=> this.store.patchLink(id, { midControls: after }),
-        undo:()=> this.store.patchLink(id, { midControls: before }) });
+        do:()=> this.patchItem(id, { midControls: after }),
+        undo:()=> this.patchItem(id, { midControls: before }) });
     },
   }
 });

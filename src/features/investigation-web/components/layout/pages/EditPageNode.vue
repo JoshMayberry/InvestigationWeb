@@ -78,6 +78,10 @@
           <option v-for="s in track.segments || 1" :key="s-1" :value="s-1">#{{ s }}</option>
         </select>
       </div>
+      <div class="pill-row" v-if="track && track.groupId">
+        <span class="pill hdr">Group</span>
+        <button class="pill link" @click="selectGroup(track.groupId)">{{ track.groupId }}</button>
+      </div>
     </template>
 
     <div v-if="mode==='selected'" class="actions">
@@ -207,6 +211,7 @@ export default defineComponent({
     selectLink(id:string){ this.selection?.set(id); },
     selectTrack(id:string){ this.selection?.set(id); },
     selectNode(id:string){ this.selection?.set(id); },
+    selectGroup(id:string){ this.selection?.set(id); },
     changeSegment(v:string){
       if (!this.node || this.node.kind!=='snap' || !this.track) return;
       const seg = Math.max(0, Math.min((this.track.segments||1)-1, Number(v)|0));

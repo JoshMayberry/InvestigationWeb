@@ -32,6 +32,12 @@ export function createInitialState() {
       direction: 1 as 1 | -1
     } as any,
 
+    groupDraft: {
+      type: "horizontal-lines",
+      colorPalette: ['#38bdf8','#22d3ee','#818cf8','#f472b6'],
+      params: { cx:0, cy:0, width:800, lines:4, gap:120, rotation:0 }
+    },
+
     links: [] as any[],
     linkSeq: 0,
     linkDraft: {
@@ -44,7 +50,15 @@ export function createInitialState() {
 
     discovery: { ...({ mode: "free", visibility: { mode: "hide", depth: 1 }, allowUndiscover: true }) },
 
-    tools: { addFreeNode: false, addSnapNode: false, placeStagedId: null as string | null, placeStagedSnapId: null as string | null, editDefaults: false, addLink: false, addTrack: false },
+    tools: {
+      addFreeNode: false,
+      addSnapNode: false,
+      addLink: false,
+      addTrack: false,
+      addCalcGroup: false, // NEW
+      placeStagedId: null,
+      placeStagedSnapId: null
+    },
     currentEditState: "none" as import("../types/editState").CurrentEditState,
     drag: { nodeId: null as string | null, active: false },
     panels: { settingsOpen: false },
@@ -66,6 +80,19 @@ export function createInitialState() {
       valid: true,
       reason: null as string|null
     },
+    calcGroupPlacementGhost: {
+      active: false,
+      type: "horizontal-lines",
+      params: {},
+      valid: true,
+      reason: null,
+      tracks: [],
+      bbox: null,
+      centerX: 0,
+      centerY: 0,
+      invalidIds: [] as string[]
+    },
     suppressClearSelectionUntil: 0,
+    calcGroups: [], // array of calculated track groups
   };
 }

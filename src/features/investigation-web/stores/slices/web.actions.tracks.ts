@@ -1,5 +1,6 @@
 import { newId } from "../util/newId";
 import { pointAtTrackPosition } from "../util/trackGeometry";
+import { projectPointToTrack } from "../util/trackGeometry";
 
 export const trackActions = {
   addFreeTrack(this:any, p:{ p1:{x:number;y:number}; p2:{x:number;y:number}; color?:string; locked?:boolean; type?:string }) {
@@ -28,6 +29,7 @@ export const trackActions = {
       endRadius: (type==="corkscrew"||type==="spiral") ? td.endRadius : undefined,
       direction: (type==="corkscrew"||type==="spiral") ? td.direction : undefined,
     };
+    t._v = 1;
     this.tracks.push(t);
     this.dirty = true;
     return id;
@@ -48,12 +50,30 @@ export const trackActions = {
   patchTrack(this:any, id:string, patch:any){
     const i = this.tracks.findIndex((t:any)=> t.id===id);
     if (i === -1) return;
-    this.tracks[i] = { ...this.tracks[i], ...patch };
+    const prev = this.tracks[i];
+    if (prev.kind === 'calc') return; // generated
+    const next = { ...prev, ...patch };
+    next._v = (prev._v||0) + 1;
+    if (next._geomCache) delete next._geomCache;
+    if (next.type === 'path' && next._arcCache) delete next._arcCache;
+    this.tracks[i] = next;
     this.dirty = true;
-    const shapeKeys = ["p1","p2","type","midControls","c1","c2","symmetric","controls","tension","turns","startRadius","endRadius","direction","segments"];
+    const shapeKeys = ["p1","p2","type","midControls","c1","c2","symmetric","controls","tension","turns","startRadius","endRadius","direction","segments","pathPoints"];
     if (Object.keys(patch).some(k => shapeKeys.includes(k))){
       this._repositionSnapNodesForTrack(id);
-      if (patch.segments != null) this._recalcSnapTrackLayout(id); // force spacing update
+      if (patch.segments != null) this._recalcSnapTrackLayout(id);
+    }
+    // Path translation
+    if (next.type === 'path' && Array.isArray(next.pathPoints) && (patch.p1 || patch.p2)) {
+      const curP1 = next.pathPoints[0];
+      const newP1 = (patch.p1 || next.p1);
+      const dx = newP1.x - curP1.x;
+      const dy = newP1.y - curP1.y;
+      if (dx || dy){
+        next.pathPoints = next.pathPoints.map((p:any)=> ({ x:p.x + dx, y:p.y + dy }));
+        next.p1 = { ...next.pathPoints[0] };
+        next.p2 = { ...next.pathPoints[next.pathPoints.length-1] };
+      }
     }
   },
   setTrackDraft(this:any, patch:any){
@@ -188,4 +208,9 @@ export const trackActions = {
     this.trackDragGhost.active = false;
     this.trackDragGhost.trackId = null;
   },
+  // Removed group-related methods:
+  // addCalculatedGroup, stageAllGroupSnapNodes, removeCalculatedGroup, explodeCalculatedGroup,
+  // updateCalculatedGroup, startCalcGroupPlacement, updateCalcGroupPlacement, commitCalcGroupPlacement,
+  // cancelCalcGroupPlacement, setGroupDraft, setGroupDefaultsFromGroup, _remapSnapNodesForGroup,
+  // _regenerateCalculatedGroups, _reapplyTrackPositions
 };

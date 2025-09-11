@@ -100,13 +100,13 @@ export const nodeActions = {
     const snaps = this.nodes.filter((n:any)=> n.kind==="snap" && n.trackId===trackId);
     if (!snaps.length) return;
     const segCount = Math.max(1, track.segments || 1);
-    // Projection for ordering if needed
+
+    // Build projected array using existing trackPosition (no projection) unless missing or new
     const projected = snaps.map(n=>{
-      const proj = projectPointToTrack(track, n.x, n.y);
-      return { n, t: proj.t };
+      let t = typeof n.trackPosition === "number" ? n.trackPosition : 0.5;
+      return { n, t };
     });
 
-    // Optional override for new node insertion
     if (optionalTHint!=null && newIdForHint){
       const target = projected.find(e=> e.n.id===newIdForHint);
       if (target){
@@ -119,7 +119,7 @@ export const nodeActions = {
       }
     }
 
-    // Ensure every node has a valid trackSegment
+    // Ensure every node has a segment index
     for (const e of projected){
       if (typeof e.n.trackSegment !== "number" || e.n.trackSegment < 0 || e.n.trackSegment >= segCount){
         e.n.trackSegment = Math.min(segCount-1, Math.floor(e.t * segCount));
@@ -135,7 +135,7 @@ export const nodeActions = {
     for (let seg=0; seg<segCount; seg++){
       const list = groups[seg];
       if (!list.length) continue;
-      // Sort inside segment by t to keep relative ordering
+      // Sort by t but keep existing approximate order
       list.sort((a,b)=> a.t - b.t);
       const segT0 = seg / segCount;
       const segT1 = (seg+1)/segCount;

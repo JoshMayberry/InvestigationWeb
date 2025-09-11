@@ -100,6 +100,24 @@ export const policyActions = {
       this.setCurrentEditState("none");
     }
   },
+  setAddCalcGroup(this:any, on:boolean){
+    this.tools.addCalcGroup = on;
+    if (on){
+      this.tools.addFreeNode = false;
+      this.tools.addSnapNode = false;
+      this.tools.placeStagedId = null;
+      this.tools.placeStagedSnapId = null;
+      this.tools.addLink = false;
+      this.tools.addTrack = false;
+      this.setCurrentEditState("add-calc-group");
+      this.startCalcGroupPlacement?.(this.groupDraft?.type || "horizontal-lines");
+    } else {
+      this.cancelCalcGroupPlacement?.();
+      if (!this.tools.addFreeNode && !this.tools.addSnapNode && !this.tools.placeStagedId && !this.tools.placeStagedSnapId && !this.tools.addLink && !this.tools.addTrack){
+        this.setCurrentEditState("none");
+      }
+    }
+  },
   closeAddPanel(this:any){ this.resetTools(); },
   resetTools(this:any){
     this.tools.addFreeNode = false;
@@ -109,7 +127,9 @@ export const policyActions = {
     this.tools.editDefaults = false;
     this.tools.addLink = false;
     this.tools.addTrack = false;
+    this.tools.addCalcGroup = false;
     this.setCurrentEditState("none");
+    this.cancelCalcGroupPlacement?.();
   },
   setPanelOpen(this:any, key: "settings", on: boolean) {
     if (!this.panels) this.panels = { settingsOpen: false };

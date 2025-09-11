@@ -23,6 +23,7 @@
 
       <WebLinks />
       <WebTracks />
+      <WebCalculatedGroups />
 
       <NodeLayer
         :nodes="nodes"
@@ -36,6 +37,7 @@
       <NodeGhost />
       <LinkGhost />
       <TrackGhost />
+      <WebCalcGroupGhost />
 
       <template #overlay>
         <rect
@@ -62,10 +64,12 @@ import { defineComponent, inject, watch } from "vue";
 import ReactiveSvg from "../ReactiveSvg.vue";
 import WebLinks from "./WebLinks.vue";
 import WebTracks from "./WebTracks.vue";
+import WebCalculatedGroups from "./WebCalculatedGroups.vue";
 import NodeLayer from "./NodeLayer.vue";
 import LinkGhost from "./LinkGhost.vue";
 import NodeGhost from "./NodeGhost.vue";
 import TrackGhost from "./TrackGhost.vue";
+import WebCalcGroupGhost from "./WebCalcGroupGhost.vue";
 import NodeTooltip from "./NodeTooltip.vue";
 import GridOverlay from "./GridOverlay.vue";
 import { useInvestigationWebStore } from "../../stores/web";
@@ -81,7 +85,7 @@ import { useGridSnap } from "./composables/useGridSnap";
 
 export default defineComponent({
   name: "InvestigationWeb",
-  components: { ReactiveSvg, WebLinks, WebTracks, NodeLayer, LinkGhost, NodeGhost, TrackGhost, NodeTooltip, GridOverlay },
+  components: { ReactiveSvg, WebLinks, WebTracks, WebCalculatedGroups, NodeLayer, LinkGhost, NodeGhost, TrackGhost, NodeTooltip, GridOverlay, WebCalcGroupGhost },
   data(){
     const store = useInvestigationWebStore();
     const runtime = inject(RUNTIME_KEY, null) as any;
@@ -111,13 +115,11 @@ export default defineComponent({
     },
     gridActive(): boolean {
       const placing = this.placingMode === "add-free";
-      const draggingNode = this.dragGhost?.mode === "drag-node";
+      const draggingNode = this.dragGhost?.mode === 'drag-node';
       const trackPlacing = this.store.tools.addTrack || !!this.runtime?.controllers?.trackPlacement?.ghost?.active;
       const draggingTrack = ["drag-track","drag-track-end"].includes(this.store.currentEditState);
-      // const settingsPanelOpen = !!this.store.panels?.settingsOpen;
-      // return settingsPanelOpen || placing || draggingNode || trackPlacing || draggingTrack || !!this.settings.gridAlwaysVisible;
-      // Interaction-driven activation during editing
-      return placing || draggingNode || trackPlacing || draggingTrack || !!this.settings.gridAlwaysVisible;
+      const calcGroupPlacing = this.store.calcGroupPlacementGhost?.active;
+      return placing || draggingNode || trackPlacing || draggingTrack || calcGroupPlacing || !!this.settings.gridAlwaysVisible;
     },
     showGrid(): boolean {
       if (!this.settings.enableGrid) return false;
@@ -153,6 +155,8 @@ export default defineComponent({
       if (!on) this.runtime?.controllers?.linkPlacement?.cancel();
       else this.runtime?.controllers?.linkPlacement?.cancel(); // reset when turning on
     }, { immediate: false });
+
+    window.addEventListener("keydown", this._onKey);
   },
   beforeUnmount(){
     this._removeDom();
@@ -160,6 +164,7 @@ export default defineComponent({
     this._tracks?.dispose?.();
     this._nodes?.dispose?.();
     this._links?.dispose?.();
+    window.removeEventListener("keydown", this._onKey);
   },
   methods:{
     onResize(sz:{ w:number; h:number }){
@@ -173,6 +178,8 @@ export default defineComponent({
       this._nodes?.cancelAll?.();
       this._links?.cancelAll?.();
       this.store.resetTools?.();
+
+      if (this.store.calcGroupPlacementGhost?.active) this.store.cancelCalcGroupPlacement();
     },
     _installDom(){
       const svg = this.rs?.getSvg?.();
@@ -198,9 +205,17 @@ export default defineComponent({
       if (this._links.onClick(e)) return;
       if (this._nodes.onClick(e)) return;
 
+      if (this.store.calcGroupPlacementGhost?.active){
+        const id = this.store.commitCalcGroupPlacement();
+        if (id){
+          this.runtime?.controllers?.selection?.set(id);
+        }
+        return;
+      }
+
       // background clears selection
       const el = e.target as Element | null;
-      const isBg = !el || (!el.closest(".node") && !el.closest(".track") && !el.closest(".link"));
+      const isBg = !el || (!el.closest(".node") && !el.closest(".track") && !el.closest(".link") && !el.closest(".calc-group"));
       if (isBg) {
         if (Date.now() < (this.store.suppressClearSelectionUntil || 0)) return; // suppress after drag
         this.runtime?.controllers?.selection?.clear?.();
@@ -210,10 +225,34 @@ export default defineComponent({
       this._tracks.onPointerMove(e);
       this._links.onPointerMove(e);
       this._nodes.onPointerMove(e);
+
+      if (this.store.tools.addCalcGroup && this.runtime?.controllers?.view){
+        const w = this.runtime.controllers.view.worldFromClient(e.clientX, e.clientY);
+        let { x, y } = w;
+        if (this.store.settings.enableGrid && !e.altKey){
+          const gs = this.store.settings.gridSize || 16;
+          x = Math.round(x/gs)*gs;
+          y = Math.round(y/gs)*gs;
+        }
+        this.store.updateCalcGroupPlacement(x, y, { alt: e.altKey });
+      }
     },
     _onLeave(e: PointerEvent){
       this._nodes.onPointerLeave(e);
-    }
+    },
+    _onKey(e:KeyboardEvent){
+      if (e.key === "Escape"){
+        if (this.store.calcGroupPlacementGhost?.active){
+          this.store.cancelCalcGroupPlacement();
+          this.store.setCurrentEditState?.("none");
+        } else {
+          this._tracks?.cancelAll?.();
+          this._nodes?.cancelAll?.();
+          this._links?.cancelAll?.();
+          this.store.resetTools?.();
+        }
+      }
+    },
   },
   // private handles
   // eslint-disable-next-line vue/no-reserved-keys

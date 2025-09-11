@@ -22,6 +22,7 @@
   ],
   "staging": [],
   "tracks": [],
+  "calcGroups": [],
   "bonuses": [
     {
       "id": "b:focus",

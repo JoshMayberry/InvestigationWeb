@@ -6,7 +6,7 @@
     <!-- Wrap ID label with v-if="!isDraft" -->
     <label v-if="!isDraft">
       <span>ID</span>
-      <input class="txt" :value="track.id" @change="onId(($event.target as HTMLInputElement).value)" />
+      <input class="txt" :value="track.id" @change="onId(($event.target as HTMLInputElement).value)" :disabled="track.kind==='calc'" />
     </label>
 
     <label>
@@ -16,7 +16,7 @@
 
     <label class="row">
       <span>Locked</span>
-      <input type="checkbox" :checked="!!track.locked" @change="onChange('locked', ($event.target as HTMLInputElement).checked)" />
+      <input type="checkbox" :checked="!!track.locked" @change="onChange('locked', ($event.target as HTMLInputElement).checked)" :disabled="track.kind==='calc'" />
     </label>
 
     <label>
@@ -37,10 +37,15 @@
       />
     </label>
 
+    <div v-if="track.kind==='calc' && track.groupId" class="pill-row">
+      <span class="pill hdr">Group</span>
+      <button class="pill link" @click="selectGroup(track.groupId)">{{ track.groupId }}</button>
+    </div>
+
     <!-- Dynamic shape editor (reuse path editors) -->
     <component
-      v-if="typeDef && typeDef.editor"
-      :is="typeDef.editor"
+      v-if="!isCalc || isDraft"
+      :is="typeDef && typeDef.editor"
       :mode="isDraft ? 'draft' : 'selected'"
       :track="track"
     />
@@ -62,6 +67,7 @@
       <button class="secondary" @click="duplicate">Duplicate</button>
       <!-- In actions row add -->
       <button v-if="!isDraft" class="secondary" @click="setAsDefault">Set As Default</button>
+      <button v-if="!isDraft" class="secondary" @click="stageAllTrack">Stage All Nodes</button>
     </div>
   </div>
   <div v-else class="muted small">No track selected.</div>
@@ -77,6 +83,7 @@ import BezierEditor from "../../../components/paths/editors/BezierEditor.vue";
 import SplineEditor from "../../../components/paths/editors/SplineEditor.vue";
 import CorkscrewEditor from "../../../components/paths/editors/CorkscrewEditor.vue";
 import SpiralEditor from "../../../components/paths/editors/SpiralEditor.vue";
+import PathEditor from "../../../components/paths/editors/PathEditor.vue";
 
 const TYPE_DEFS: any = {
   straight:{ editor: StraightEditor, label:"Straight" },
@@ -84,7 +91,8 @@ const TYPE_DEFS: any = {
   bezier:{ editor: BezierEditor, label:"Bezier" },
   spline:{ editor: SplineEditor, label:"Spline" },
   corkscrew:{ editor: CorkscrewEditor, label:"Corkscrew" },
-  spiral:{ editor: SpiralEditor, label:"Spiral" }
+  spiral:{ editor: SpiralEditor, label:"Spiral" },
+  path:{ editor: PathEditor, label:"Path" }
 };
 
 export default defineComponent({
@@ -118,7 +126,8 @@ export default defineComponent({
       return this.store.nodes
         .filter((n:any)=> n.kind==='snap' && n.trackId===this.track.id)
         .sort((a:any,b:any)=> a.trackOrder - b.trackOrder);
-    }
+    },
+    isCalc(): boolean { return !!this.track && this.track.kind==='calc'; },
   },
   methods:{
     onId(next:string){
@@ -206,9 +215,14 @@ export default defineComponent({
       if (nid) this.runtime?.controllers?.selection.set(nid);
     },
     selectNode(id:string){ this.runtime?.controllers?.selection.set(id); },
+    selectGroup(id:string){ this.runtime?.controllers?.selection?.set(id); },
     setAsDefault(){
       if (this.isDraft || !this.track) return;
       this.store.setTrackDefaultsFromTrack(this.track.id);
+    },
+    stageAllTrack(){
+      if (this.isDraft || !this.track) return;
+      this.store.stageAllTrackSnapNodes(this.track.id);
     }
   }
 });

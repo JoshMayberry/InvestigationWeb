@@ -1,5 +1,5 @@
 export type TrackKind = "free" | "calc";
-export type TrackType = "straight" | "curved" | "bezier" | "spline" | "corkscrew" | "spiral";
+export type TrackType = "straight" | "curved" | "bezier" | "spline" | "corkscrew" | "spiral" | "path";
 
 export interface TrackBase {
   id: string;

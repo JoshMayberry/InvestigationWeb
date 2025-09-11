@@ -5,10 +5,12 @@
     <EditPageLink v-if="store.tools.addLink" mode="draft" />
     <EditPageNode v-else-if="store.tools.addFreeNode" mode="defaults" />
     <EditPageTrack v-else-if="store.tools.addTrack" mode="draft" />
+    <EditPageTrackGroup v-else-if="store.tools.addCalcGroup" mode="draft" />
 
     <EditPageNode v-else-if="selectedNode" mode="selected" :node-id="selectedNode.id" />
     <EditPageLink v-else-if="selectedLink" mode="selected" :link-id="selectedLink.id" />
     <EditPageTrack v-else-if="selectedTrack" :track-id="selectedTrack.id" />
+    <EditPageTrackGroup v-else-if="selectedGroup" :group-id="selectedGroup.id" />
     <div v-else class="empty"><em>Nothing selected.</em></div>
   </div>
 </template>
@@ -20,10 +22,11 @@ import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
 import EditPageNode from "./pages/EditPageNode.vue";
 import EditPageLink from "./pages/EditPageLink.vue";
 import EditPageTrack from "./pages/EditPageTrack.vue";
+import EditPageTrackGroup from "./pages/EditPageTrackGroup.vue";
 
 export default defineComponent({
   name: "PanelEdit",
-  components: { EditPageNode, EditPageLink, EditPageTrack },
+  components: { EditPageNode, EditPageLink, EditPageTrack, EditPageTrackGroup },
   data(){
     return {
       store: useInvestigationWebStore(),
@@ -43,6 +46,10 @@ export default defineComponent({
     selectedTrack(): any {
       const id = this.selectionCtrl?.get();
       return id ? this.store.tracks.find((t:any)=>t.id===id) || null : null;
+    },
+    selectedGroup(): any {
+      const id = this.selectionCtrl?.get();
+      return id ? this.store.calcGroups.find((g:any)=> g.id===id) || null : null;
     }
   }
 });

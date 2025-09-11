@@ -1,102 +1,72 @@
-// Replaces previous content, keeps existing exports used elsewhere.
-
 export interface SamplePoint { x:number; y:number; len:number; t:number; }
 
 function clamp01(v:number){ return v<0?0:v>1?1:v; }
+
+export function buildPathFromPoints(pts:{x:number;y:number}[]): string {
+  if (!pts.length) return "";
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i=1;i<pts.length;i++) d += ` L ${pts[i].x} ${pts[i].y}`;
+  return d;
+}
+
+export function parseSimplePath(pathD:string): { x:number; y:number }[] {
+  const pts: {x:number;y:number}[] = [];
+  if (!pathD) return pts;
+  const tokens = pathD.replace(/,/g," ").trim().split(/\s+/);
+  let i=0;
+  while (i < tokens.length){
+    const cmd = tokens[i++];
+    if (cmd !== 'M' && cmd !== 'L') break;
+    const x = Number(tokens[i++]); const y = Number(tokens[i++]);
+    if (Number.isFinite(x) && Number.isFinite(y)) pts.push({ x,y }); else break;
+  }
+  return pts;
+}
+
+import { trackBezierPath, trackBezierPointAt } from "@features/investigation-web/components/paths/calculations/bezierPath";
+import { trackCurvedPath, trackCurvedPointAt } from "@features/investigation-web/components/paths/calculations/curvedPath";
+import { trackSplinePath, trackSplinePointAt } from "@features/investigation-web/components/paths/calculations/splinePath";
+import { trackRawPathD, rawPathPointAt } from "@features/investigation-web/components/paths/calculations/rawPath";
 
 export function trackPathD(track:any): string {
   if (!track) return "";
   switch(track.type){
     case "straight": return `M ${track.p1.x} ${track.p1.y} L ${track.p2.x} ${track.p2.y}`;
-    case "curved": return curvedPath(track);
-    case "bezier": return bezierPath(track);
-    case "spline": return splinePath(track);
+    case "curved": return trackCurvedPath(track);
+    case "bezier": return trackBezierPath(track);
+    case "spline": return trackSplinePath(track);
+    case "path": return trackRawPathD(track);
     case "corkscrew":
     case "spiral":
-      return `M ${track.p1.x} ${track.p1.y} L ${track.p2.x} ${track.p2.y}`; // placeholder
-    default: return `M ${track.p1.x} ${track.p1.y} L ${track.p2.x} ${track.p2.y}`;
+      return `M ${track.p1.x} ${track.p1.y} L ${track.p2.x} ${track.p2.y}`;
+    default:
+      return `M ${track.p1?.x||0} ${track.p1?.y||0} L ${track.p2?.x||0} ${track.p2?.y||0}`;
   }
-}
-
-// ----- Path builders (same logic as before) -----
-function buildAxis(track:any){
-  const p1 = track.p1, p2 = track.p2;
-  const dx = p2.x - p1.x, dy = p2.y - p1.y;
-  const dist = Math.hypot(dx,dy) || 1;
-  const ux = dx/dist, uy = dy/dist;
-  const nx = -uy, ny = ux;
-  return { p1, p2, dx, dy, ux, uy, nx, ny, dist };
-}
-
-function curvedPath(t:any): string {
-  const A = buildAxis(t);
-  const ctrls = (t.midControls??[]).map((c:any)=>{
-    const tt = clamp01((c.t??50)/100);
-    const off = ((c.off??0)/100);
-    return {
-      x: A.p1.x + A.ux * (tt * A.dist) + A.nx * (off * A.dist),
-      y: A.p1.y + A.uy * (tt * A.dist) + A.ny * (off * A.dist)
-    };
-  });
-  const pts = [A.p1, ...ctrls, A.p2];
-  if (pts.length === 2) return `M ${A.p1.x} ${A.p1.y} L ${A.p2.x} ${A.p2.y}`;
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i=1;i<pts.length-1;i++){
-    const c = pts[i];
-    const nxt = pts[i+1];
-    const end = i < pts.length - 2 ? { x:(c.x+nxt.x)/2, y:(c.y+nxt.y)/2 } : nxt;
-    d += ` Q ${c.x} ${c.y} ${end.x} ${end.y}`;
-  }
-  return d;
-}
-
-function bezierPath(t:any): string {
-  const A = buildAxis(t);
-  let c1 = t.c1 || { t:25, off:30 };
-  let c2 = t.c2 || { t:75, off:-30 };
-  if (t.symmetric){
-    c2 = { t: 100 - c1.t, off: -c1.off };
-  }
-  const cc = (c:any) => {
-    const tt = clamp01((c.t??50)/100);
-    const off = (c.off??0)/100;
-    return {
-      x: A.p1.x + A.ux * (tt * A.dist) + A.nx * (off * A.dist),
-      y: A.p1.y + A.uy * (tt * A.dist) + A.ny * (off * A.dist)
-    };
-  };
-  const P1 = cc(c1), P2 = cc(c2);
-  return `M ${A.p1.x} ${A.p1.y} C ${P1.x} ${P1.y} ${P2.x} ${P2.y} ${A.p2.x} ${A.p2.y}`;
-}
-
-function splinePath(t:any): string {
-  const A = buildAxis(t);
-  const controls = (t.controls && t.controls.length ? t.controls : [{ t:50, off:0 }]).map((c:any)=>{
-    const tt = clamp01((c.t??50)/100);
-    const off = ((c.off??0)/100);
-    return {
-      x: A.p1.x + A.ux * (tt * A.dist) + A.nx * (off * A.dist),
-      y: A.p1.y + A.uy * (tt * A.dist) + A.ny * (off * A.dist)
-    };
-  });
-  const pts = [A.p1, ...controls, A.p2];
-  if (pts.length === 2) return `M ${A.p1.x} ${A.p1.y} L ${A.p2.x} ${A.p2.y}`;
-  const tension = clamp01(t.tension ?? 0.25);
-  const k = (1 - tension) / 6;
-  const P = (i:number)=> pts[Math.max(0, Math.min(pts.length-1, i))];
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i=0;i<pts.length-1;i++){
-    const p0=P(i-1), pA=P(i), pB=P(i+1), p3=P(i+2);
-    const c1 = { x: pA.x + (pB.x - p0.x) * k, y: pA.y + (pB.y - p0.y) * k };
-    const c2 = { x: pB.x - (p3.x - pA.x) * k, y: pB.y - (p3.y - pA.y) * k };
-    d += ` C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${pB.x} ${pB.y}`;
-  }
-  return d;
 }
 
 // ----- Sampling & Projection -----
 export function sampleTrack(track:any, steps=64): SamplePoint[] {
   const pts: {x:number;y:number}[] = [];
+    if (typeof track.pathD === "string") {
+    const p = parseSimplePath(track.pathD);
+    if (p.length >= 2) {
+      // use raw points
+      let len = 0;
+      const out: SamplePoint[] = [];
+      for (let i=0;i<p.length;i++){
+        if (i>0){
+          const dx = p[i].x - p[i-1].x;
+          const dy = p[i].y - p[i-1].y;
+          len += Math.hypot(dx,dy);
+        }
+        out.push({ x:p[i].x, y:p[i].y, len, t:0 });
+      }
+      const total = len || 1;
+      out.forEach(pt => pt.t = pt.len / total);
+      return out;
+    }
+    // fallback to generic handling if parse fails
+  }
   if (track.type === "straight"){
     pts.push(track.p1, track.p2);
   } else {
@@ -121,104 +91,66 @@ export function sampleTrack(track:any, steps=64): SamplePoint[] {
   return out;
 }
 
-// Approx param evaluation (straight maps to chord; others use shape math)
+function buildArcTableFromPoints(pts:{x:number;y:number}[]){
+  const table:number[] = [0];
+  let acc=0;
+  for (let i=1;i<pts.length;i++){
+    const dx=pts[i].x-pts[i-1].x, dy=pts[i].y-pts[i-1].y;
+    acc += Math.hypot(dx,dy);
+    table.push(acc);
+  }
+  return { table, total: acc || 1 };
+}
+
 function pointAtApprox(track:any, s:number){
-  if (track.type === "straight"){
-    return {
-      x: track.p1.x + (track.p2.x - track.p1.x)*s,
-      y: track.p1.y + (track.p2.y - track.p1.y)*s
-    };
-  }
-  // For now re-use axis offsets pattern (not exact arc-length)
-  if (track.type === "bezier"){
-    // Decompose to cubic
-    const A = buildAxis(track);
-    let c1 = track.c1 || { t:25, off:30 };
-    let c2 = track.c2 || { t:75, off:-30 };
-    if (track.symmetric){
-      c2 = { t: 100 - c1.t, off: -c1.off };
-    }
-    const cc = (c:any) => {
-      const tt = clamp01((c.t??50)/100);
-      const off = (c.off??0)/100;
+  switch(track.type){
+    case "straight":
       return {
-        x: A.p1.x + A.ux * (tt * A.dist) + A.nx * (off * A.dist),
-        y: A.p1.y + A.uy * (tt * A.dist) + A.ny * (off * A.dist)
+        x: track.p1.x + (track.p2.x-track.p1.x)*s,
+        y: track.p1.y + (track.p2.y-track.p1.y)*s
       };
-    };
-    const P0=A.p1, P3=A.p2, P1=cc(c1), P2=cc(c2);
-    const u=1-s;
-    const x = u*u*u*P0.x + 3*u*u*s*P1.x + 3*u*s*s*P2.x + s*s*s*P3.x;
-    const y = u*u*u*P0.y + 3*u*u*s*P1.y + 3*u*s*s*P2.y + s*s*s*P3.y;
-    return { x, y };
-  }
-  if (track.type === "curved"){
-    // piecewise quadratics — map s to chain
-    const A = buildAxis(track);
-    const ctrls = (track.midControls??[]).map((c:any)=>{
-      const tt = clamp01((c.t??50)/100);
-      const off = ((c.off??0)/100);
+    case "bezier": return trackBezierPointAt(track, s);
+    case "curved": return trackCurvedPointAt(track, s);
+    case "spline": return trackSplinePointAt(track, s);
+    case "path":
+      ensurePathArcCache(track);
+      if (track._arcCache){
+        const { table, total } = track._arcCache;
+        const target = s * total;
+        // binary search
+        let lo=0, hi=table.length-1;
+        while (lo < hi){
+          const mid = (lo+hi)>>1;
+          if (table[mid] < target) lo=mid+1; else hi=mid;
+        }
+        const idx = Math.max(1, lo);
+        const t0 = table[idx-1], t1 = table[idx];
+        const span = (t1 - t0) || 1;
+        const f = Math.max(0, Math.min(1, (target - t0)/span));
+        const a = track.pathPoints[idx-1], b = track.pathPoints[idx];
+        return { x: a.x + (b.x-a.x)*f, y: a.y + (b.y-a.y)*f };
+      }
+      return rawPathPointAt(track, s);
+    case "spiral":
+    case "corkscrew":
+      // Placeholder linear; can replace with real param later
       return {
-        x: A.p1.x + A.ux * (tt * A.dist) + A.nx * (off * A.dist),
-        y: A.p1.y + A.uy * (tt * A.dist) + A.ny * (off * A.dist)
+        x: track.p1.x + (track.p2.x-track.p1.x)*s,
+        y: track.p1.y + (track.p2.y-track.p1.y)*s
       };
-    });
-    const pts = [A.p1, ...ctrls, A.p2];
-    if (pts.length === 2) return {
-      x: A.p1.x + (A.p2.x - A.p1.x)*s,
-      y: A.p1.y + (A.p2.y - A.p1.y)*s
-    };
-    const segs = pts.length - 1;
-    const segF = s * segs;
-    const i = Math.min(segs-1, Math.floor(segF));
-    const local = segF - i;
-    const p0 = pts[i];
-    const p1 = pts[i+1];
-    // Quadratic via midpoint (approx) – simple linear for preview
-    return { x: p0.x + (p1.x - p0.x)*local, y: p0.y + (p1.y - p0.y)*local };
+    default:
+      return { x:0, y:0 };
   }
-  if (track.type === "spline"){
-    // Basic interpolate along catmull-like sequence (simplified)
-    const A = buildAxis(track);
-    const controls = (track.controls && track.controls.length ? track.controls : [{ t:50, off:0 }]).map((c:any)=>{
-      const tt = clamp01((c.t??50)/100);
-      const off = ((c.off??0)/100);
-      return {
-        x: A.p1.x + A.ux * (tt * A.dist) + A.nx * (off * A.dist),
-        y: A.p1.y + A.uy * (tt * A.dist) + A.ny * (off * A.dist)
-      };
-    });
-    const pts = [A.p1, ...controls, A.p2];
-    const segs = pts.length - 1;
-    const segF = s * segs;
-    const i = Math.min(segs-1, Math.floor(segF));
-    const local = segF - i;
-    const P = (k:number)=> pts[Math.max(0, Math.min(pts.length-1, k))];
-    const p0=P(i-1), p1=P(i), p2=P(i+1), p3=P(i+2);
-    // Catmull-Rom
-    const l2 = local*local;
-    const l3 = l2*local;
-    const tension = clamp01(track.tension ?? 0.25);
-    const alpha = (1 - tension)*0.5;
-    const x = (
-      (-alpha*p0.x + (2-alpha)*p1.x + (alpha-2)*p2.x + alpha*p3.x) * l3 +
-      (2*alpha*p0.x + (alpha-3)*p1.x + (3-2*alpha)*p2.x - alpha*p3.x) * l2 +
-      (-alpha*p0.x + alpha*p2.x) * local +
-      p1.x
-    );
-    const y = (
-      (-alpha*p0.y + (2-alpha)*p1.y + (alpha-2)*p2.y + alpha*p3.y) * l3 +
-      (2*alpha*p0.y + (alpha-3)*p1.y + (3-2*alpha)*p2.y - alpha*p3.y) * l2 +
-      (-alpha*p0.y + alpha*p2.y) * local +
-      p1.y
-    );
-    return { x, y };
+}
+
+// Add helper exposed (optional use elsewhere)
+export function ensurePathArcCache(track:any){
+  if (track.type!=='path' || !Array.isArray(track.pathPoints) || track.pathPoints.length<2) return;
+  const v = track._v || 0;
+  if (!track._arcCache || track._arcCache._v !== v){
+    const { table, total } = buildArcTableFromPoints(track.pathPoints);
+    track._arcCache = { _v: v, table, total };
   }
-  // Spiral / corkscrew placeholder linear
-  return {
-    x: track.p1.x + (track.p2.x - track.p1.x)*s,
-    y: track.p1.y + (track.p2.y - track.p1.y)*s
-  };
 }
 
 // Projection using sampled polyline
@@ -292,4 +224,85 @@ export function segmentSamplePaths(track:any, segments:number){
 export function trackSegmentIndex(track:any, trackPosition:number){
   const segs = Math.max(1, track.segments || 1);
   return Math.min(segs-1, Math.floor(trackPosition * segs));
+}
+
+// Lightweight cached polyline sampling (lower detail) for interactive hit tests / projections.
+export function getFastSamples(track:any, detail=40){
+  if (!track) return [];
+  // internal versioning: bump track._v whenever geometry fields change
+  const cacheKey = detail;
+  track._geomCache = track._geomCache || { v: track._v||0, samples:{}, bbox:null };
+  if (track._geomCache.v !== (track._v||0)){
+    track._geomCache = { v: track._v||0, samples:{}, bbox:null };
+  }
+  if (track._geomCache.samples[cacheKey]) return track._geomCache.samples[cacheKey];
+  // Build samples (reuse existing logic but with reduced steps)
+  let samples;
+  if (track.type === 'straight'){
+    samples = [
+      { x: track.p1.x, y: track.p1.y, len:0, t:0 },
+      { x: track.p2.x, y: track.p2.y, len: Math.hypot(track.p2.x-track.p1.x, track.p2.y-track.p1.y), t:1 }
+    ];
+  } else if (track.type === 'path' && Array.isArray(track.pathPoints) && track.pathPoints.length >= 2){
+    let len=0;
+    samples = track.pathPoints.map((p:any,i:number)=>{
+      if (i>0){
+        const dx=p.x-track.pathPoints[i-1].x, dy=p.y-track.pathPoints[i-1].y;
+        len += Math.hypot(dx,dy);
+      }
+      return { x:p.x, y:p.y, len, t:0 };
+    });
+    const total = len||1;
+    for (const s of samples) s.t = s.len/total;
+  } else {
+    // fallback to regular sampleTrack but lower resolution
+    samples = sampleTrack(track, detail);
+  }
+  track._geomCache.samples[cacheKey] = samples;
+  return samples;
+}
+
+export function fastProjectPointToTrack(track:any, x:number, y:number){
+  const pts = getFastSamples(track, 48);
+  if (pts.length < 2) return { x, y, t:0, dist: Infinity };
+  let bestDist = Infinity;
+  let best = { x:pts[0].x, y:pts[0].y, t:0, dist:Infinity };
+  for (let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1];
+    const vx=b.x-a.x, vy=b.y-a.y;
+    const len2 = vx*vx + vy*vy || 1;
+    let tt = ((x-a.x)*vx + (y-a.y)*vy)/len2;
+    if (tt<0) tt=0; else if (tt>1) tt=1;
+    const px = a.x + vx*tt, py = a.y + vy*tt;
+    const d2 = (px-x)*(px-x)+(py-y)*(py-y);
+    if (d2 < bestDist){
+      const segT = a.t + (b.t - a.t)*tt;
+      bestDist = d2;
+      best = { x:px, y:py, t:segT, dist: Math.sqrt(d2) };
+    }
+  }
+  return best;
+}
+
+export function getTrackBBox(track:any){
+  track._geomCache = track._geomCache || { v: track._v||0, samples:{}, bbox:null };
+  if (track._geomCache.v !== (track._v||0)){
+    track._geomCache = { v: track._v||0, samples:{}, bbox:null };
+  }
+  if (track._geomCache.bbox) return track._geomCache.bbox;
+  const pts = getFastSamples(track, 32);
+  let minX= Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  for (const p of pts){
+    if (p.x < minX) minX=p.x;
+    if (p.x > maxX) maxX=p.x;
+    if (p.y < minY) minY=p.y;
+    if (p.y > maxY) maxY=p.y;
+  }
+  if (!pts.length){
+    minX = maxX = track.p1?.x||0;
+    minY = maxY = track.p1?.y||0;
+  }
+  const bbox = { x:minX, y:minY, w:maxX-minX, h:maxY-minY };
+  track._geomCache.bbox = bbox;
+  return bbox;
 }

@@ -16,16 +16,31 @@
     </g>
     <g v-for="t in tracks" :key="t.id" class="track" :class="{ sel: isSel(t.id) }">
       <!-- Slide pad -->
-      <line
-        v-if="showSlidePads"
-        class="slide-pad"
-        :x1="t.p1.x" :y1="t.p1.y" :x2="t.p2.x" :y2="t.p2.y"
-        :stroke="slidePadColor"
-        :stroke-width="slidePadWidth"
-        stroke-linecap="round"
-        stroke-opacity="0.22"
-        pointer-events="none"
-      />
+      <template v-if="showSlidePads">
+        <line
+          v-if="t.type==='straight'"
+          class="slide-pad"
+          :x1="t.p1.x" :y1="t.p1.y" :x2="t.p2.x" :y2="t.p2.y"
+          :stroke="slidePadColor"
+          :stroke-width="slidePadWidth"
+          stroke-linecap="round"
+          stroke-opacity="0.22"
+          pointer-events="none"
+        />
+        <path
+          v-else
+          class="slide-pad"
+          :d="pathD(t)"
+          fill="none"
+          :stroke="slidePadColor"
+          :stroke-width="slidePadWidth"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-opacity="0.22"
+          vector-effect="non-scaling-stroke"
+          pointer-events="none"
+        />
+      </template>
       <template v-if="t.type==='straight'">
         <g v-if="(t.segments || 1) > 1" class="segmented">
           <line
@@ -92,7 +107,7 @@
 import { defineComponent, inject } from "vue";
 import { useInvestigationWebStore } from "../../stores/web";
 import { RUNTIME_KEY } from "../../context/runtime";
-import { trackPathD, projectPointToTrack, segmentSamplePaths } from "../../stores/util/trackGeometry";
+import { trackPathD, projectPointToTrack, segmentSamplePaths, fastProjectPointToTrack } from "../../stores/util/trackGeometry";
 import TrackGhost from "./TrackGhost.vue";
 
 export default defineComponent({
@@ -141,13 +156,13 @@ export default defineComponent({
       if (this.store.tools.addSnapNode || this.store.tools.placeStagedSnapId){
         if (!view) return;
         const w0 = view.worldFromClient(e.clientX, e.clientY);
-        const proj = this.projectT(t, w0.x, w0.y);
+        const projT = fastProjectPointToTrack(t, w0.x, w0.y).t;
         if (this.store.tools.addSnapNode){
-          const snap = this.store.addSnapNode({ trackId: t.id, tHint: proj });
+          const snap = this.store.addSnapNode({ trackId: t.id, tHint: projT });
           this.runtime?.controllers?.selection?.set(snap.id);
           if (!e.shiftKey) this.store.setAddSnapNode(false);
         } else if (this.store.tools.placeStagedSnapId){
-          const snap = this.store.placeSnapFromStaging(this.store.tools.placeStagedSnapId, t.id, proj);
+          const snap = this.store.placeSnapFromStaging(this.store.tools.placeStagedSnapId, t.id, projT);
           this.runtime?.controllers?.selection?.set(snap?.id || null);
           if (!e.shiftKey) this.store.setPlaceStagedSnap(null);
         }
@@ -161,6 +176,7 @@ export default defineComponent({
       }
       e.stopPropagation();
       this.selCtrl?.set(t.id);
+      // no auto-switch to group; calc tracks are selectable (but locked for drag)
     },
     dragWholeTrack(t:any, e:PointerEvent){
       const view = this.runtime?.controllers?.view;

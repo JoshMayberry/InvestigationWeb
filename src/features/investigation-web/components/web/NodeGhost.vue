@@ -46,7 +46,7 @@
 import { defineComponent, inject } from "vue";
 import { RUNTIME_KEY } from "../../context/runtime";
 import { useInvestigationWebStore } from "../../stores/web";
-import { projectPointToTrack, pointAtTrackPosition } from "../../stores/util/trackGeometry"; // NEW
+import { projectPointToTrack, pointAtTrackPosition, fastProjectPointToTrack } from "../../stores/util/trackGeometry"; // NEW
 
 export default defineComponent({
   name: "NodeGhost",
@@ -80,7 +80,7 @@ export default defineComponent({
         // nearest track
         let nearest:any = null;
         for (const t of this.store.tracks){
-          const proj = projectPointToTrack(t, this.dragGhost.x, this.dragGhost.y);
+          const proj = fastProjectPointToTrack(t, this.dragGhost.x, this.dragGhost.y);
           if (!nearest || proj.dist < nearest.dist) nearest = { tObj:t, t:proj.t, dist:proj.dist };
         }
         if (!nearest) return [];
@@ -96,9 +96,12 @@ export default defineComponent({
 
       // Build projection list for ordering inside segments
       const projList = snaps.map(n=>{
-        const proj = projectPointToTrack(track, n.x, n.y);
-        let segIdx = typeof n.trackSegment === "number" ? n.trackSegment : Math.min(segCount-1, Math.floor(proj.t * segCount));
-        return { id:n.id, t: proj.t, seg: segIdx };
+        // Use stored trackPosition to avoid re-projecting
+        let tVal = typeof n.trackPosition === "number" ? n.trackPosition : 0.5;
+        let segIdx = typeof n.trackSegment === "number"
+          ? n.trackSegment
+          : Math.min(segCount-1, Math.floor(tVal * segCount));
+        return { id:n.id, t: tVal, seg: segIdx };
       });
 
       // Determine target segment for ghost

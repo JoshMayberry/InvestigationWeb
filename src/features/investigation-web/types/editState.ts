@@ -10,4 +10,5 @@ export type CurrentEditState =
   | "drag-snap-node"
   | "drag-track"
   | "drag-track-end"
-  | "edit-selected-node";
+  | "edit-selected-node"
+  | "add-calc-group";

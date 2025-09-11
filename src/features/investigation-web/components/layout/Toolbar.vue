@@ -69,6 +69,7 @@ export default defineComponent({
           return this.runtime?.controllers?.selection.get()
             ? `Selected: ${this.runtime?.controllers?.selection.get()}`
             : "Edit";
+        case "add-calc-group": return "Add Calculated Tracks: move mouse, click to place. Alt = ignore grid";
         default:
           return this.store.policy.canEditStructure ? "Click a node to select" : "View mode";
       }

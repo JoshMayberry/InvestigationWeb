@@ -9,6 +9,7 @@ import { linkActions } from "./slices/web.actions.links";
 import { snapshotActions } from "./slices/web.actions.snapshot";
 import { discoveryActions } from "./slices/web.actions.discovery";
 import { trackActions } from "./slices/web.actions.tracks";
+import { calcGroupActions } from "./slices/web.actions.calcGroups";
 
 export const useInvestigationWebStore = defineStore("investigationWeb", {
   state: () => createInitialState(),
@@ -20,7 +21,11 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
     ...nodeActions,
     ...linkActions,
     ...trackActions,
+    ...calcGroupActions,
     ...snapshotActions,
     ...discoveryActions,
-  }
+  },
+  setRuntime(runtime: any) {
+    (this as any).runtime = runtime;
+  },
 });

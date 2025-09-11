@@ -16,6 +16,11 @@ export const snapshotActions = {
       ...t,
       segments: Math.max(1, t.segments || 1)
     }));
+    this.calcGroups = (raw.calcGroups || []).map((g:any)=>({
+      ...g,
+      params: { ...g.params }
+    }));
+    this._regenerateCalculatedGroups();
     this.trackSeq = raw.trackSeq ?? this.tracks.length;
     if (raw.trackDraft){
       this.trackDraft = {
@@ -24,6 +29,7 @@ export const snapshotActions = {
         segments: Math.max(1, raw.trackDraft.segments || 1)
       };
     }
+    if (raw.groupDraft) this.groupDraft = { ...raw.groupDraft };
     if (raw.meta?.settings) {
       const s = raw.meta.settings;
       // (Keep existing settings merge logic)
@@ -48,7 +54,9 @@ export const snapshotActions = {
       tracks: this.tracks,
       trackSeq: this.trackSeq,
       trackDraft: this.trackDraft,
-      meta: { savedAt: new Date().toISOString() }
+      groupDraft: this.groupDraft,
+      meta: { savedAt: new Date().toISOString() },
+      calcGroups: this.calcGroups,
     };
     await axios.post("/api/data", { folder: FOLDER, filename: FILENAME, data: doc });
     this.savedAt = doc.meta.savedAt;

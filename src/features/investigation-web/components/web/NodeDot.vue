@@ -65,7 +65,7 @@ import { defineComponent, inject } from "vue";
 import type { NodeAny } from "../../types/node";
 import { RUNTIME_KEY } from "../../context/runtime";
 import { useInvestigationWebStore } from "../../stores/web";
-import { projectPointToTrack } from "../../stores/util/trackGeometry"; // ADDED
+import { projectPointToTrack, fastProjectPointToTrack, getTrackBBox } from "../../stores/util/trackGeometry"; // ADD
 
 const MOVE_THRESHOLD = 3;
 
@@ -170,12 +170,21 @@ export default defineComponent({
           this.view = this.viewCtrl;
           this.thresh = () => this.storeRef.settings.snapPlacementThreshold || this.storeRef.settings.slideTrackThreshold || 32;
           this.dragCtrl?.setValidator((g:any)=>{
+            const thresh = this.thresh();
             let best = Infinity;
+            // quick pass: bbox rejection
             for (const t of this.storeRef.tracks){
-              const proj = projectPointToTrack(t, g.x, g.y);
+              const bb = getTrackBBox(t);
+              // expand bbox by threshold once (inflate)
+              const dx = g.x < bb.x ? bb.x - g.x : (g.x > bb.x+bb.w ? g.x - (bb.x+bb.w) : 0);
+              const dy = g.y < bb.y ? bb.y - g.y : (g.y > bb.y+bb.h ? g.y - (bb.y+bb.h) : 0);
+              const approxDist = dx || dy ? Math.hypot(dx,dy) : 0;
+              if (approxDist > thresh) continue;
+              const proj = fastProjectPointToTrack(t, g.x, g.y);
               if (proj.dist < best) best = proj.dist;
+              if (best <= 2) break;
             }
-            return { valid: best <= this.thresh() };
+            return { valid: best <= thresh };
           });
         } else {
           this.dragCtrl?.setValidator(()=>({ valid:true }));

@@ -42,6 +42,20 @@ export const snapshotActions = {
     }
     this.savedAt = raw.meta?.savedAt || null;
     this.dirty = false;
+
+    for (const n of (raw.nodes||[])){
+      if (n.kind === 'sim'){
+        n.kind = 'free';
+        n.sim = n.sim || { enabled:true };
+      }
+    }
+    for (const n of (raw.staging||[])){
+      if (n.kind === 'sim'){
+        n.kind = 'free';
+        n.sim = n.sim || { enabled:true };
+      }
+    }
+
     return true;
   },
 

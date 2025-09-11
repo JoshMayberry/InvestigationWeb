@@ -3,10 +3,12 @@
     <h3 class="title">Add</h3>
     <div class="row">
       <button class="btn" :class="{ active: store.tools.addFreeNode }" @click="toggleFree">Add Free Node</button>
+      <button class="btn" :class="{ active: store.tools.addSimNode }" @click="toggleSim">Add Simulation Node</button>
       <button class="btn" :class="{ active: store.tools.addSnapNode }" @click="toggleSnap">Add Snap Node</button>
       <button class="btn" :class="{ active: store.tools.addLink }" @click="toggleLink">Add Link</button>
       <button class="btn" :class="{ active: store.tools.addTrack }" @click="toggleTrack">Add Track</button>
       <button class="btn" :class="{ active: store.tools.addCalcGroup }" @click="toggleCalcGroup">Add Calculated Tracks</button>
+      <button class="btn" :class="{ active: store.tools.linkLasso }" @click="toggleLinkLasso">Link Lasso</button>
     </div>
   </div>
 </template>
@@ -36,6 +38,21 @@ export default defineComponent({
         this.store.setAddSnapNode(false);
         this.store.setAddLink(false);
         this.store.setAddTrack(false);
+        this.store.setAddCalcGroup(false);
+        this.store.setPlaceStaged(null);
+        this.store.setPlaceStagedSnap(null);
+      }
+    },
+    toggleSim(){
+      const on = !this.store.tools.addSimNode;
+      this.runtime?.controllers?.linkPlacement?.cancel();
+      this.store.setAddSimNode(on);
+      if (on){
+        this.store.setAddFreeNode(false);
+        this.store.setAddSnapNode(false);
+        this.store.setAddLink(false);
+        this.store.setAddTrack(false);
+        this.store.setAddCalcGroup(false);
         this.store.setPlaceStaged(null);
         this.store.setPlaceStagedSnap(null);
       }
@@ -84,6 +101,22 @@ export default defineComponent({
         this.store.setAddSnapNode(false);
         this.store.setAddLink(false);
         this.store.setAddTrack(false);
+        this.store.setPlaceStaged(null);
+        this.store.setPlaceStagedSnap(null);
+      }
+    },
+    toggleLinkLasso(){
+      const on = !this.store.tools.linkLasso;
+      this.runtime?.controllers?.linkPlacement?.cancel();
+      this.store.setLinkLasso(on);
+      if (on){
+        // ensure other tools off
+        this.store.setAddLink(false);
+        this.store.setAddFreeNode(false);
+        this.store.setAddSimNode(false);
+        this.store.setAddSnapNode(false);
+        this.store.setAddTrack(false);
+        this.store.setAddCalcGroup(false);
         this.store.setPlaceStaged(null);
         this.store.setPlaceStagedSnap(null);
       }

@@ -2,7 +2,7 @@
   <g
     class="node"
     :data-id="node.id"
-    :class="{ dim, sel: isSelected, hovered: isHovered }"
+    :class="{ dim, sel: isSelected, hovered: isHovered, undiscovered: (!node.discovered && store.currentMode==='discovery') }"
     :transform="`translate(${node.x},${node.y})`"
     ref="el"
     @pointerdown="onPointerDown"
@@ -38,7 +38,7 @@
       pointer-events="none"
     />
     <circle
-      v-if="node.locked"
+      v-if="canEdit && node.locked"
       class="lock-dot"
       :cx="-(node.r||12) * 0.7"
       :cy="-(node.r||12) * 0.7"
@@ -48,13 +48,22 @@
       stroke-width="1"
       pointer-events="none"
     />
+    <circle
+      v-if="(canEdit || isSimulationMode) && (node.kind!=='snap')"
+      :class="node.sim?.enabled ? 'sim-ring' : ''"
+      :r="(node.r||12)+4"
+      fill="none"
+      :stroke="node.sim?.enabled ? '#f59e0b' : '#999999'"
+      stroke-width="1.5"
+      stroke-dasharray="4 3"
+      pointer-events="none"
+    />
     <text
-      v-if="node.label"
+      v-if="showLabel"
       class="label"
-      y="-16"
-      text-anchor="middle"
-      fill="#c8d3ff"
-      font-size="11"
+      :transform="labelTransform"
+      :text-anchor="textAnchor"
+      :style="labelCss"
       pointer-events="none"
     >{{ node.label }}</text>
   </g>
@@ -89,7 +98,10 @@ export default defineComponent({
       // added placeholders used during snap drag
       storeRef: null as any,
       view: null as any,
-      thresh: () => 32
+      thresh: () => 32,
+      simDragActive:false,
+      simDragLast:{ x:0, y:0 },
+      simDragOffset:{ x:0, y:0 },
     };
   },
   computed:{
@@ -106,13 +118,95 @@ export default defineComponent({
       const ghost = this.dragCtrl?.ghost;
       return !!ghost && (ghost.mode === "add-free" || ghost.mode === "place-staged");
     },
-    addLinkActive(): boolean { return !!this.store?.tools?.addLink; }
+    addLinkActive(): boolean { return !!this.store?.tools?.addLink; },
+    isSimulationMode(): boolean { return this.store.currentMode === 'simulation'; },
+    discovered(): boolean { return !!this.node.discovered; },
+    showLabel(): boolean {
+      if (!this.node.label) return false;
+      const mode = this.node.labelStyle?.mode || 'angle';
+      if (mode === 'hidden') return false;
+      return true;
+    },
+    labelConfig(): any {
+      const ls = this.node.labelStyle || {};
+      return {
+        mode: ls.mode || 'angle',
+        angle: typeof ls.angle === 'number' ? ls.angle : 0,
+        offsetX: ls.offsetX ?? 0,
+        offsetY: ls.offsetY ?? 0,
+        rotation: ls.rotation ?? 0,
+        fontSize: ls.fontSize ?? 11,
+        fontWeight: ls.fontWeight || 'normal',
+        fontStyle: ls.fontStyle || 'normal',
+        color: ls.color || '#c8d3ff',
+        margin: ls.margin ?? 4
+      };
+    },
+    labelTransform(): string {
+      if (!this.showLabel) return '';
+      const r = this.node.r || 12;
+      const cfg = this.labelConfig;
+      if (cfg.mode === 'free'){
+        return `translate(${cfg.offsetX},${cfg.offsetY}) rotate(${cfg.rotation})`;
+      }
+      // angle mode
+      // angle 0 = top (subtract 90° to convert to standard)
+      const rad = (cfg.angle - 90) * Math.PI / 180;
+      const dist = r + cfg.margin + 2;
+      const x = Math.cos(rad) * dist;
+      const y = Math.sin(rad) * dist;
+      return `translate(${x.toFixed(2)},${y.toFixed(2)})`;
+    },
+    textAnchor(): string {
+      const m = this.labelConfig.mode;
+      if (m === 'free') return 'middle';
+      // angle-based dynamic anchor (optional simple heuristic)
+      const a = ((this.labelConfig.angle % 360)+360)%360;
+      if (a > 45 && a < 135) return 'middle';
+      if (a > 225 && a < 315) return 'middle';
+      return 'middle';
+    },
+    labelCss(): string {
+      const cfg = this.labelConfig;
+      const dim = (!this.discovered && this.store.currentMode === 'discovery');
+      return `
+        font-size:${cfg.fontSize}px;
+        font-weight:${cfg.fontWeight};
+        font-style:${cfg.fontStyle};
+        fill:${cfg.color};
+        opacity:${dim ? 0.35 : 0.95};
+      `;
+    }
   },
   created(){ this.runtime = inject(RUNTIME_KEY, null); },
   methods:{
     onEnter(){ this.hoverCtrl?.set(this.node.id); },
     onLeave(){ this.hoverCtrl?.clear(); },
     onPointerDown(e:PointerEvent){
+      // Simulation-mode direct drag (bypasses normal edit restrictions)
+      if (this.isSimulationMode){
+        if (!this.store.simulation.running){
+          this.store.startSimulation();
+          this.store.updateSimSettings({ alpha: Math.max(this.store.simulation.alpha, this.store.simulation.minAlphaOnInteract || 0.25) });
+        }
+
+        e.stopPropagation(); e.preventDefault();
+        // Only allow free nodes (snap nodes stay fixed) – adjust if you want snaps movable too
+        if (this.node.kind === 'snap') return;
+        const w = this.viewCtrl.worldFromClient(e.clientX, e.clientY);
+        this.simDragActive = true;
+        this.simDragLast = { x: w.x, y: w.y };
+        this.simDragOffset = { x: this.node.x - w.x, y: this.node.y - w.y };
+        if (!this.node.sim) this.node.sim = { enabled:false };
+        this.node.sim.dragging = true;
+        // Zero velocity while grabbed
+        this.node.sim.vx = 0; this.node.sim.vy = 0;
+        window.addEventListener("pointermove", this.onSimDragMove);
+        window.addEventListener("pointerup", this.onSimDragUp, { once:true });
+        return;
+      }
+
+      // --- existing non-simulation logic below (unchanged) ---
       // Discovery mode: toggle discovered state (respect mode rules)
       if (this.canDiscover && !this.canEdit) {
         e.stopPropagation(); e.preventDefault();
@@ -305,7 +399,36 @@ export default defineComponent({
       if (this.snapDragging){
         window.removeEventListener("pointermove", this.onSnapMove);
       }
-    }
+    },
+    onSimDragMove(e:PointerEvent){
+      if (!this.simDragActive) return;
+      const w = this.viewCtrl.worldFromClient(e.clientX, e.clientY);
+      const nx = w.x + this.simDragOffset.x;
+      const ny = w.y + this.simDragOffset.y;
+      // Compute instantaneous velocity (simple)
+      const vx = (w.x - this.simDragLast.x);
+      const vy = (w.y - this.simDragLast.y);
+      this.node.x = nx;
+      this.node.y = ny;
+      this.node.sim.vx = vx;
+      this.node.sim.vy = vy;
+      this.simDragLast = { x: w.x, y: w.y };
+      if (this.store.simulation){
+        if (!this.store.simulation.running) this.store.startSimulation();
+        if (this.store.simulation.alpha < (this.store.simulation.minAlphaOnInteract||0.25)){
+          this.store.simulation.alpha = this.store.simulation.minAlphaOnInteract||0.25;
+        }
+      }
+    },
+    onSimDragUp(){
+      if (!this.simDragActive) return;
+      this.simDragActive = false;
+      if (this.node.sim){
+        // Release: allow physics to take over with last set velocity
+        delete this.node.sim.dragging;
+      }
+      window.removeEventListener("pointermove", this.onSimDragMove);
+    },
   }
 });
 </script>
@@ -318,4 +441,10 @@ export default defineComponent({
 .halo { pointer-events:none; }
 .node.sel .core { filter: drop-shadow(0 0 6px rgba(96,165,250,0.9)); }
 .bonus-dot { filter: drop-shadow(0 0 4px rgba(16,185,129,0.8)); }
+.sim-ring { animation: pulse 2.2s linear infinite; opacity:0.7; }
+.node.undiscovered .core { opacity:.35; }
+@keyframes pulse {
+  0% { stroke-dashoffset:0; }
+  100% { stroke-dashoffset: -14; }
+}
 </style>

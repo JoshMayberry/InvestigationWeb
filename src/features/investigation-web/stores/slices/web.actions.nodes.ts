@@ -2,25 +2,44 @@ import { newId } from "../util/newId";
 import { projectPointToTrack, pointAtTrackPosition } from "../util/trackGeometry"; // ADDED
 
 export const nodeActions = {
-  addNode(this:any, p: any) {
+  addNode(this:any, p:any){
     const d = this.settings.defaultNode;
-    const n = {
+    const wantSim = p.kind === 'sim' || p.simEnabled;
+    const n:any = {
       id: p.id || newId(),
-      kind: "free",
-      x: p.x ?? 0, y: p.y ?? 0,
-      r: p.r ?? d.r, color: p.color || d.color, label: p.label ?? d.label
+      kind: p.kind === 'snap' ? 'snap' : 'free',
+      x: p.x ?? 0,
+      y: p.y ?? 0,
+      r: p.r ?? d.r,
+      label: p.label ?? d.label,
+      data: p.data || {},
+      locked: !!p.locked,
+      labelStyle: p.labelStyle || { mode:'angle', angle:0, fontSize:11, margin:4 },
     };
-    this.nodes.push(n); this.dirty = true; return n;
+    if (n.kind === 'free' && wantSim){
+      n.sim = { enabled:true };
+    }
+    this.nodes.push(n);
+    this.dirty = true;
+    return n;
   },
-  addStaged(this:any, p?: any) {
+  addStaged(this:any, p?:any){
     const d = this.settings.defaultNode;
-    const n = {
+    const wantSim = p?.kind === 'sim' || p?.simEnabled;
+    const n:any = {
       id: p?.id || newId("s"),
-      kind: "free",
-      x: p?.x ?? 0, y: p?.y ?? 0,
-      r: p?.r ?? d.r, color: p?.color || d.color, label: p?.label ?? d.label
+      kind: 'free',
+      x: p?.x ?? 0,
+      y: p?.y ?? 0,
+      r: p?.r ?? d.r,
+      label: p?.label ?? d.label,
+      locked: !!p?.locked,
+      labelStyle: p?.labelStyle || { mode:'angle', angle:0, fontSize:11, margin:4 },
     };
-    this.staging.push(n); this.dirty = true; return n;
+    if (wantSim) n.sim = { enabled:true };
+    this.staging.push(n);
+    this.dirty = true;
+    return n;
   },
   duplicateNodeToStaging(this:any, id: string) {
     const n = this.nodes.find((n:any) => n.id === id); if (!n) return;
@@ -35,8 +54,16 @@ export const nodeActions = {
     const [n] = this.staging.splice(i, 1); n.x = x; n.y = y; this.nodes.push(n);
     this.tools.placeStagedId = null; this.dirty = true; return n;
   },
+  // (Optional robustness) when patching sim flag keep existing velocities:
   patchNode(this:any, id: string, patch: any) {
     const i = this.nodes.findIndex((n:any) => n.id === id); if (i === -1) return;
+    if (patch.sim && this.nodes[i].sim){
+      patch = { ...patch, sim: { ...this.nodes[i].sim, ...patch.sim } };
+    }
+    if (patch.labelStyle){
+      const cur = this.nodes[i].labelStyle || {};
+      patch = { ...patch, labelStyle: { ...cur, ...patch.labelStyle } };
+    }
     this.nodes[i] = { ...this.nodes[i], ...patch }; this.dirty = true;
   },
   hasNode(this:any, id:string){ return this.nodes.some((n:any)=> n.id === id) || this.staging.some((n:any)=> n.id === id); },

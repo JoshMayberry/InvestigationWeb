@@ -58,6 +58,15 @@ export const linkActions = {
         color: payload.color || this.linkDraft.color, stroke: payload.stroke || this.linkDraft.stroke,
         arrowHead: payload.arrowHead ?? this.linkDraft.arrowHead, pad: payload.pad ?? this.linkDraft.pad };
     }
+    if ((payload as any)?.simEnabled || this.linkDraft?.sim?.enabled) {
+      link.sim = {
+        enabled:true,
+        restLength: (payload as any).restLength ?? this.linkDraft.sim?.restLength ?? 160,
+        tension: (payload as any).tension ?? this.linkDraft.sim?.tension ?? 0.05,
+        compression: (payload as any).compression ?? this.linkDraft.sim?.compression ?? 0.05,
+        maxForce: (payload as any).maxForce ?? this.linkDraft.sim?.maxForce ?? 4
+      };
+    }
     this.links.push(link); return id;
   },
   patchLink(this:any, id: string, patch: any) {
@@ -74,6 +83,16 @@ export const linkActions = {
     }
     if ((next as any).type === "corkscrew" && patch.turns !== undefined) (next as any).turns = Math.round(patch.turns);
     if ((next as any).type === "spiral" && patch.turns !== undefined) (next as any).turns = Math.round(patch.turns);
+    if (patch.sim && (this.links[i] as any).sim){
+      next.sim = { ...(this.links[i] as any).sim, ...patch.sim };
+    }
+    if (next.sim?.enabled && (next.sim.restLength == null)){
+      const A = this.nodes.find((n:any)=> n.id===next.from);
+      const B = this.nodes.find((n:any)=> n.id===next.to);
+      if (A && B){
+        next.sim.restLength = Math.hypot(B.x-A.x, B.y-A.y);
+      }
+    }
     this.links[i] = next; this.dirty = true;
   },
   deleteLink(this:any, id:string){

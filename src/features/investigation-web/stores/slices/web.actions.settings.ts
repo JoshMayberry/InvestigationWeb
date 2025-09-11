@@ -1,5 +1,7 @@
 import { LS_SETTINGS_KEY } from "../web.const";
 
+export const LS_PRESETS_KEY = "investigation.presets";
+
 export const defaultSettings = {
   confirmDeleteNode: true,
   confirmDeleteStaging: true,

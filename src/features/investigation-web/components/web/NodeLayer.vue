@@ -9,7 +9,7 @@
     />
   </g>
 
-  <g v-if="settings.enforceNoOverlap && settings.showPadPreview" class="pad-preview">
+  <g v-if="canEdit && settings.enforceNoOverlap && settings.showPadPreview" class="pad-preview">
     <circle
       v-for="n in nodes"
       :key="`pad-${n.id}`"
@@ -24,6 +24,7 @@
 <script lang="ts">
 import { defineComponent, inject } from "vue";
 import NodeDot from "./NodeDot.vue";
+import { useInvestigationWebStore } from "../../stores/web";
 import { RUNTIME_KEY } from "../../context/runtime";
 
 export default defineComponent({
@@ -39,11 +40,13 @@ export default defineComponent({
   },
   data(){
     return {
+      store: useInvestigationWebStore(),
       runtime: inject(RUNTIME_KEY, null) as any
     };
   },
   computed:{
-    dragGhost(): any { return this.runtime?.controllers?.drag?.ghost || null; }
+    dragGhost(): any { return this.runtime?.controllers?.drag?.ghost || null; },
+    canEdit(): boolean { return !!this.store?.policy?.canEditStructure; },
   },
   methods: {
     paddingRadius(n: any) {

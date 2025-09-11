@@ -95,6 +95,7 @@ export default defineComponent({
       overlayRect: { x:0, y:0, w:120, h:0 },
       _svgInstalled: false as boolean,
       _svgEl: null as SVGSVGElement | null,
+      _lastNodeCount: 0,                 // ADD
     };
   },
   computed:{
@@ -155,6 +156,25 @@ export default defineComponent({
       if (!on) this.runtime?.controllers?.linkPlacement?.cancel();
       else this.runtime?.controllers?.linkPlacement?.cancel(); // reset when turning on
     }, { immediate: false });
+
+    // ADD: watch for new node while sim tool active
+    this.$watch(
+      () => this.store.nodes.length,
+      (len, prev) => {
+        if (!this.store.tools.addSimNode) { this._lastNodeCount = len; return; }
+        if (len > prev) {
+          const added = this.store.nodes.slice(prev);
+          for (const n of added) {
+            if (n.kind === 'free' && !n.sim?.enabled) {
+              // tag as simulation participant
+              this.store.patchNode(n.id, { sim: { ...(n.sim||{}), enabled: true } });
+            }
+          }
+        }
+        this._lastNodeCount = len;
+      },
+      { immediate: true }
+    );
 
     window.addEventListener("keydown", this._onKey);
   },
@@ -217,7 +237,7 @@ export default defineComponent({
       const el = e.target as Element | null;
       const isBg = !el || (!el.closest(".node") && !el.closest(".track") && !el.closest(".link") && !el.closest(".calc-group"));
       if (isBg) {
-        if (Date.now() < (this.store.suppressClearSelectionUntil || 0)) return; // suppress after drag
+        if (Date.now() < (this.store.suppressClearSelectionUntil || 0)) return;
         this.runtime?.controllers?.selection?.clear?.();
       }
     },
@@ -251,6 +271,10 @@ export default defineComponent({
           this._links?.cancelAll?.();
           this.store.resetTools?.();
         }
+      }
+      if (this.store.tools.linkLasso){
+        this.store.setLinkLasso(false);
+        this.runtime?.controllers?.linkPlacement?.cancel?.();
       }
     },
   },

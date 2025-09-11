@@ -1,11 +1,18 @@
 <template>
   <g class="links">
-    <component
-      v-for="l in store.links"
-      :key="l.id"
-      :is="getType(l.type).linkCanvas"
-      :l="l"
-    />
+    <g v-for="l in store.links" :key="l.id" :class="['link-wrap', { 'sim-active': l.sim?.enabled }]">
+      <component
+        :is="getType(l.type).linkCanvas"
+        :l="l"
+      />
+      <path
+        v-if="l.sim?.enabled"
+        :d="straightOverlay(l)"
+        class="sim-outline"
+        vector-effect="non-scaling-stroke"
+        fill="none"
+      />
+    </g>
   </g>
 </template>
 
@@ -17,11 +24,30 @@ import { getPathType } from "../paths/registry";
 export default defineComponent({
   name: "WebLinks",
   data(){ return { store: useInvestigationWebStore() }; },
-  methods:{ getType(t:string){ return getPathType(t); } }
+  methods:{
+    getType(t:string){ return getPathType(t); },
+    straightOverlay(l:any){
+      const a = this.store.nodes.find((n:any)=> n.id===l.from);
+      const b = this.store.nodes.find((n:any)=> n.id===l.to);
+      if (!a || !b) return "";
+      return `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+    }
+  }
 });
 </script>
 
 <style scoped>
+.link-wrap.sim-active > :deep(path),
+.link-wrap.sim-active > :deep(line) {
+  filter: drop-shadow(0 0 4px rgba(245,158,11,0.8));
+}
+.sim-outline {
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  pointer-events: none;
+  opacity: 0.85;
+}
 .links path.hovered:not(.sel),
 .links line.hovered:not(.sel) { filter: drop-shadow(0 0 4px rgba(96,165,250,0.65)); }
 .links path.sel,

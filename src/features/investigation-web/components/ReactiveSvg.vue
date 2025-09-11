@@ -15,6 +15,7 @@
 import { defineComponent, inject } from "vue";
 import * as d3 from "d3";
 import { InvestigationRuntime, RUNTIME_KEY } from "../context/runtime";
+import { useInvestigationWebStore } from "../stores/web";
 
 interface RSTransform { k:number; x:number; y:number; }
 
@@ -35,7 +36,8 @@ export default defineComponent({
       size: { w:0, h:0 },
       resizeObs: null as ResizeObserver | null,
       zoomBehavior: null as d3.ZoomBehavior<SVGSVGElement, unknown> | null,
-      runtime: null as InvestigationRuntime | null
+      runtime: null as InvestigationRuntime | null,
+      store: useInvestigationWebStore(),
     };
   },
   created(){ this.runtime = inject(RUNTIME_KEY, null); },
@@ -62,6 +64,10 @@ export default defineComponent({
       this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
         .scaleExtent([this.minZoom, this.maxZoom])
         .filter(function(event: any) {
+          // Disable background drag-pan while Link Lasso active
+          if (self.store?.tools?.linkLasso) {
+            if (event.type === "mousedown") return false; // block drag start
+          }
           if (event.type === "mousedown" && event.button !== 0) return false;
           if ((event.target as HTMLElement).closest(".stash-zone")) return false;
           return true;
@@ -74,7 +80,9 @@ export default defineComponent({
           self.$emit("zoom", { ...self.t });
         });
 
-      d3.select(this.svgEl).call(this.zoomBehavior as any);
+      d3.select(this.svgEl)
+        .call(this.zoomBehavior as any)
+        .on("dblclick.zoom", null); // explicit remove
     },
     observeResize(){
       if (!this.wrapEl) return;

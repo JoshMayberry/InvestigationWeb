@@ -28,6 +28,51 @@ import { trackCurvedPath, trackCurvedPointAt } from "@features/investigation-web
 import { trackSplinePath, trackSplinePointAt } from "@features/investigation-web/components/paths/calculations/splinePath";
 import { trackRawPathD, rawPathPointAt } from "@features/investigation-web/components/paths/calculations/rawPath";
 
+function buildSpiralPointsForTrack(track:any){
+  const turns = track.turns ?? 2;
+  const startR = track.startRadius ?? 10;
+  const endR = track.endRadius ?? 60;
+  const dir = track.direction ?? 1;
+  const p1 = track.p1, p2 = track.p2;
+  if (!p1 || !p2) return [{ x:0, y:0 }, { x:0, y:0 }];
+  const vx = p2.x - p1.x, vy = p2.y - p1.y;
+  const L = Math.hypot(vx, vy) || 1;
+  const ux = vx / L, uy = vy / L;
+  const nx = -uy, ny = ux;
+  const steps = Math.max(40, Math.floor(Math.abs(turns) * 60));
+  const pts:any[] = [];
+  for (let i=0;i<=steps;i++){
+    const t = i/steps;
+    const theta = dir * (2*Math.PI*turns) * t;
+    const r = startR + (endR - startR) * t;
+    const sx = r * Math.cos(theta);
+    const sy = r * Math.sin(theta);
+    const axial = L * t;
+    // mild scale for lateral swirl (same as link impl)
+    const lx = axial + sx * 0.2;
+    const ly = sy * 0.2;
+    pts.push({ x: p1.x + lx*ux + ly*nx, y: p1.y + lx*uy + ly*ny });
+  }
+  return pts;
+}
+
+function ensureSpiralCache(track:any){
+  if (!(track.type === 'corkscrew' || track.type === 'spiral')) return;
+  const v = track._v || 0;
+  if (!track._spiralCache || track._spiralCache._v !== v){
+    const pts = buildSpiralPointsForTrack(track);
+    // Build arc table
+    let acc=0;
+    const table=[0];
+    for (let i=1;i<pts.length;i++){
+      const dx=pts[i].x-pts[i-1].x, dy=pts[i].y-pts[i-1].y;
+      acc += Math.hypot(dx,dy);
+      table.push(acc);
+    }
+    track._spiralCache = { _v: v, pts, table, total: acc || 1 };
+  }
+}
+
 export function trackPathD(track:any): string {
   if (!track) return "";
   switch(track.type){
@@ -38,6 +83,13 @@ export function trackPathD(track:any): string {
     case "path": return trackRawPathD(track);
     case "corkscrew":
     case "spiral":
+      ensureSpiralCache(track);
+      if (track._spiralCache){
+        const pts = track._spiralCache.pts;
+        let d = `M ${pts[0].x} ${pts[0].y}`;
+        for (let i=1;i<pts.length;i++) d += ` L ${pts[i].x} ${pts[i].y}`;
+        return d;
+      }
       return `M ${track.p1.x} ${track.p1.y} L ${track.p2.x} ${track.p2.y}`;
     default:
       return `M ${track.p1?.x||0} ${track.p1?.y||0} L ${track.p2?.x||0} ${track.p2?.y||0}`;
@@ -133,7 +185,22 @@ function pointAtApprox(track:any, s:number){
       return rawPathPointAt(track, s);
     case "spiral":
     case "corkscrew":
-      // Placeholder linear; can replace with real param later
+      ensureSpiralCache(track);
+      if (track._spiralCache){
+        const { pts, table, total } = track._spiralCache;
+        const target = s * total;
+        let lo=0, hi=table.length-1;
+        while (lo < hi){
+          const mid = (lo+hi)>>1;
+          if (table[mid] < target) lo=mid+1; else hi=mid;
+        }
+        const idx = Math.max(1, lo);
+        const t0 = table[idx-1], t1 = table[idx];
+        const span = (t1 - t0) || 1;
+        const f = Math.max(0, Math.min(1, (target - t0)/span));
+        const A = pts[idx-1], B = pts[idx];
+        return { x: A.x + (B.x-A.x)*f, y: A.y + (B.y-A.y)*f };
+      }
       return {
         x: track.p1.x + (track.p2.x-track.p1.x)*s,
         y: track.p1.y + (track.p2.y-track.p1.y)*s

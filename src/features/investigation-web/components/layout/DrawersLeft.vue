@@ -9,6 +9,7 @@
     <PanelDiscovery :drawer="{ icon:'visibility', label:'Discovery' }" />
     <PanelFilters :drawer="{ icon:'filter', label:'Filters' }" />
     <PanelBonus :drawer="{ icon:'star', label:'Bonuses' }" />
+    <PanelSimulation :drawer="{ icon:'directions_run', label:'Simulation' }" />
     <PanelSettings :drawer="{ icon:'settings', label:'Settings' }" />
   </Drawers>
 </template>
@@ -25,10 +26,11 @@ import PanelDiscovery from "./PanelDiscovery.vue";
 import PanelFilters from "./PanelFilters.vue";
 import PanelBonus from "./PanelBonus.vue";
 import PanelSettings from "./PanelSettings.vue";
+import PanelSimulation from "./PanelSimulation.vue";
 
 export default defineComponent({
   name: "DrawersLeft",
-  components: { Drawers, PanelEdit, PanelDiscovery, PanelFilters, PanelBonus, PanelSettings },
+  components: { Drawers, PanelEdit, PanelDiscovery, PanelFilters, PanelBonus, PanelSettings, PanelSimulation },
   data() {
     return {
       store: useInvestigationWebStore(),
@@ -58,7 +60,8 @@ export default defineComponent({
         : idx === 1 ? "discovery"
         : idx === 2 ? "filter"
         : idx === 3 ? "bonus"
-        : idx === 4 ? "setting"
+        : idx === 4 ? "simulation"
+        : idx === 5 ? "setting"
         : "view";
     }
   }

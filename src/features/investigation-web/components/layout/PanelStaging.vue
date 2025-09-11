@@ -10,6 +10,11 @@
         <div class="row">
           <span class="dot" :style="{ background: n.color || 'var(--ok)' }"></span>
           <span class="lbl">{{ n.label || n.id }}</span>
+          <label class="sim-flag">
+            <input type="checkbox" :checked="!!n.sim?.enabled"
+                   @change="toggleSim(n.id, $event.target.checked)" />
+            <span>Sim</span>
+          </label>
           <button
             class="place"
             :class="{ on: store.tools.placeStagedId === n.id }"
@@ -53,6 +58,18 @@ export default defineComponent({
     togglePlaceSnap(id:string){
       if (this.store.tools.placeStagedSnapId === id) this.store.setPlaceStagedSnap(null);
       else this.store.setPlaceStagedSnap(id);
+    },
+    toggleSim(id:string, on:boolean){
+      const n = this.store.staging.find((x:any)=> x.id===id);
+      if (!n) return;
+      if (on){ n.sim = { ...(n.sim||{}), enabled:true }; }
+      else if (n.sim){ n.sim.enabled = false; }
+    },
+    changeKind(id:string, kind:string){
+      const n = this.store.staging.find((x:any)=> x.id===id);
+      if (!n) return;
+      if (kind === 'sim') n.kind = 'sim';
+      else n.kind = 'free';
     }
   }
 });
@@ -96,4 +113,13 @@ h3 { margin:0; font-size:14px; }
 .small { font-size:11px; }
 .muted { color: var(--muted); }
 .hint { margin-top:6px; }
+.kind {
+  background: rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.18);
+  color:var(--text);
+  font-size:11px;
+  padding:2px 4px;
+  border-radius:4px;
+}
+.sim-flag { display:inline-flex; align-items:center; gap:4px; font-size:11px; }
 </style>

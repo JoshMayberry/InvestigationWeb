@@ -1,1 +1,1 @@
-export type UIMode = "view" | "edit" | "discovery" | "filter" | "bonus" | "setting";
+export type UIMode = "view" | "edit" | "discovery" | "filter" | "bonus" | "setting" | "simulation";

@@ -1,6 +1,17 @@
 export type LinkType = "straight" | "curved" | "corkscrew" | "bezier" | "spline";
 
-export interface BaseLink {
+export interface SimulationLinkProps {
+  sim?: {
+    enabled: boolean
+    restLength?: number          // preferred length
+    tension?: number             // stiffness when stretched (diff > 0)
+    compression?: number         // stiffness when compressed (diff < 0)
+    maxForce?: number            // clamp per tick
+  }
+}
+
+// Extend BaseLink (non-breaking)
+export interface BaseLink extends SimulationLinkProps {
   id: string;
   type: LinkType;
   from: string;

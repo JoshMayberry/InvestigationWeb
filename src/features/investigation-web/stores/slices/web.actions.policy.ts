@@ -1,7 +1,12 @@
 import type { UIMode } from "../../types/mode";
 
 export const policyActions = {
-  setCurrentEditState(this:any, s: "none" | "add-free-node" | "add-link" | "place-stashed-node" | "drag-free-node" | "edit-selected-node") {
+  setCurrentEditState(this:any, s:
+    "none"|"add-free-node"|"add-link"|"place-stashed-node"|
+    "drag-free-node"|"edit-selected-node"|"add-snap-node"|
+    "place-stashed-snap-node"|"drag-snap-node"|"add-track"|
+    "drag-track"|"drag-track-end"|"add-calc-group"
+  ){
     this.currentEditState = s;
   },
   setCanEditStructure(this:any, on: boolean) {
@@ -119,25 +124,45 @@ export const policyActions = {
     }
   },
   closeAddPanel(this:any){ this.resetTools(); },
+  setLinkLasso(this:any, on:boolean){
+    this.tools.linkLasso = on;
+    if (on){
+      // turn off other mutually exclusive tools
+      this.setAddLink(false);
+      this.setAddFreeNode(false);
+      this.setAddSimNode?.(false);
+      this.setAddSnapNode(false);
+      this.setAddTrack(false);
+      this.setAddCalcGroup(false);
+      this.setPlaceStaged(null);
+      this.setPlaceStagedSnap(null);
+    }
+  },
   resetTools(this:any){
     this.tools.addFreeNode = false;
+    this.tools.addSimNode = false;
     this.tools.addSnapNode = false;
-    this.tools.placeStagedId = null;
-    this.tools.placeStagedSnapId = null;
-    this.tools.editDefaults = false;
     this.tools.addLink = false;
+    this.tools.linkLasso = false;     // <-- ensure cleared
     this.tools.addTrack = false;
     this.tools.addCalcGroup = false;
-    this.setCurrentEditState("none");
-    this.cancelCalcGroupPlacement?.();
+    this.tools.placeStaged = null;
+    this.tools.placeStagedSnap = null;
+    this.currentEditState = "none";
   },
   setPanelOpen(this:any, key: "settings", on: boolean) {
     if (!this.panels) this.panels = { settingsOpen: false };
     if (key === "settings") this.panels.settingsOpen = !!on;
   },
 
-  // NEW: app-wide UI mode (left drawer)
   setMode(this:any, mode: UIMode) {
-    this.currentMode = mode; // ensure state has currentMode; default set from page init
+    this.currentMode = mode;
+    this.setCanEditStructure(mode === "edit");
+    // Allow discovery interactions when discovery drawer active
+    this.policy.canDiscover = (mode === "discovery");
+  },
+  setAddSimNode(this:any, on:boolean){
+    this.setAddFreeNode(on);
+    this.tools.addSimNode = on;
   },
 };

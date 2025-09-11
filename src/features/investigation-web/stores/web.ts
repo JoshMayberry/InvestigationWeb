@@ -10,6 +10,8 @@ import { snapshotActions } from "./slices/web.actions.snapshot";
 import { discoveryActions } from "./slices/web.actions.discovery";
 import { trackActions } from "./slices/web.actions.tracks";
 import { calcGroupActions } from "./slices/web.actions.calcGroups";
+import { simulationActions } from "./slices/web.actions.simulation";
+import { presetActions } from "./slices/web.actions.presets";
 
 export const useInvestigationWebStore = defineStore("investigationWeb", {
   state: () => createInitialState(),
@@ -24,6 +26,8 @@ export const useInvestigationWebStore = defineStore("investigationWeb", {
     ...calcGroupActions,
     ...snapshotActions,
     ...discoveryActions,
+    ...simulationActions,
+    ...presetActions,
   },
   setRuntime(runtime: any) {
     (this as any).runtime = runtime;

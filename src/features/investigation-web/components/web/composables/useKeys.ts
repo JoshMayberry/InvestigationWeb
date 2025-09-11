@@ -10,6 +10,7 @@ export function useKeys({ runtime, store }:{ runtime:any; store:any }){
       if (store.tools.addFreeNode) store.setAddFreeNode(false);
       if (store.tools.placeStagedId) store.setPlaceStaged(null);
       if (store.tools.addTrack) { runtime.controllers.trackPlacement.cancel(); store.setAddTrack(false); }
+      if (store.tools.linkLasso) { runtime.controllers.linkPlacement.cancel(); store.setLinkLasso(false); }
     }
   }
   window.addEventListener("keydown", onKey);

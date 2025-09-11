@@ -92,6 +92,15 @@
       </div>
       <p class="hint muted">Distance within which a snap node (add/drag) is considered on a track. When enabled, live preview repositions existing snap nodes on that track.</p>
     </div>
+
+    <div class="group">
+      <div class="row">
+        <button class="secondary" @click="exportAll">Export Settings & Presets</button>
+        <button class="secondary" @click="triggerImport">Import</button>
+        <input ref="importEl" type="file" accept="application/json" style="display:none" @change="onImport" />
+      </div>
+      <p class="hint muted">Export creates a JSON file containing settings & presets.</p>
+    </div>
   </div>
 </template>
 
@@ -117,7 +126,21 @@ export default defineComponent({
     setNum(key:string, e:Event){
       const v = Number((e.target as HTMLInputElement).value);
       this.store.setSetting(key, v);
-    }
+    },
+    exportAll(){ this.store.exportSettingsAndPresets(); },
+    triggerImport(){ (this.$refs.importEl as HTMLInputElement).value=""; (this.$refs.importEl as HTMLInputElement).click(); },
+    onImport(e:Event){
+      const file = (e.target as HTMLInputElement).files?.[0]; if (!file) return;
+      const r = new FileReader();
+      r.onload = ()=> {
+        try {
+          const obj = JSON.parse(String(r.result));
+          this.store.importSettingsAndPresets(obj);
+          alert("Imported settings & presets");
+        } catch { alert("Invalid JSON"); }
+      };
+      r.readAsText(file);
+    },
   }
 });
 </script>

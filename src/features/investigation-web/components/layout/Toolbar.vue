@@ -53,10 +53,18 @@ export default defineComponent({
       return label ? `Redo: ${label}` : "Redo";
     },
     hint(): string {
+      if (this.store.currentMode === 'simulation') {
+        return "Simulation Mode: drag nodes directly to influence forces";
+      }
+      if (this.store.tools.linkLasso) {
+        return "Link Lasso: hold left mouse and sweep through nodes to chain links";
+      }
       const state = this.store.currentEditState;
       switch (state) {
         case "add-link": return "Add Link: click first node, then second. Shift = keep adding";
-        case "add-free-node": return "Add Free Node: click to place. Shift = keep adding";
+        case "add-free-node":
+          if (this.store.tools.addSimNode) return "Add Simulation Node: click to place. Shift = keep adding";
+          return "Add Free Node: click to place. Shift = keep adding";
         case "add-snap-node": return "Add Snap Node: click a track to insert evenly. Shift = keep adding";
         case "place-stashed-node": return "Place Staged Free Node: click to place";
         case "place-stashed-snap-node": return "Place Staged Snap Node: click a track to insert";

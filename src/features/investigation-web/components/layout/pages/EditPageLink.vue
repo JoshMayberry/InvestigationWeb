@@ -109,6 +109,20 @@
       :link="link"
     />
 
+    <div class="block-title sm">Additional Fields</div>
+    <div class="field-list" v-if="store.customFields.link.length && link">
+      <label v-for="f in store.customFields.link" :key="f.key" class="row">
+        <span>{{ f.label || f.key }}</span>
+        <input class="txt"
+          :value="(link.extra && link.extra[f.key]) || ''"
+          @input="onLinkCustomFieldChange(f.key, ($event.target as HTMLInputElement).value)" />
+        <button class="small danger" @click="removeLinkField(f.key)">✕</button>
+      </label>
+    </div>
+    <div class="row">
+      <button class="secondary small" @click="addLinkField">+ Add Field</button>
+    </div>
+
     <p v-if="mode==='draft'" class="muted small">Click first node, then second. Shift to keep adding.</p>
   </div>
 </template>
@@ -283,12 +297,27 @@ export default defineComponent({
       if (!id) return;
       if (confirm("Remove link sim preset?")) this.store.removeLinkSimPreset(id);
     },
+    addLinkField(){
+      const key = prompt("Field key (identifier):","note");
+      if (!key) return;
+      const label = prompt("Label (optional):", key) || key;
+      this.store.addCustomField('link', key, label);
+    },
+    removeLinkField(key:string){
+      if (confirm(`Remove field '${key}' from all links?`)){
+        this.store.removeCustomField('link', key);
+      }
+    },
+    onLinkCustomFieldChange(key:string, val:string){
+      if (!this.link) return;
+      this.store.setCustomValue('link', this.link.id, key, val);
+    },
   }
 });
 </script>
 
 <style scoped>
-.form { display:flex; flex-direction:column; gap:10px; }
+.form { display:flex; flex-direction:column; gap:10px; flex:1 1 auto; min-height:0; overflow-y:auto; }
 .block { display:flex; flex-direction:column; gap:8px; }
 .block-title { font-size:12px; color:var(--muted); letter-spacing:.3px; }
 label { display:flex; align-items:center; justify-content:space-between; gap:10px; }
@@ -327,4 +356,5 @@ label > span { font-size:12px; color: var(--muted); }
   align-items:center;
   gap:10px;
 }
+.field-list { display:flex; flex-direction:column; gap:6px; }
 </style>

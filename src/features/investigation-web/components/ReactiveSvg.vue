@@ -64,9 +64,9 @@ export default defineComponent({
       this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
         .scaleExtent([this.minZoom, this.maxZoom])
         .filter(function(event: any) {
-          // Disable background drag-pan while Link Lasso active
-          if (self.store?.tools?.linkLasso) {
-            if (event.type === "mousedown") return false; // block drag start
+          // Disable background drag-pan while Link Lasso or Link Cutter active
+          if (self.store?.tools?.linkLasso || self.store?.tools?.linkCutter) {
+            if (event.type === "mousedown") return false;
           }
           if (event.type === "mousedown" && event.button !== 0) return false;
           if ((event.target as HTMLElement).closest(".stash-zone")) return false;

@@ -62,6 +62,20 @@
     </div>
     <p v-else class="muted small">No snap nodes on this track.</p>
 
+    <div class="block-title sm">Additional Fields</div>
+    <div class="field-list" v-if="store.customFields.track.length && track">
+      <label v-for="f in store.customFields.track" :key="f.key" class="row">
+        <span>{{ f.label || f.key }}</span>
+        <input class="txt"
+          :value="(track.extra && track.extra[f.key]) || ''"
+          @input="onTrackCustomFieldChange(f.key, ($event.target as HTMLInputElement).value)" />
+        <button class="small danger" @click="removeTrackField(f.key)">✕</button>
+      </label>
+    </div>
+    <div class="row">
+      <button class="secondary small" @click="addTrackField">+ Add Field</button>
+    </div>
+
     <div class="row actions">
       <button class="danger" @click="deleteTrack">Delete</button>
       <button class="secondary" @click="duplicate">Duplicate</button>
@@ -223,13 +237,29 @@ export default defineComponent({
     stageAllTrack(){
       if (this.isDraft || !this.track) return;
       this.store.stageAllTrackSnapNodes(this.track.id);
-    }
+    },
+    addTrackField(){
+      const key = prompt("Field key (identifier):","note");
+      if (!key) return;
+      const label = prompt("Label (optional):", key) || key;
+      this.store.addCustomField('track', key, label);
+    },
+    removeTrackField(key:string){
+      if (confirm(`Remove field '${key}' from all tracks?`)){
+        this.store.removeCustomField('track', key);
+      }
+    },
+    onTrackCustomFieldChange(key:string, val:string){
+      if (!this.track) return;
+      const id = this.track.id;
+      this.store.patchTrack(id, { extra: { [key]: val } } as any);
+    },
   }
 });
 </script>
 
 <style scoped>
-.form { display:flex; flex-direction:column; gap:12px; }
+.form { display:flex; flex-direction:column; gap:12px; flex:1 1 auto; min-height:0; overflow-y:auto; }
 .row { display:flex; align-items:center; gap:8px; }
 .pill-row { display:flex; flex-wrap:wrap; gap:6px; }
 .pill.link { background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); padding:2px 8px; border-radius:999px; cursor:pointer; font-size:11px; }
@@ -239,4 +269,8 @@ export default defineComponent({
 .actions { margin-top:8px; }
 .txt, .sel { background:#0f172a; border:1px solid rgba(255,255,255,0.15); color:var(--text); padding:4px 6px; border-radius:6px; }
 .num { background:#0f172a; border:1px solid rgba(255,255,255,0.15); color:var(--text); padding:4px 6px; border-radius:6px; width:90px; }
+.field-list { border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; }
+.field-list label { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.1); }
+.field-list label:last-child { border-bottom:none; }
+.small.danger { opacity:.8; }
 </style>

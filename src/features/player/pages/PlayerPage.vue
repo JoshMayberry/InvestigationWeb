@@ -1,23 +1,32 @@
 <template>
-  <div class="player-page">
-    <div class="player-photo" v-if="selectedPhoto">
-      <FullImage
-        :photo="selectedPhoto"
-        :fill="true"
-      />
+  <div class="player-grid">
+    <!-- Top row: Web (left 2/3) -->
+    <div class="cell web">
+      <PlayerInvestigationView />
     </div>
-    <div v-else class="no-photo">No photo selected.</div>
+
+    <!-- Top row: Photo (right 1/3) -->
+    <div class="cell photo">
+      <FullImage :photo="selectedPhoto" :fill="true" />
+    </div>
+
+    <!-- Bottom row: Bonuses (span both columns) -->
+    <div class="cell bonuses">
+      <PanelBonus />
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 import { usePlayerPhotoStore } from "@shared/stores/photos";
+import PlayerInvestigationView from "@features/player/components/PlayerInvestigationView.vue";
 import FullImage from "@features/player/components/FullImage.vue";
+import PanelBonus from "@features/investigation-web/components/layout/PanelBonus.vue";
 
 export default defineComponent({
   name: "PlayerPage",
-  components: { FullImage },
+  components: { PlayerInvestigationView, FullImage, PanelBonus },
   data() {
     const store = usePlayerPhotoStore();
     store.loadFromStorage();
@@ -32,21 +41,23 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.player-page {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  color: var(--text);
+.player-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;  /* 2/3 : 1/3 */
+  grid-template-rows: 1fr auto;    /* web+photo take remaining; bonuses auto height */
+  grid-template-areas:
+    "web photo"
+    "bonuses bonuses";
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
   background: var(--bg);
-  padding: 1rem;
-  min-height: 0;
+  color: var(--text);
 }
-.player-photo {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.no-photo { color: var(--muted); font-style: italic; margin-top: 2rem; }
+.cell { background: var(--panel); border-radius: 10px; min-height: 0; overflow: hidden; }
+.web   { grid-area: web; padding: 0; }
+.photo { grid-area: photo; display: flex; min-height: 0; }
+.bonuses { grid-area: bonuses; padding: 10px; background: transparent; }
 </style>

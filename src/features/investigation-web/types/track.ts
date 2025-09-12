@@ -25,6 +25,7 @@ export interface FreeTrack extends TrackBase {
   startRadius?: number;
   endRadius?: number;
   direction?: 1 | -1;
+  extra?: Record<string, any> // NEW (for additional fields)
 }
 
 export type TrackAny = FreeTrack;

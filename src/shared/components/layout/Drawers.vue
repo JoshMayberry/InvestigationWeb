@@ -168,7 +168,7 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   width: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 .drawer-panel {
   width: 100%;

@@ -9,7 +9,19 @@ export function createInitialState() {
     savedAt: null as string | null,
     dirty: false,
     settings: { ...defaultSettings },
-    filters: { query: "", colors: [] as string[] },
+    filters: {
+      query: "",
+      colors: [] as string[],
+      // selected values per additional field key (empty array => no filtering for that key)
+      extra: {} as Record<string, string[]>,
+      // search target toggles for query text
+      searchTargets: {
+        label: true,
+        description: true,
+        bonus: false,
+        extras: {} as Record<string, boolean>, // each additional field key
+      },
+    },
 
     tracks: [] as any[],
     trackSeq: 0,
@@ -57,6 +69,7 @@ export function createInitialState() {
       addSnapNode: false,
       addLink: false,
       linkLasso: false,
+      linkCutter: false,          // NEW
       addTrack: false,
       addCalcGroup: false,
       placeStaged: null,
@@ -137,6 +150,12 @@ export function createInitialState() {
         { id:"link-antipush", name:"Anti-Compression", description:"Repels when compressed", data:{ restLength:180, tension:0.15, compression:-0.15, maxForce:16 } },
         { id:"link-long-spring", name:"Long Spring", description:"Longer neutral length", data:{ restLength:260, tension:0.08, compression:0.06, maxForce:14 } }
       ]
+    },
+    customFields: {                                // NEW
+      node: [] as { key:string; label?:string }[],
+      link: [] as { key:string; label?:string }[],
+      track: [] as { key:string; label?:string }[],
+      group: [] as { key:string; label?:string }[],
     },
   };
 }

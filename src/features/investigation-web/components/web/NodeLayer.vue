@@ -5,7 +5,7 @@
       :key="n.id"
       v-show="!hideWhileDrag(n)"
       :node="n"
-      :dim="(filtersActive && !filteredIdsSet.has(n.id)) || (discoveryPreviewActive && !discoveryVisibleSet.has(n.id))"
+      :dim="(filtersActive && !filteredIdsSet.has(n.id))"
     />
   </g>
 

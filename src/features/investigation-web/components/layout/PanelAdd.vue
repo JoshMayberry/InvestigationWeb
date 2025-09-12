@@ -9,6 +9,7 @@
       <button class="btn" :class="{ active: store.tools.addTrack }" @click="toggleTrack">Add Track</button>
       <button class="btn" :class="{ active: store.tools.addCalcGroup }" @click="toggleCalcGroup">Add Calculated Tracks</button>
       <button class="btn" :class="{ active: store.tools.linkLasso }" @click="toggleLinkLasso">Link Lasso</button>
+      <button class="btn" :class="{ active: store.tools.linkCutter }" @click="toggleLinkCutter">Link Cutter</button> <!-- NEW -->
     </div>
   </div>
 </template>
@@ -110,7 +111,23 @@ export default defineComponent({
       this.runtime?.controllers?.linkPlacement?.cancel();
       this.store.setLinkLasso(on);
       if (on){
-        // ensure other tools off
+        this.store.setLinkCutter(false);
+        this.store.setAddLink(false);
+        this.store.setAddFreeNode(false);
+        this.store.setAddSimNode(false);
+        this.store.setAddSnapNode(false);
+        this.store.setAddTrack(false);
+        this.store.setAddCalcGroup(false);
+        this.store.setPlaceStaged(null);
+        this.store.setPlaceStagedSnap(null);
+      }
+    },
+    toggleLinkCutter(){              // NEW
+      const on = !this.store.tools.linkCutter;
+      this.runtime?.controllers?.linkPlacement?.cancel();
+      this.store.setLinkCutter(on);
+      if (on){
+        this.store.setLinkLasso(false);
         this.store.setAddLink(false);
         this.store.setAddFreeNode(false);
         this.store.setAddSimNode(false);

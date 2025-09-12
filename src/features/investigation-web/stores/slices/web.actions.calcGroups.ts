@@ -44,6 +44,7 @@ export const calcGroupActions = {
       const c = view.centerWorld?.();
       if (c){ group.params.cx = c.x; group.params.cy = c.y; }
     }
+    (group as any).extra = (group as any).extra || {}; // ensure extra
     this.calcGroups.push(group);
     this._regenerateCalculatedGroups();
     this.dirty = true;
@@ -239,11 +240,43 @@ export const calcGroupActions = {
   },
   // Internal helpers
   _regenerateCalculatedGroups(this:any){
+    // Capture previous calc tracks per group BEFORE clearing them
+    const prevByGroup: Record<string, any[]> = {};
+    for (const t of this.tracks){
+      if (t.kind === 'calc' && t.groupId){
+        (prevByGroup[t.groupId] ||= []).push(t);
+      }
+    }
+    // Clear calc tracks
     this.tracks = this.tracks.filter((t:any)=> t.kind !== 'calc');
+
     for (const g of this.calcGroups){
       const gen = generateGroupTracks(g);
-      for (const t of gen){
+      const prevArr = (prevByGroup[g.id] || []).slice();
+      // stable order for fallback index mapping
+      prevArr.sort((a:any,b:any)=> (a.id||"").localeCompare(b.id||""));
+
+      // Build quick id map for exact matches
+      const prevById = new Map<string, any>(prevArr.map(p=> [p.id, p]));
+
+      for (let i=0;i<gen.length;i++){
+        const t = gen[i];
         t._v = 1;
+
+        // Merge extras from previous track by id, or by index as fallback
+        const prev = t.id ? prevById.get(t.id) : null;
+        const idxExtra = Array.isArray(g._trackExtrasIndex) ? g._trackExtrasIndex[i] : null;
+        const byIdExtra = (g as any).trackExtras?.[t.id];
+        const prevExtra = prev?.extra;
+
+        if (prevExtra || byIdExtra || idxExtra || t.extra){
+          t.extra = {
+            ...(prevExtra || {}),
+            ...(byIdExtra || {}),
+            ...(idxExtra || {}),
+            ...(t.extra || {})
+          };
+        }
       }
       this.tracks.push(...gen);
     }
@@ -276,5 +309,16 @@ export const calcGroupActions = {
       }
       this._recalcSnapTrackLayout(tid);
     }
-  }
+  },
+  // NEW: simple patch for group (no regen)
+  patchCalcGroup(this:any, id:string, patch:any){
+    const g = this.calcGroups.find((x:any)=> x.id===id);
+    if (!g) return;
+    if (patch.extra){
+      g.extra = { ...(g.extra||{}), ...patch.extra };
+      delete patch.extra;
+    }
+    Object.assign(g, patch);
+    this.dirty = true;
+  },
 };

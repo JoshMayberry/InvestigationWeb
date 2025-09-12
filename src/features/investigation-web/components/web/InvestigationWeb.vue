@@ -21,7 +21,8 @@
         :gridSize="settings.gridSize || 16"
       />
 
-      <WebLinks />
+      <!-- CHANGE: use local computed visible set (no store getter dependency) -->
+      <WebLinks :visibleIdSet="playerView ? playerVisibleIdSet : null" />
       <WebTracks />
       <WebCalculatedGroups />
 
@@ -86,6 +87,10 @@ import { useGridSnap } from "./composables/useGridSnap";
 export default defineComponent({
   name: "InvestigationWeb",
   components: { ReactiveSvg, WebLinks, WebTracks, WebCalculatedGroups, NodeLayer, LinkGhost, NodeGhost, TrackGhost, NodeTooltip, GridOverlay, WebCalcGroupGhost },
+  // NEW: opt-in player mode without touching editor logic
+  props: {
+    playerView: { type: Boolean, default: false },
+  },
   data(){
     const store = useInvestigationWebStore();
     const runtime = inject(RUNTIME_KEY, null) as any;
@@ -95,25 +100,63 @@ export default defineComponent({
       overlayRect: { x:0, y:0, w:120, h:0 },
       _svgInstalled: false as boolean,
       _svgEl: null as SVGSVGElement | null,
-      _lastNodeCount: 0,                 // ADD
+      _lastNodeCount: 0,
     };
   },
   computed:{
     rs(): any { return (this.$refs.rs as any) || null; },
-    nodes(): any[] { return this.store.nodes || []; },
+
+    // Visible node ids for the Player:
+    // - connected: discovered ∪ discoverable (frontier)
+    // - free: discovered only
+    visibleIdsPlayer(): Set<string> {
+      if (!this.playerView) return new Set<string>();
+      return new Set([...this.store.discoverableIdSet, ...this.store.discoveredIdSet]);
+    },
+
+    // Nodes fed to the canvas
+    nodes(): any[] {
+      const all = this.store.nodes || [];
+      if (!this.playerView) return all;
+      const vis = this.visibleIdsPlayer;
+      const out = all.filter((n:any)=> vis.has(n.id));
+      return out;
+    },
+
+    // For link rendering, hide any link touching a hidden node
+    playerVisibleIdSet(): Set<string> {
+      return this.playerView ? this.visibleIdsPlayer : new Set<string>();
+    },
+
+    // Dimming:
+    // In playerView, dim any node that is NOT discovered (i.e., show discoverable faint).
+    // NodeLayer dims when id NOT IN discoveryVisibleSet. So pass discovered set here.
+    discoveryVisibleSet(): Set<string> {
+      if (this.playerView) {
+        const discovered: Set<string> = this.store.discoveredIdSet;
+        return new Set<string>(discovered);
+      }
+      // editor/GM preview path (unchanged)
+      const s = this.store?.visibleByDiscoveryIdSet;
+      if (s instanceof Set) return s;
+      try { if (typeof s === "function") return new Set((s() || []) as string[]); } catch {}
+      return new Set<string>();
+    },
+
+    // In playerView, force preview dimming active so undiscovered get faint style
+    discoveryPreviewActive(): boolean {
+      return false && this.playerView ? true : !!this.store.policy?.canDiscover;
+    },
+
     hoveredId(): string | null { return this.runtime?.controllers?.hover?.id || null; },
     hoveredNode(): any | null { return this.hoveredId ? this.nodes.find(n => n.id === this.hoveredId) || null : null; },
     filteredIdsSet(): Set<string> { return this.store.filteredIdSet; },
     filtersActive(): boolean { return this.store.filtersActive; },
-    discoveryVisibleSet(): Set<string> { return this.store.visibleByDiscoveryIdSet; },
-    discoveryPreviewActive(): boolean { return !!this.store.policy?.canDiscover; },
     settings(): any { return this.store.settings; },
     policy(): any { return this.store.policy; },
     dragGhost(): any { return this.runtime?.controllers?.drag?.ghost; },
     placingMode(): string { return this.runtime?.controllers?.nodePlacement?.activeMode?.() || "none"; },
-    currentMode(): string {
-      return this.store?.currentMode || "view";
-    },
+    currentMode(): string { return this.store?.currentMode || "view"; },
     gridActive(): boolean {
       const placing = this.placingMode === "add-free";
       const draggingNode = this.dragGhost?.mode === 'drag-node';
@@ -124,9 +167,7 @@ export default defineComponent({
     },
     showGrid(): boolean {
       if (!this.settings.enableGrid) return false;
-      // Always show in Settings mode
       if (this.currentMode === "setting") return true;
-      // Otherwise, only when editing and active/forced
       return !!this.policy.canEditStructure && (this.settings.gridAlwaysVisible || this.gridActive);
     },
     showTooltip(): boolean {
@@ -146,18 +187,14 @@ export default defineComponent({
     this._links = useLinkInteractions({ runtime: this.runtime, store: this.store, getSvg });
     this._keys = useKeys({ runtime: this.runtime, store: this.store });
     this._gridSnap = useGridSnap({ runtime: this.runtime, store: this.store, keys: this._keys });
-
-    // DOM listeners are installed in mounted, when refs are ready
   },
   mounted(){
     this._installDom();
-    // Cancel any active ghost when addLink is turned off anywhere
     this.$watch(() => this.store.tools.addLink, (on:boolean) => {
       if (!on) this.runtime?.controllers?.linkPlacement?.cancel();
-      else this.runtime?.controllers?.linkPlacement?.cancel(); // reset when turning on
+      else this.runtime?.controllers?.linkPlacement?.cancel();
     }, { immediate: false });
 
-    // ADD: watch for new node while sim tool active
     this.$watch(
       () => this.store.nodes.length,
       (len, prev) => {
@@ -166,7 +203,6 @@ export default defineComponent({
           const added = this.store.nodes.slice(prev);
           for (const n of added) {
             if (n.kind === 'free' && !n.sim?.enabled) {
-              // tag as simulation participant
               this.store.patchNode(n.id, { sim: { ...(n.sim||{}), enabled: true } });
             }
           }
@@ -190,7 +226,6 @@ export default defineComponent({
     onResize(sz:{ w:number; h:number }){
       const rect = this._stash.onResize(sz);
       this.overlayRect = rect;
-      // Late-mount safety: if svg wasn’t ready earlier, try now
       if (!this._svgInstalled) this._installDom();
     },
     onContextMenu(){

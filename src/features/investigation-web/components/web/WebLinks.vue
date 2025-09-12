@@ -1,6 +1,6 @@
 <template>
   <g class="links">
-    <g v-for="l in store.links" :key="l.id" :class="['link-wrap', { 'sim-active': l.sim?.enabled }]">
+    <template v-for="l in linksToShow" :key="l.id">
       <component
         :is="getType(l.type).linkCanvas"
         :l="l"
@@ -12,7 +12,7 @@
         vector-effect="non-scaling-stroke"
         fill="none"
       />
-    </g>
+    </template>
   </g>
 </template>
 
@@ -23,7 +23,19 @@ import { getPathType } from "../paths/registry";
 
 export default defineComponent({
   name: "WebLinks",
+  props: {
+    // Optional set of visible node ids (Player view)
+    visibleIdSet: { type: Object as () => Set<string> | null, default: null },
+  },
   data(){ return { store: useInvestigationWebStore() }; },
+  computed:{
+    linksToShow(): any[] {
+      const all = this.store.links || [];
+      const vis = this.visibleIdSet as Set<string> | null;
+      if (!vis) return all;
+      return all.filter((l:any)=> vis.has(l.from) && vis.has(l.to));
+    }
+  },
   methods:{
     getType(t:string){ return getPathType(t); },
     straightOverlay(l:any){

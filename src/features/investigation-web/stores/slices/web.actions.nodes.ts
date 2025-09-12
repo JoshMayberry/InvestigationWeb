@@ -12,9 +12,11 @@ export const nodeActions = {
       y: p.y ?? 0,
       r: p.r ?? d.r,
       label: p.label ?? d.label,
+      description: p.description ?? d.description ?? "",  // NEW
       data: p.data || {},
       locked: !!p.locked,
       labelStyle: p.labelStyle || { mode:'angle', angle:0, fontSize:11, margin:4 },
+      extra: p.extra || {},               // NEW
     };
     if (n.kind === 'free' && wantSim){
       n.sim = { enabled:true };
@@ -33,8 +35,10 @@ export const nodeActions = {
       y: p?.y ?? 0,
       r: p?.r ?? d.r,
       label: p?.label ?? d.label,
+      description: p?.description ?? d.description ?? "",   // NEW
       locked: !!p?.locked,
       labelStyle: p?.labelStyle || { mode:'angle', angle:0, fontSize:11, margin:4 },
+      extra: p?.extra || {},              // NEW
     };
     if (wantSim) n.sim = { enabled:true };
     this.staging.push(n);
@@ -63,6 +67,10 @@ export const nodeActions = {
     if (patch.labelStyle){
       const cur = this.nodes[i].labelStyle || {};
       patch = { ...patch, labelStyle: { ...cur, ...patch.labelStyle } };
+    }
+    if (patch.extra){
+      const cur = this.nodes[i].extra || {};
+      patch = { ...patch, extra: { ...cur, ...patch.extra } };
     }
     this.nodes[i] = { ...this.nodes[i], ...patch }; this.dirty = true;
   },

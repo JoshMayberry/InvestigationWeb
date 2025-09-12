@@ -52,6 +52,21 @@
     </div>
     <p v-else class="muted small">No tracks generated.</p>
 
+    <!-- Additional Fields -->
+    <div class="block-title sm">Additional Fields</div>
+    <div class="field-list" v-if="store.customFields.group.length && group">
+      <label v-for="f in store.customFields.group" :key="f.key" class="row">
+        <span>{{ f.label || f.key }}</span>
+        <input class="txt"
+          :value="(group.extra && group.extra[f.key]) || ''"
+          @input="onGroupCustomFieldChange(f.key, ($event.target as HTMLInputElement).value)" />
+        <button class="small danger" @click="removeGroupField(f.key)">✕</button>
+      </label>
+    </div>
+    <div class="row">
+      <button class="secondary small" @click="addGroupField">+ Add Field</button>
+    </div>
+
     <div class="block-title sm">Palette</div>
     <div class="palette">
       <div v-for="(c,i) in group.colorPalette" :key="i" class="pal-item">
@@ -218,12 +233,32 @@ export default defineComponent({
       if (this.mode !== 'selected' || !this.group) return;
       this.store.setGroupDefaultsFromGroup(this.group.id);
     },
+    addGroupField(){
+      if (!this.group) return;
+      const key = prompt("Field key (identifier):","note");
+      if (!key) return;
+      const label = prompt("Label (optional):", key) || key;
+      this.store.addCustomField('group', key, label);
+    },
+    removeGroupField(key:string){
+      if (!this.group) return;
+      if (confirm(`Remove field '${key}' from all groups?`)){
+        this.store.removeCustomField('group', key);
+      }
+    },
+    onGroupCustomFieldChange(key:string, val:string){
+      if (!this.group) return;
+      // Mutate and nudge update so values persist on regen
+      if (!this.group.extra) this.group.extra = {};
+      this.group.extra[key] = val;
+      this.store.updateCalculatedGroup(this.group.id, {}); // trigger persist/regen
+    },
   }
 });
 </script>
 
 <style scoped>
-.form { display:flex; flex-direction:column; gap:10px; }
+.form { display:flex; flex-direction:column; gap:10px; flex:1 1 auto; min-height:0; overflow-y:auto; }
 .block-title { font-weight:600; font-size:14px; }
 .block-title.sm { font-size:12px; opacity:.7; margin-top:4px; }
 .row { display:flex; align-items:center; gap:8px; }
@@ -246,4 +281,6 @@ export default defineComponent({
 .secondary { color:#93c5fd; }
 .small { font-size:11px; }
 .muted.small { font-size:11px; opacity:.6; }
+.field-list { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+.field-list .row { gap:8px; }
 </style>

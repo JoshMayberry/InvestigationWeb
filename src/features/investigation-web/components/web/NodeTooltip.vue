@@ -11,9 +11,18 @@
       <slot :node="displayNode">
         <div class="title">{{ displayNode.label || displayNode.id }}</div>
         <div v-if="displayNode.label" class="sub muted">ID: {{ displayNode.id }}</div>
+        <div v-if="displayNode.description" class="desc">{{ displayNode.description }}</div>
         <div class="meta">
           <span class="pill">r={{ displayNode.r }}</span>
           <span class="pill" v-if="displayNode.color">{{ displayNode.color }}</span>
+        </div>
+
+        <!-- Additional fields (non-empty only) -->
+        <div class="extras" v-if="extraPairs.length">
+          <div class="xrow" v-for="p in extraPairs" :key="p.key">
+            <span class="k">{{ p.label }}</span>
+            <span class="v">{{ p.value }}</span>
+          </div>
         </div>
       </slot>
       <div class="arrow" data-popper-arrow></div>
@@ -22,10 +31,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, inject, watch, nextTick, ref } from "vue";
+import { defineComponent, inject, watch, nextTick, ref, computed } from "vue";
 import type { NodeAny } from "../../types/node";
 import { createPopper, Instance, VirtualElement } from "@popperjs/core";
 import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
+import { useInvestigationWebStore } from "../../stores/web";
 
 export default defineComponent({
   name: "NodeTooltip",
@@ -38,6 +48,7 @@ export default defineComponent({
   },
   setup(props){
     const runtime = inject(RUNTIME_KEY, null) as InvestigationRuntime | null;
+    const store = useInvestigationWebStore();
     const inst = ref<Instance|null>(null);
     const virt = ref<VirtualElement|null>(null);
     const displayNode = ref<NodeAny|null>(null);
@@ -158,6 +169,24 @@ export default defineComponent({
 
     const tipRef = ref<HTMLElement|null>(null);
 
+    // Build label/value pairs for non-empty additional fields
+    const extraPairs = computed(() => {
+      const n = displayNode.value as any;
+      if (!n) return [] as { key:string; label:string; value:string }[];
+      const defs = store.customFields?.node || [];
+      const ex = n.extra || {};
+      const out: { key:string; label:string; value:string }[] = [];
+      for (const d of defs){
+        const k = d.key;
+        const raw = ex?.[k];
+        if (raw == null) continue;
+        const v = String(raw).trim();
+        if (!v) continue;
+        out.push({ key:k, label: d.label || k, value: v });
+      }
+      return out;
+    });
+
     return {
       runtime,
       tipRef,
@@ -166,7 +195,8 @@ export default defineComponent({
       wrapperStyle: {
         transition: `opacity ${props.fadeMs}ms`,
       },
-      frozenRect
+      frozenRect,
+      extraPairs,
     };
   }
 });
@@ -196,6 +226,12 @@ export default defineComponent({
 }
 .title { font-weight:600; font-size:13px; margin-bottom:2px; color: var(--accent); }
 .sub { font-size:11px; margin-bottom:6px; }
+.desc {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text);
+  white-space: pre-wrap;
+}
 .meta { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
 .pill {
   background: rgba(255,255,255,0.06);
@@ -217,4 +253,8 @@ export default defineComponent({
 [data-popper-placement^='bottom'] .arrow { top:-5px; }
 [data-popper-placement^='left'] .arrow { right:-5px; }
 [data-popper-placement^='right'] .arrow { left:-5px; }
+.extras { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.xrow { display: flex; gap: 8px; align-items: baseline; }
+.k { font-size: 11px; color: var(--muted); min-width: 88px; }
+.v { font-size: 12px; color: var(--text); }
 </style>

@@ -5,7 +5,7 @@
        :class="{ sel: isSel(g.id) }"
        @pointerdown.stop="onGroupPointerDown(g, $event)">
       <rect
-        v-if="g.bbox"
+        v-if="policy.canEditStructure && g.bbox"
         @click.stop
         :x="g.bbox.x" :y="g.bbox.y"
         :width="g.bbox.w" :height="g.bbox.h"
@@ -33,7 +33,8 @@ export default defineComponent({
   },
   computed:{
     groups():any[]{ return this.store.calcGroups || []; },
-    selection(){ return this.runtime?.controllers?.selection; }
+    selection(){ return this.runtime?.controllers?.selection; },
+    policy(): any { return this.store.policy || {}; }  // NEW
   },
   methods:{
     isSel(id:string){ return this.selection?.get?.() === id; },

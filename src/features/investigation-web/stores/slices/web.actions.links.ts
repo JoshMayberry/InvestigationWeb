@@ -67,6 +67,7 @@ export const linkActions = {
         maxForce: (payload as any).maxForce ?? this.linkDraft.sim?.maxForce ?? 4
       };
     }
+    link.extra = (payload as any).extra || {};
     this.links.push(link); return id;
   },
   patchLink(this:any, id: string, patch: any) {
@@ -93,10 +94,49 @@ export const linkActions = {
         next.sim.restLength = Math.hypot(B.x-A.x, B.y-A.y);
       }
     }
+    if ((patch as any).extra){
+      const cur = (this.links[i] as any).extra || {};
+      (next as any).extra = { ...cur, ...(patch as any).extra };
+    }
     this.links[i] = next; this.dirty = true;
   },
   deleteLink(this:any, id:string){
     const i = this.links.findIndex((l:any)=> l.id === id);
     if (i >= 0) this.links.splice(i,1);
+  },
+  removeLink(this:any, id:string){                     // NEW
+    const i = (this.links || []).findIndex((l:any)=> l.id === id);
+    if (i === -1) return false;
+    const removed = this.links[i];
+    this.links.splice(i,1);
+    this.dirty = true;
+    // optional: push undo if controller exists
+    this._pushUndo?.({
+      label:`delete-link:${id}`,
+      before: { add: [removed] },
+      after: { remove: [id] },
+      do: ()=>{},
+      undo: ()=>{ this.links.push(removed); this.dirty = true; },
+    });
+    return true;
+  },
+  removeLinks(this:any, ids:string[]){                 // NEW
+    const set = new Set(ids);
+    const kept:any[] = [];
+    const removed:any[] = [];
+    for (const l of (this.links||[])){
+      if (set.has(l.id)) removed.push(l); else kept.push(l);
+    }
+    if (!removed.length) return false;
+    this.links = kept;
+    this.dirty = true;
+    this._pushUndo?.({
+      label:`delete-links:${removed.length}`,
+      before: { add: removed.slice() },
+      after: { remove: removed.map((x:any)=> x.id) },
+      do: ()=>{},
+      undo: ()=>{ this.links.push(...removed); this.dirty = true; },
+    });
+    return true;
   },
 };

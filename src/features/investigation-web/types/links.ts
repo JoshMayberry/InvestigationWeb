@@ -22,6 +22,7 @@ export interface BaseLink extends SimulationLinkProps {
   arrowHead?: boolean;
   // extra gap between node edge and link on both ends (world units)
   pad?: number;
+  extra?: Record<string, any> // NEW (for additional fields)
 }
 
 export interface StraightLink extends BaseLink {

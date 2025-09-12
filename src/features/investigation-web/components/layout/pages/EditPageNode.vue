@@ -12,6 +12,16 @@
       <input class="txt" :value="labelVal" @input="onChange('label', ($event.target as HTMLInputElement).value)" />
     </label>
 
+    <!-- NEW: Description -->
+    <label>
+      <span>Description</span>
+      <textarea class="area"
+        :value="descriptionVal"
+        @input="onChange('description', ($event.target as HTMLTextAreaElement).value)"
+        placeholder="Optional description for this node"></textarea>
+    </label>
+    <!-- END NEW -->
+
     <label>
       <span>Color</span>
       <input class="color" type="color" :value="colorVal" @input="onChange('color', ($event.target as HTMLInputElement).value)" />
@@ -180,6 +190,22 @@
       </label>
     </template>
 
+    <template v-if="mode==='selected' && node">
+      <div class="block-title sm">Additional Fields</div>
+      <div class="field-list" v-if="store.customFields.node.length">
+        <label v-for="f in store.customFields.node" :key="f.key" class="row">
+          <span>{{ f.label || f.key }}</span>
+          <input class="txt"
+            :value="(node.extra && node.extra[f.key]) || ''"
+            @input="onCustomFieldChange(f.key, ($event.target as HTMLInputElement).value)" />
+          <button class="small danger" @click="removeField(f.key)">✕</button>
+        </label>
+      </div>
+      <div class="row">
+        <button class="secondary small" @click="addField">+ Add Field</button>
+      </div>
+    </template>
+
     <template v-if="mode==='selected'">
       <div class="block-title sm">Bonuses</div>
       <div class="bonus-list">
@@ -270,6 +296,11 @@ export default defineComponent({
       return this.store.nodes.find((n:any)=>n.id===this.nodeId) || null;
     },
     labelVal(): string { return (this.mode === "selected" ? (this.node?.label || "") : this.store.settings.defaultNode.label) as string; },
+    descriptionVal(): string {   // NEW
+      return (this.mode === "selected"
+        ? (this.node?.description || "")
+        : (this.store.settings.defaultNode.description || "")) as string;
+    },
     colorVal(): string { return (this.mode === "selected" ? (this.node?.color || this.store.settings.defaultNode.color) : this.store.settings.defaultNode.color) as string; },
     radiusVal(): number { return (this.mode === "selected" ? (this.node?.r || this.store.settings.defaultNode.r) : this.store.settings.defaultNode.r) as number; },
     nodeBonuses(): { title:string; description?:string }[] {
@@ -299,7 +330,7 @@ export default defineComponent({
       const ok = this.store.renameNodeId(oldId, next);
       if (ok && next !== oldId) this.selection?.set(next);
     },
-    onChange(key:"label"|"color"|"r"|"locked", value:any){
+    onChange(key:"label"|"color"|"r"|"locked"|"description", value:any){  // changed union
       if (this.mode === "defaults"){
         this.store.updateDefaultNode({ [key]: value } as any);
         return;
@@ -481,12 +512,27 @@ export default defineComponent({
       });
       this.store.patchNode(id, after);
     },
+    addField(){
+      const key = prompt("Field key (identifier):","note");
+      if (!key) return;
+      const label = prompt("Label (optional):", key) || key;
+      this.store.addCustomField('node', key, label);
+    },
+    removeField(key:string){
+      if (confirm(`Remove field '${key}' from all nodes?`)){
+        this.store.removeCustomField('node', key);
+      }
+    },
+    onCustomFieldChange(key:string, val:string){
+      if (!this.node) return;
+      this.store.setCustomValue('node', this.node.id, key, val);
+    },
   }
 });
 </script>
 
 <style scoped>
-.form { display:flex; flex-direction:column; gap:10px; }
+.form { display:flex; flex-direction:column; gap:10px; flex:1 1 auto; min-height:0; overflow-y:auto; }
 .block-title { font-size:12px; color:var(--muted); letter-spacing:.3px; }
 .block-title.sm { margin-top:2px; }
 label { display:flex; align-items:center; justify-content:space-between; gap:10px; }
@@ -545,4 +591,7 @@ label > span { font-size:12px; color: var(--muted); }
   border-radius:6px;
   font-size:12px;
 }
+.field-list { display:flex; flex-direction:column; gap:10px; }
+.field-list .row { gap:8px; }
+.field-list .row .txt { flex:1; }
 </style>

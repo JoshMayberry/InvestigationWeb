@@ -4,7 +4,7 @@
       <button class="btn" @click="onSave" :disabled="!canSave">Save</button>
       <button class="btn" @click="onLoad">Load</button>
       <button class="btn" @click="onExport">Export</button>
-      <button class="btn" @click="triggerImport">Import</button>
+      <button class="btn" @click="onImportSnapshot">Import</button>
 
       <Tooltip :text="undoTooltip">
         <button class="btn" @click="undo" :disabled="!canUndo">Undo</button>
@@ -21,8 +21,8 @@
 
 <script lang="ts">
 import { defineComponent, inject } from "vue";
+import { importSnapshotFile, exportSnapshot } from "../../utils/snapshotFiles";
 import { useInvestigationWebStore } from "../../stores/web";
-import { exportSnapshot } from "../../utils/snapshotFiles";
 import type { Snapshot } from "../../types/snapshot";
 import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
 import Tooltip from "../ui/Tooltip.vue";
@@ -59,6 +59,9 @@ export default defineComponent({
       if (this.store.tools.linkLasso) {
         return "Link Lasso: hold left mouse and sweep through nodes to chain links";
       }
+      if (this.store.tools.linkCutter) {             // NEW
+        return "Link Cutter: hold left mouse and sweep across links to remove them";
+      }
       const state = this.store.currentEditState;
       switch (state) {
         case "add-link": return "Add Link: click first node, then second. Shift = keep adding";
@@ -89,10 +92,19 @@ export default defineComponent({
     async onLoad(){ await this.store.load(); },
     onExport(){
       const doc: Snapshot = {
-        version: 3,
+        version: 4,
         nodes: this.store.nodes as any,
         staging: this.store.staging as any,
         bonuses: this.store.bonuses,
+        tracks: this.store.tracks as any,
+        calcGroups: this.store.calcGroups as any,
+        links: this.store.links as any,
+        trackSeq: this.store.trackSeq,
+        linkSeq: this.store.linkSeq,
+        trackDraft: this.store.trackDraft,
+        linkDraft: this.store.linkDraft,
+        groupDraft: this.store.groupDraft,
+        customFields: this.store.customFields as any,
         meta: { savedAt: new Date().toISOString() }
       };
       exportSnapshot("investigation-web.json", doc);
@@ -114,7 +126,20 @@ export default defineComponent({
       }
     },
     undo(){ this.undoCtrl?.undo(); },
-    redo(){ this.undoCtrl?.redo(); }
+    redo(){ this.undoCtrl?.redo(); },
+    async onImportSnapshot(){
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.onchange = async () => {
+        const file = input.files?.[0]; if (!file) return;
+        const json = await importSnapshotFile(file);
+        if (!json) return;
+        // Hardened merge happens inside setRawSnapshot
+        this.store.setRawSnapshot(json);
+      };
+      input.click();
+    },
   }
 });
 </script>

@@ -17,6 +17,7 @@ import DrawersRight from "../components/layout/DrawersRight.vue";
 import Toolbar from "../components/layout/Toolbar.vue";
 import { useInvestigationWebStore } from "../stores/web";
 import { createInvestigationRuntime, RUNTIME_KEY } from "../context/runtime";
+import { createChannel } from "@shared/utils/broadcast"; // ADD
 
 export default defineComponent({
   name: "InvestigationWebPage",
@@ -27,6 +28,8 @@ export default defineComponent({
       store: null as ReturnType<typeof useInvestigationWebStore> | null,
       runtime,
       isDirty: false,
+      _bc: null as any,        // ADD
+      _timer: 0 as any,        // ADD
     };
   },
   provide() { return { [RUNTIME_KEY]: this.runtime }; },
@@ -37,8 +40,54 @@ export default defineComponent({
     this.store.initSettingsFromLocal();
     this.store.$subscribe((_m, state) => { this.isDirty = state.dirty; });
     this.store.setMode?.("view");
+
+    // BroadcastChannel publisher (GM is authority)
+    this._bc = createChannel("iw-snapshot");
+    const publish = () => {
+      // Build a plain snapshot (no proxies)
+      const doc = {
+        version: 4,
+        nodes: this.store!.nodes,
+        staging: this.store!.staging,
+        bonuses: this.store!.bonuses,
+        tracks: this.store!.tracks,
+        links: this.store!.links,
+        calcGroups: this.store!.calcGroups,
+        trackSeq: this.store!.trackSeq,
+        linkSeq: this.store!.linkSeq,
+        trackDraft: this.store!.trackDraft,
+        linkDraft: this.store!.linkDraft,
+        groupDraft: this.store!.groupDraft,
+        customFields: this.store!.customFields,
+        discovery: this.store!.discovery,
+        // include UI/policy/config so players match GM view exactly
+        currentMode: this.store!.currentMode,
+        policy: this.store!.policy,
+        filters: this.store!.filters,
+        settings: this.store!.settings,
+        meta: { savedAt: this.store!.savedAt || null },
+      };
+      // debug published snapshot summary
+      try { console.debug("[GM publish snapshot] mode:", doc.currentMode, "discovery:", doc.discovery, "filters:", { q: doc.filters?.query, colors: (doc.filters?.colors||[]).length }); } catch {}
+      this._bc.post(doc);
+    };
+
+    // Throttle broadcasts on relevant changes
+    this.$watch(
+      () => [ this.store!.nodes, this.store!.links, this.store!.tracks, this.store!.calcGroups, this.store!.discovery,
+              this.store!.filters, this.store!.settings, this.store!.currentMode, this.store!.policy, this.store!.customFields ],
+      () => {
+        if (this._timer) return;
+        this._timer = window.setTimeout(() => { this._timer = 0; publish(); }, 150);
+      },
+      { deep: true, immediate: true }
+    );
   },
   mounted() { this.store?.load(); },
+  beforeUnmount(){
+    if (this._timer) { clearTimeout(this._timer); this._timer = 0; }
+    this._bc?.stop?.();
+  },
 });
 </script>
 

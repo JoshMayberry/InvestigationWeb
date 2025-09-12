@@ -138,12 +138,28 @@ export const policyActions = {
       this.setPlaceStagedSnap(null);
     }
   },
+  setLinkCutter(this:any, on:boolean){             // NEW
+    this.tools.linkCutter = on;
+    if (on){
+      // turn off other mutually exclusive tools
+      this.setAddLink(false);
+      this.setAddFreeNode(false);
+      this.setAddSimNode?.(false);
+      this.setAddSnapNode(false);
+      this.setAddTrack(false);
+      this.setAddCalcGroup(false);
+      this.setPlaceStaged(null);
+      this.setPlaceStagedSnap(null);
+      this.tools.linkLasso = false; // mutually exclusive
+    }
+  },
   resetTools(this:any){
     this.tools.addFreeNode = false;
     this.tools.addSimNode = false;
     this.tools.addSnapNode = false;
     this.tools.addLink = false;
-    this.tools.linkLasso = false;     // <-- ensure cleared
+    this.tools.linkLasso = false;
+    this.tools.linkCutter = false;                 // NEW
     this.tools.addTrack = false;
     this.tools.addCalcGroup = false;
     this.tools.placeStaged = null;

@@ -5,6 +5,7 @@ export interface NodeBase {
     y: number
     color?: string
     label?: string
+    description?: string        // NEW
     bonuses?: { title: string; description?: string }[]
     discovered?: boolean
     locked?: boolean
@@ -20,6 +21,7 @@ export interface NodeBase {
         color?: string;
         margin?: number;         // distance from node rim (angle mode)
     };
+    extra?: Record<string, any> // NEW (for additional fields)
 }
 
 export interface NodeFree extends NodeBase {

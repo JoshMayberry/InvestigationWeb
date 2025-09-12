@@ -28,6 +28,7 @@ export const trackActions = {
       startRadius: (type==="corkscrew"||type==="spiral") ? td.startRadius : undefined,
       endRadius: (type==="corkscrew"||type==="spiral") ? td.endRadius : undefined,
       direction: (type==="corkscrew"||type==="spiral") ? td.direction : undefined,
+      extra: (p as any).extra || {}    // NEW
     };
     t._v = 1;
     this.tracks.push(t);
@@ -51,7 +52,34 @@ export const trackActions = {
     const i = this.tracks.findIndex((t:any)=> t.id===id);
     if (i === -1) return;
     const prev = this.tracks[i];
-    if (prev.kind === 'calc') return; // generated
+
+    // CHANGE: allow updating extras on calc tracks; store on group for regeneration
+    if (prev.kind === 'calc') {
+      if ((patch as any).extra){
+        // merge into live track
+        prev.extra = { ...(prev.extra||{}), ...(patch as any).extra };
+        // also store a copy under the owning group for regen
+        const g = this.calcGroups?.find?.((x:any)=> x.id === prev.groupId);
+        if (g){
+          // map by id for stable ids
+          if (!g.trackExtras) g.trackExtras = {};
+          g.trackExtras[prev.id] = { ...(g.trackExtras[prev.id]||{}), ...(patch as any).extra };
+          // and also by current index as fallback if ids change
+          const groupTracks = this.tracks.filter((t:any)=> t.kind==='calc' && t.groupId===prev.groupId);
+          const idxInGroup = groupTracks.findIndex((t:any)=> t.id===prev.id);
+          if (idxInGroup >= 0){
+            if (!g._trackExtrasIndex) g._trackExtrasIndex = [];
+            g._trackExtrasIndex[idxInGroup] = {
+              ...(g._trackExtrasIndex[idxInGroup]||{}),
+              ...(patch as any).extra
+            };
+          }
+        }
+        this.dirty = true;
+      }
+      return;
+    }
+
     const next = { ...prev, ...patch };
     next._v = (prev._v||0) + 1;
     if (next._geomCache) delete next._geomCache;
@@ -74,6 +102,10 @@ export const trackActions = {
         next.p1 = { ...next.pathPoints[0] };
         next.p2 = { ...next.pathPoints[next.pathPoints.length-1] };
       }
+    }
+    if ((patch as any).extra){
+      const cur = (this.tracks[i] as any).extra || {};
+      (next as any).extra = { ...cur, ...(patch as any).extra };
     }
   },
   setTrackDraft(this:any, patch:any){

@@ -123,17 +123,30 @@
       <button class="secondary small" @click="addLinkField">+ Add Field</button>
     </div>
 
+    <div class="row" style="gap:8px; margin-top:6px;">
+      <button class="danger" @click="deleteLink">Delete</button>
+      <button class="secondary small" @click="copyLinkFormat">Copy Link Format</button>
+      <button class="secondary small" @click="pasteLinkBetweenPrompt">Paste Link Between...</button>
+      <!-- Relink / Reverse -->
+      <button
+        :class="['secondary','small', { on: isRelinking }]"
+        @click="toggleRelink"
+        title="Relink: click nodes to reassign endpoints. Right-click/Esc to cancel."
+      >{{ isRelinking ? 'Relinking…' : 'Relink' }}</button>
+      <button class="secondary small" @click="reverseLink" title="Swap From/To">Reverse</button>
+    </div>
+
     <p v-if="mode==='draft'" class="muted small">Click first node, then second. Shift to keep adding.</p>
   </div>
 </template>
-
+ 
 <script lang="ts">
 import { defineComponent, inject, computed } from "vue";
 import { useInvestigationWebStore } from "../../../stores/web";
 import type { InvestigationRuntime } from "../../../context/runtime";
 import { RUNTIME_KEY } from "../../../context/runtime";
 import { getPathType, listPathTypes } from "../../paths/registry";
-
+ 
 export default defineComponent({
   name: "EditPageLink",
   props: {
@@ -201,6 +214,14 @@ export default defineComponent({
         ? (this.store.linkDraft.sim?.maxForce ?? 4)
         : (this.link?.sim?.maxForce ?? 4);
     },
+    deleteLink(){
+      if (!this.link) return;
+      this.store.deleteLink(this.link.id);
+      this.selection?.clear();
+    },
+    isRelinking(): boolean {
+      return this.store.currentEditState === "relink" && this.store.tools?.relinkTarget === this.link?.id;
+    }
   },
   methods:{
     onId(next:string){
@@ -312,10 +333,59 @@ export default defineComponent({
       if (!this.link) return;
       this.store.setCustomValue('link', this.link.id, key, val);
     },
+    copyLinkFormat(){
+      if (!this.link) { alert("No link selected to copy."); return; }
+      this.store.copyLink(this.link.id);
+      try { console.debug("[EditPageLink] copied link format", this.link.id); } catch {}
+    },
+    pasteLinkBetweenPrompt(){
+      // If editing an existing link prefill from/to, otherwise ask
+      const fromDefault = this.link?.from || "";
+      const toDefault = this.link?.to || "";
+      const from = prompt("From node id:", fromDefault) || "";
+      const to = prompt("To node id:", toDefault) || "";
+      if (!from || !to) return;
+      const id = this.store.pasteLinkBetween(from, to);
+      if (!id) alert("Paste failed: clipboard empty or invalid.");
+      else try { console.debug("[EditPageLink] pasted link between", from, to, "newId:", id); } catch {}
+    },
+    toggleRelink(){
+      if (!this.link) { alert("Select a link to relink."); return; }
+      // If already relinking this link, cancel
+      if (this.store.currentEditState === "relink" && this.store.tools?.relinkTarget === this.link.id) {
+        this.store.setCurrentEditState?.("none");
+        this.store.tools.relinkTarget = null;
+        return;
+      }
+      // Start relink mode and mark target link id
+      this.store.tools.relinkTarget = this.link.id;
+      this.store.setCurrentEditState?.("relink");
+      // The global controllers (existing code) are expected to handle node clicks while currentEditState==="relink".
+      try { console.debug("[EditPageLink] start relink for", this.link.id); } catch {}
+    },
+    reverseLink(){
+      if (!this.link) return;
+      const id = this.link.id;
+      const before = { from: this.link.from, to: this.link.to };
+      const after = { from: this.link.to, to: this.link.from };
+      const u = this.undo;
+      if (u?.push) {
+        u.push({
+          label: "reverse-link",
+          before, after,
+          do: ()=> this.store.patchLink(id, after as any),
+          undo: ()=> this.store.patchLink(id, before as any)
+        });
+      } else {
+        // Fallback: direct patch
+        this.store.patchLink(id, after as any);
+      }
+      try { console.debug("[EditPageLink] reversed link", id, before, after); } catch {}
+    },
   }
 });
 </script>
-
+ 
 <style scoped>
 .form { display:flex; flex-direction:column; gap:10px; flex:1 1 auto; min-height:0; overflow-y:auto; }
 .block { display:flex; flex-direction:column; gap:8px; }

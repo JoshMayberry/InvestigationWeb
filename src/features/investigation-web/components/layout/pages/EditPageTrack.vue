@@ -82,6 +82,10 @@
       <!-- In actions row add -->
       <button v-if="!isDraft" class="secondary" @click="setAsDefault">Set As Default</button>
       <button v-if="!isDraft" class="secondary" @click="stageAllTrack">Stage All Nodes</button>
+
+      <!-- Copy / Paste formatting -->
+      <button v-if="!isDraft" class="secondary" @click="copyTrackFormat">Copy Track Format</button>
+      <button v-if="!isDraft" class="secondary" @click="pasteTrackOnto">Paste Track Format</button>
     </div>
   </div>
   <div v-else class="muted small">No track selected.</div>
@@ -253,6 +257,34 @@ export default defineComponent({
       if (!this.track) return;
       const id = this.track.id;
       this.store.patchTrack(id, { extra: { [key]: val } } as any);
+    },
+    copyTrackFormat(){
+      if (!this.track) { alert("No track selected."); return; }
+      this.store.copyTrack(this.track.id);
+      try { console.debug("[EditPageTrack] copied track format", this.track.id); } catch {}
+    },
+    pasteTrackOnto(){
+      if (!this.track) return;
+      const cb = this.store.clipboard;
+      if (!cb || cb.kind !== 'track') { alert("Clipboard does not contain a track format."); return; }
+      const data = cb.data || {};
+      const patch: any = {};
+      if (data.color !== undefined) patch.color = data.color;
+      if (data.segments !== undefined) patch.segments = data.segments;
+      if (data.type !== undefined) patch.type = data.type;
+      if (data.midControls !== undefined) patch.midControls = data.midControls;
+      if (data.c1 !== undefined) patch.c1 = data.c1;
+      if (data.c2 !== undefined) patch.c2 = data.c2;
+      if (data.symmetric !== undefined) patch.symmetric = data.symmetric;
+      if (data.controls !== undefined) patch.controls = data.controls;
+      if (data.tension !== undefined) patch.tension = data.tension;
+      if (data.turns !== undefined) patch.turns = data.turns;
+      if (data.startRadius !== undefined) patch.startRadius = data.startRadius;
+      if (data.endRadius !== undefined) patch.endRadius = data.endRadius;
+      if (data.direction !== undefined) patch.direction = data.direction;
+      if (data.extra !== undefined) patch.extra = JSON.parse(JSON.stringify(data.extra));
+      this.store.patchTrack(this.track.id, patch);
+      try { console.debug("[EditPageTrack] pasted format onto", this.track.id, patch); } catch {}
     },
   }
 });

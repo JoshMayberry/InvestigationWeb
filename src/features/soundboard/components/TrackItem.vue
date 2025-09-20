@@ -13,7 +13,7 @@
           <input
             type="checkbox"
             :checked="item.useVolume"
-            @change="onFieldChange('useVolume', ($event?.target as HTMLInputElement)?.checked)"
+            @change="onToggleUseVolume"
             :disabled="currentMode === 'edit'"
           />
           <input
@@ -24,7 +24,7 @@
             step="1"
             :value="item.volume"
             :disabled="!item.useVolume || currentMode === 'edit'"
-            @change="onFieldChange('volume', + ($event?.target as HTMLInputElement).value)"
+            @input="onVolumeInput"
           />
           <span class="pill pct">{{ item.volume }}</span>
         </label>
@@ -51,7 +51,6 @@ import { TrackState, Track, SoundboardMode } from "../types";
 
 export default defineComponent({
   name: "TrackItem",
-  inject: { soundboardCtx: { default: null } },
   props: {
     item: { type: Object as PropType<Track>, required: true },
     trackState: { type: String as PropType<TrackState>, required: true },
@@ -61,27 +60,37 @@ export default defineComponent({
     currentMode: { type: String as PropType<SoundboardMode>, required: true }
   },
   emits: [
-    // keep for backward compatibility during migration
     "track:state",
     "track:update",
     "track:select"
   ],
   methods: {
+    onToggleUseVolume(e: Event) {
+      if (this.currentMode === "edit") return;
+      const checked = (e.target as HTMLInputElement).checked;
+      this.onFieldChange("useVolume", checked);
+      if (checked) {
+        // Re-emit current volume to ensure player applies immediately
+        this.onFieldChange("volume", this.item.volume);
+      }
+    },
+    onVolumeInput(e: Event) {
+      if (this.currentMode === "edit" || !this.item.useVolume) return;
+      const v = +(e.target as HTMLInputElement).value;
+      this.onFieldChange("volume", v);
+    },
     onPlayPause() {
       if (this.currentMode === "edit") return;
-      const act = (this as any).soundboardCtx?.actions;
-      if (act?.setTrackState) {
-        const next = this.trackState === "playing" ? "paused" : "playing";
-        act.setTrackState({
-          state: next as any,
-          groupIndex: Number(this.groupIndex),
-          subGroupIndex: Number(this.subGroupIndex),
-          trackIndex: Number(this.trackIndex),
+      if (this.trackState === "playing") {
+        this.$emit("track:state", {
+          state: "paused",
+          groupIndex: this.groupIndex,
+          subGroupIndex: this.subGroupIndex,
+          trackIndex: this.trackIndex
         });
       } else {
-        // fallback if not provided
         this.$emit("track:state", {
-          state: this.trackState === "playing" ? "paused" : "playing",
+          state: "playing",
           groupIndex: this.groupIndex,
           subGroupIndex: this.subGroupIndex,
           trackIndex: this.trackIndex
@@ -90,35 +99,16 @@ export default defineComponent({
     },
     onFieldChange(key: string, value: any) {
       if (this.currentMode === "edit") return;
-      const act = (this as any).soundboardCtx?.actions;
-      if (act?.updateTrack) {
-        act.updateTrack({
-          groupIndex: Number(this.groupIndex),
-          subGroupIndex: Number(this.subGroupIndex),
-          trackIndex: Number(this.trackIndex),
-          key,
-          value
-        });
-      } else {
-        this.$emit("track:update", {
-          groupIndex: this.groupIndex,
-          subGroupIndex: this.subGroupIndex,
-          trackIndex: this.trackIndex,
-          key,
-          value
-        });
-      }
+      this.$emit("track:update", {
+        groupIndex: this.groupIndex,
+        subGroupIndex: this.subGroupIndex,
+        trackIndex: this.trackIndex,
+        key,
+        value
+      });
     },
     onSelectTrack() {
-      if (this.currentMode !== "edit") return;
-      const act = (this as any).soundboardCtx?.actions;
-      if (act?.selectTrack) {
-        act.selectTrack({
-          groupIndex: Number(this.groupIndex),
-          subGroupIndex: Number(this.subGroupIndex),
-          trackIndex: Number(this.trackIndex),
-        });
-      } else {
+      if (this.currentMode === "edit") {
         this.$emit("track:select", {
           groupIndex: this.groupIndex,
           subGroupIndex: this.subGroupIndex,

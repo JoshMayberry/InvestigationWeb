@@ -149,7 +149,15 @@ export default defineComponent({
     },
 
     hoveredId(): string | null { return this.runtime?.controllers?.hover?.id || null; },
-    hoveredNode(): any | null { return this.hoveredId ? this.nodes.find(n => n.id === this.hoveredId) || null : null; },
+    hoveredNode(): any | null {
+      if (!this.hoveredId) return null;
+      const id = this.hoveredId;
+      // prefer nodes currently shown on canvas, fall back to staged items
+      const foundOnCanvas = (this.nodes || []).find(n => n.id === id);
+      if (foundOnCanvas) return foundOnCanvas;
+      const staged = (this.store.staging || []).find(n => n.id === id);
+      return staged || null;
+    },
     filteredIdsSet(): Set<string> { return this.store.filteredIdSet; },
     filtersActive(): boolean { return this.store.filtersActive; },
     settings(): any { return this.store.settings; },
@@ -171,10 +179,11 @@ export default defineComponent({
       return !!this.policy.canEditStructure && (this.settings.gridAlwaysVisible || this.gridActive);
     },
     showTooltip(): boolean {
-      const lp = this.runtime?.controllers?.linkPlacement;
-      const keys = this._keys;
-      if (lp?.isActive() && keys?.state.shiftDown) return false;
-      return !this.policy.canEditStructure || keys?.state.shiftDown;
+      // const lp = this.runtime?.controllers?.linkPlacement;
+      // const keys = this._keys;
+      // if (lp?.isActive() && keys?.state.shiftDown) return false;
+      // return !this.policy.canEditStructure || keys?.state.shiftDown;
+      return true;
     },
   },
   created(){

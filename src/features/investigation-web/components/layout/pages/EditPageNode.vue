@@ -266,6 +266,10 @@
       <button class="secondary" @click="setAsDefaults">Set As Default</button>
       <button class="danger" @click="deleteNode">Delete</button>
       <button class="secondary" @click="duplicateNode">Duplicate → Staging</button>
+
+      <!-- Copy / Paste formatting -->
+      <button class="secondary" @click="copyFormat">Copy Format</button>
+      <button class="secondary" @click="pasteFormat">Paste Format</button>
     </div>
   </div>
 </template>
@@ -527,6 +531,18 @@ export default defineComponent({
       if (!this.node) return;
       this.store.setCustomValue('node', this.node.id, key, val);
     },
+     copyFormat(){
+       if (!this.node) return;
+       this.store.copyNode(this.node.id);
+       // visual feedback optionally
+       try { console.debug("[EditPageNode] copied format for", this.node.id); } catch {}
+     },
+     pasteFormat(){
+       if (!this.node) return;
+       const ok = this.store.pasteNodeOnto(this.node.id);
+       if (!ok) alert("Clipboard has no node-format to paste.");
+       else try { console.debug("[EditPageNode] pasted format onto", this.node.id); } catch {}
+     },
   }
 });
 </script>

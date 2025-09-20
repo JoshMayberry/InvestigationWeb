@@ -6,6 +6,7 @@
     item-key="id"
     @end="onSubGroupDragEnd"
     :data-group-index="groupIndex"
+    :disabled="currentMode !== 'edit'"
   >
     <template #item="{ element: sub, index: subGroupIndex }">
       <div

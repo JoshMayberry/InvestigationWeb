@@ -240,9 +240,28 @@ export const trackActions = {
     this.trackDragGhost.active = false;
     this.trackDragGhost.trackId = null;
   },
-  // Removed group-related methods:
-  // addCalculatedGroup, stageAllGroupSnapNodes, removeCalculatedGroup, explodeCalculatedGroup,
-  // updateCalculatedGroup, startCalcGroupPlacement, updateCalcGroupPlacement, commitCalcGroupPlacement,
-  // cancelCalcGroupPlacement, setGroupDraft, setGroupDefaultsFromGroup, _remapSnapNodesForGroup,
-  // _regenerateCalculatedGroups, _reapplyTrackPositions
+  
+  // copy track formatting (no id, no p1/p2)
+  copyTrack(this:any, id:string){
+    const t = this.tracks.find((x:any)=> x.id === id);
+    if (!t) return false;
+    const payload:any = {
+      type: t.type,
+      color: t.color,
+      segments: t.segments,
+      extra: t.extra ? JSON.parse(JSON.stringify(t.extra)) : {},
+      // type-specific fields
+      midControls: t.midControls, c1: t.c1, c2: t.c2, symmetric: t.symmetric,
+      controls: t.controls, tension: t.tension, turns: t.turns, startRadius: t.startRadius, endRadius: t.endRadius, direction: t.direction
+    };
+    this.clipboard = { kind: 'track', data: payload };
+    return true;
+  },
+
+  // paste a copied track between two world points p1/p2
+  pasteTrackAt(this:any, p1:{x:number;y:number}, p2:{x:number;y:number}){
+    if (!this.clipboard || this.clipboard.kind !== 'track') return null;
+    const d = this.clipboard.data || {};
+    return this.addFreeTrack({ p1, p2, color: d.color, locked: false, type: d.type, segments: d.segments, extra: JSON.parse(JSON.stringify(d.extra || {})) });
+  },
 };

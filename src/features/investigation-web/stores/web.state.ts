@@ -69,11 +69,12 @@ export function createInitialState() {
       addSnapNode: false,
       addLink: false,
       linkLasso: false,
-      linkCutter: false,          // NEW
+      linkCutter: false,
       addTrack: false,
       addCalcGroup: false,
       placeStaged: null,
-      placeStagedSnap: null
+      placeStagedSnap: null,
+    relinkTarget: null as string | null // relink target id when in relink edit state (GM sets when starting relink)
     },
     currentEditState: "none" as import("../types/editState").CurrentEditState,
     drag: { nodeId: null as string | null, active: false },
@@ -157,5 +158,8 @@ export function createInitialState() {
       track: [] as { key:string; label?:string }[],
       group: [] as { key:string; label?:string }[],
     },
+
+    // Clipboard for copy/paste (formatting-only)
+    clipboard: null as null | { kind: 'node'|'link'|'track'; data: any },
   };
 }

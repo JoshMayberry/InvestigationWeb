@@ -6,7 +6,10 @@
     </div>
     <p v-if="!store.staging.length" class="muted small">Drag nodes here to stash them.</p>
     <ul class="list">
-      <li v-for="n in store.staging" :key="n.id" class="item" :class="{ active: store.tools.placeStagedId === n.id }">
+      <li v-for="n in store.staging" :key="n.id" class="item" :class="{ active: store.tools.placeStagedId === n.id }"
+          :data-id="n.id"
+          @mouseenter="onEnterStage(n, $event)" @mouseleave="onLeaveStage"
+      >
         <div class="row">
           <span class="dot" :style="{ background: n.color || 'var(--ok)' }"></span>
           <span class="lbl">{{ n.label || n.id }}</span>
@@ -30,6 +33,14 @@
       </li>
     </ul>
     <p v-if="store.tools.placeStagedId" class="hint small muted">Click on the web to place staged node...</p>
+
+    <!-- Tooltip anchored to the hovered list item's dot -->
+    <!-- <NodeTooltip
+      :node="hoveredNode"
+      :active="!!hoveredNode"
+      placement="right"
+      :anchorEl="anchorEl"
+    /> -->
   </div>
 </template>
 
@@ -37,15 +48,32 @@
 import { defineComponent, inject } from "vue";
 import { useInvestigationWebStore } from "../../stores/web";
 import { InvestigationRuntime, RUNTIME_KEY } from "../../context/runtime";
+import NodeTooltip from "../../components/web/NodeTooltip.vue";
 
 export default defineComponent({
   name: "PanelStaging",
+  components: { NodeTooltip },
   data(){ return {
     store: useInvestigationWebStore(),
     runtime: inject(RUNTIME_KEY, null) as InvestigationRuntime | null,
+    hoveredNode: null as any | null,
+    anchorEl: null as HTMLElement | null,
   }; },
   methods:{
     add(){ this.store.addStaged(); },
+    onEnterStage(n:any, e: MouseEvent){
+      try { this.runtime?.controllers?.hover?.set?.(n.id); } catch(e){}
+      this.hoveredNode = n;
+      // Prefer the .dot element as anchor; fall back to the list item
+      const li = e.currentTarget as HTMLElement;
+      const dot = li?.querySelector?.(".dot") as HTMLElement | null;
+      this.anchorEl = dot || li || null;
+    },
+    onLeaveStage(){
+      try { this.runtime?.controllers?.hover?.clear?.(); } catch(e){}
+      this.hoveredNode = null;
+      this.anchorEl = null;
+    },
     del(id:string){
       if (this.store.settings.confirmDeleteStaging && !confirm("Delete staged node?")) return;
       this.store.deleteNode(id);

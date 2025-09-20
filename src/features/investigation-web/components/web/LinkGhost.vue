@@ -29,33 +29,91 @@ export default defineComponent({
   computed:{
     nodes(): any[] { return this.store?.nodes || []; },
     lpGhost(): any { return this.runtime?.controllers?.linkPlacement?.ghost; },
+
+    // Relink mode: currently relinking link id (store.tools.relinkTarget)
+    relinkActive(): boolean {
+      return this.store?.currentEditState === "relink" && !!this.store?.tools?.relinkTarget;
+    },
+    relinkLink(): any | null {
+      const id = this.store?.tools?.relinkTarget;
+      if (!id) return null;
+      return (this.store?.links || []).find((l:any)=> l.id === id) || null;
+    },
+    relinkSource(): any | null {
+      const id = this.relinkLink?.from;
+      return id ? this.nodes.find((n:any)=> n.id === id) || null : null;
+    },
+    relinkTargetNode(): any | null {
+      // Use hover controller to determine the node under the cursor in panels/canvas
+      const hoverId = this.runtime?.controllers?.hover?.id || null;
+      return hoverId ? this.nodes.find((n:any)=> n.id === hoverId) || null : null;
+    },
+
     source(): any | null {
+      // normal linkPlacement source or relink source
+      if (this.relinkActive) return this.relinkSource;
       const id = this.lpGhost?.sourceId;
       return id ? this.nodes.find((n:any)=>n.id===id) || null : null;
     },
     target(): any | null {
+      if (this.relinkActive) return this.relinkTargetNode;
       const id = this.lpGhost?.targetHoverId;
       return id ? this.nodes.find((n:any)=>n.id===id) || null : null;
     },
-    active(): boolean { return !!(this.lpGhost?.active && this.source); }, // allow live pointer after source
-    color(): string { return this.lpGhost?.valid ? this.lpGhost?.color : "#ef4444"; },
-    opacity(): number { return this.lpGhost?.valid ? 0.65 : 0.9; },
+
+    active(): boolean {
+      // active if normal link placement ghost active OR relink ghost active with both endpoints present
+      if (this.lpGhost?.active && this.source) return true;
+      if (this.relinkActive && this.relinkSource && this.relinkTargetNode) return true;
+      return false;
+    },
+
+    // color: prefer relink link color if present
+    color(): string {
+      if (this.relinkActive && this.relinkLink?.color) return this.relinkLink.color;
+      return this.lpGhost?.valid ? this.lpGhost?.color : "#ef4444";
+    },
+
+    opacity(): number {
+      if (this.relinkActive) {
+        // slightly translucent for relink preview
+        return this.relinkSource && this.relinkTargetNode ? 0.9 : 0.6;
+      }
+      return this.lpGhost?.valid ? 0.65 : 0.9;
+    },
+
     dash(): string | undefined {
+      if (this.relinkActive) {
+        // solid when valid (different endpoints), dashed when invalid
+        const link = this.relinkLink;
+        if (!link) return "4 3";
+        const a = link.from, b = this.relinkTargetNode?.id;
+        if (!b || a === b) return "4 3";
+        const dup = (this.store.links || []).some((l:any)=> (l.from === a && l.to === b) || (l.from === b && l.to === a));
+        return dup ? "4 3" : (link.stroke === "dashed" ? "6 4" : (link.stroke === "dotted" ? "2 4" : undefined));
+      }
       if (!this.lpGhost?.valid) return "4 3";
       return this.lpGhost?.stroke === "dashed" ? "6 4" : (this.lpGhost?.stroke === "dotted" ? "2 4" : undefined);
     },
+
     markerEnd(): string | undefined {
-      const arrow = this.store?.linkDraft?.arrowHead;
-      return this.lpGhost?.valid && arrow ? "url(#iw-arrow-head)" : undefined;
+      // prefer relink link arrowHead if present
+      const arrow = this.relinkLink?.arrowHead ?? this.store?.linkDraft?.arrowHead;
+      return (this.relinkActive && this.relinkSource && this.relinkTargetNode && arrow) ? "url(#iw-arrow-head)" : (this.lpGhost?.valid && this.store?.linkDraft?.arrowHead ? "url(#iw-arrow-head)" : undefined);
     },
+
     bind(): any {
-      if (!this.active || !this.source) return {};
+      // Compute coords from source->target (either linkPlacement or relink)
       const pad = this.store?.linkDraft?.pad || 0;
       const a = this.source;
+      if (!a) return {};
       if (this.target) {
         const b = this.target;
         return this.trimmed(a.x, a.y, a.r || 12, b.x, b.y, b.r || 12, pad);
       }
+      // fallback: if relinking and no hover target, do not draw
+      if (this.relinkActive) return {};
+      // fallback for live pointer during normal linkPlacement
       return this.trimOne(a.x, a.y, a.r || 12, this.lpGhost.pointer.x, this.lpGhost.pointer.y, pad);
     }
   },

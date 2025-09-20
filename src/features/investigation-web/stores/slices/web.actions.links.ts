@@ -139,4 +139,45 @@ export const linkActions = {
     });
     return true;
   },
+  // copy link visual formatting (no id, no endpoints)
+  copyLink(this:any, id:string){
+    const l = this.links.find((x:any)=> x.id === id);
+    if (!l) return false;
+    const payload:any = {
+      type: l.type,
+      color: l.color,
+      stroke: l.stroke,
+      arrowHead: !!l.arrowHead,
+      pad: l.pad,
+      extra: l.extra ? JSON.parse(JSON.stringify(l.extra)) : {},
+      // type-specific controls (without endpoints)
+      ...(l.type === 'bezier' ? { c1: l.c1, c2: l.c2, symmetric: l.symmetric } : {}),
+      ...(l.type === 'spline' ? { controls: l.controls, tension: l.tension } : {}),
+      ...(l.type === 'curved' ? { midpoints: l.midpoints, midControls: l.midControls } : {}),
+      ...(l.type === 'corkscrew' || l.type === 'spiral' ? { turns: l.turns, startRadius: l.startRadius, endRadius: l.endRadius, direction: l.direction } : {})
+    };
+    this.clipboard = { kind: 'link', data: payload };
+    return true;
+  },
+
+  // paste a copied link between two node ids
+  pasteLinkBetween(this:any, fromId:string, toId:string){
+    if (!this.clipboard || this.clipboard.kind !== 'link') return null;
+    const d = this.clipboard.data || {};
+    const payload:any = {
+      type: d.type || 'straight',
+      from: fromId,
+      to: toId,
+      color: d.color,
+      stroke: d.stroke,
+      arrowHead: d.arrowHead,
+      pad: d.pad,
+      extra: JSON.parse(JSON.stringify(d.extra || {})),
+      c1: d.c1, c2: d.c2, symmetric: d.symmetric,
+      controls: d.controls, tension: d.tension,
+      midpoints: d.midpoints, midControls: d.midControls,
+      turns: d.turns, startRadius: d.startRadius, endRadius: d.endRadius, direction: d.direction
+    };
+    return this.addLink(payload);
+  },
 };

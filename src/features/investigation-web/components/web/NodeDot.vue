@@ -206,6 +206,53 @@ export default defineComponent({
         return;
       }
 
+      // --- Relink mode handling: intercept clicks and reassign link endpoint instead of selecting node ---
+      try {
+        if (this.store.currentEditState === "relink" && this.store.tools?.relinkTarget) {
+          e.stopPropagation(); e.preventDefault();
+          const linkId = this.store.tools.relinkTarget as string;
+          const link = (this.store.links || []).find((l:any)=> l.id === linkId);
+          if (!link) {
+            // nothing to relink -> cancel
+            this.store.tools.relinkTarget = null;
+            this.store.setCurrentEditState?.("none");
+            return;
+          }
+          const clickedId = this.node.id;
+          // Clicking the same node as an existing endpoint cancels relink per spec
+          if (clickedId === link.from || clickedId === link.to) {
+            this.store.tools.relinkTarget = null;
+            this.store.setCurrentEditState?.("none");
+            return;
+          }
+          // Default behavior: replace the "to" endpoint with the clicked node
+          const before = { from: link.from, to: link.to };
+          const after = { from: link.from, to: clickedId };
+          // Push undo if available
+          try {
+            const u = this.runtime?.controllers?.undo;
+            if (u?.push) {
+              u.push({
+                label: "relink",
+                before, after,
+                do: ()=> this.store.patchLink(linkId, after),
+                undo: ()=> this.store.patchLink(linkId, before)
+              });
+            } else {
+              this.store.patchLink(linkId, after);
+            }
+          } catch (err) {
+            this.store.patchLink(linkId, after);
+          }
+          // Finish relinking
+          this.store.tools.relinkTarget = null;
+          this.store.setCurrentEditState?.("edit-selected-node");
+          // keep selection on the link: select it if selection controller exists
+          try { this.runtime?.controllers?.selection?.set?.(linkId); } catch(e){}
+          return;
+        }
+      } catch (e) { console.log("possible error?", e); /* non-fatal - fall through to normal behavior */ }
+
       // --- existing non-simulation logic below (unchanged) ---
       // Discovery mode: toggle discovered state (respect mode rules)
       if (this.canDiscover && !this.canEdit) {
@@ -379,6 +426,10 @@ export default defineComponent({
       if (e.key === "Escape"){
         this.dragCtrl?.cancel();
         this.dragCtrl?.setValidator(()=>({ valid:true }));
+        // cancel relink if active
+        if (this.store.currentEditState === "relink") {
+          this.store.tools.relinkTarget = null;
+        }
         this.store?.setCurrentEditState?.("none");
         this.cleanup();
       }

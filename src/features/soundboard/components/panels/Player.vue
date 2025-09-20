@@ -27,6 +27,7 @@ export default defineComponent({
     currentTrack: { type: [Object, null] as PropType<Track | null>, required: true },
     trackState: { type: String as PropType<TrackState>, required: true },
     currentMode: { type: String as PropType<SoundboardMode>, required: true },
+    masterVol: { type: Number, required: true },
   },
   data() {
     return {
@@ -38,7 +39,9 @@ export default defineComponent({
     trackState(newVal) {
       if (!this.playerReady || (this.currentMode === "edit")) return;
       if (newVal === "playing") {
+        this.ensureVideoLoaded();
         this.player.playVideo && this.player.playVideo();
+        this.applyVolume();
       } else if (newVal === "paused") {
         this.player.pauseVideo && this.player.pauseVideo();
       } else if (newVal === "stopped") {
@@ -47,13 +50,30 @@ export default defineComponent({
     },
     currentTrack: {
       handler(newVal: Track | null) {
-        if (this.playerReady && (this.currentMode !== "edit") && (this.trackState !== "editing") && newVal && newVal.url) {
-          const id = this.parseId(newVal.url)
-          if (id) this.player.loadVideoById(id)
+        if (!this.playerReady || !newVal || !newVal.url) return;
+        const id = this.parseId(newVal.url);
+        if (!id) return;
+        const shouldAutoplay = this.trackState === "playing" && this.currentMode !== "edit";
+        // load video (object form lets us be explicit)
+        try {
+          this.player.loadVideoById({ videoId: id, startSeconds: 0 });
+        } catch {
+          try { this.player.loadVideoById(id); } catch {}
         }
+        // play after short delay if we are in playing state
+        setTimeout(() => {
+          this.applyVolume();
+          if (shouldAutoplay) {
+            try { this.player.playVideo(); } catch {}
+          }
+        }, 200);
       },
       immediate: true,
-    }
+    },
+    masterVol() { this.applyVolume(); },
+    "currentTrack.useVolume"() { this.applyVolume(); },
+    "currentTrack.volume"() { this.applyVolume(); },
+    "currentTrack.isLoop"() { /* no-op: read at END event */ }
   },
   mounted() {
     if (!(window as any).YT) {
@@ -70,10 +90,29 @@ export default defineComponent({
       this.player = new (window as any).YT.Player('player', {
         playerVars: { autoplay: 0, rel: 0, modestbranding: 1 },
         events: {
-          onReady: () => { this.playerReady = true },
+          onReady: () => {
+            this.playerReady = true;
+            this.applyVolume();
+            // If already have a track & should be playing, ensure load
+            if (this.currentTrack?.url && this.trackState === "playing" && this.currentMode !== "edit") {
+              this.ensureVideoLoaded(true);
+            }
+          },
           onStateChange: (e: any) => {
             if (e.data === (window as any).YT.PlayerState.ENDED) {
-              this.$emit('next')
+              if (this.currentTrack?.isLoop) {
+                try {
+                  this.player.seekTo(0, true);
+                  this.player.playVideo();
+                  this.applyVolume();
+                } catch (err) {
+                  console.error("Error playing video:", err);
+                }
+              } else {
+                this.$emit('next');
+              }
+            } else if (e.data === (window as any).YT.PlayerState.PLAYING) {
+              this.applyVolume();
             }
           }
         }
@@ -81,10 +120,33 @@ export default defineComponent({
     },
     parseId(u: string): string | null {
       try {
-        if (/^[a-zA-Z0-9_-]{11}$/.test(u)) return u
-        const x = new URL(u)
-        return x.searchParams.get('v')
-      } catch { return null }
+        if (/^[a-zA-Z0-9_-]{11}$/.test(u)) return u;
+        const x = new URL(u);
+        return x.searchParams.get('v');
+      } catch { return null; }
+    },
+    ensureVideoLoaded(force=false) {
+      if (!this.currentTrack?.url) return;
+      const id = this.parseId(this.currentTrack.url);
+      if (!id) return;
+      // If force or player has no video cued (getVideoData might be undefined early)
+      let currentId: string | null = null;
+      try { currentId = this.player?.getVideoData?.()?.video_id || null; } catch {}
+      if (force || id !== currentId) {
+        try {
+          this.player.loadVideoById({ videoId: id, startSeconds: 0 });
+        } catch {
+          try { this.player.loadVideoById(id); } catch {}
+        }
+      }
+    },
+    applyVolume() {
+      if (!this.playerReady || !this.player?.setVolume) return;
+      const vol = this.currentTrack && this.currentTrack.useVolume && (this.currentTrack.volume !== undefined)
+        ? this.currentTrack.volume
+        : this.masterVol;
+      const clamped = Math.min(100, Math.max(0, Number(vol) || 0));
+      try { this.player.setVolume(clamped); } catch {}
     }
   }
 });

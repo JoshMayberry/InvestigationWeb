@@ -1,6 +1,6 @@
 # Rules
     - Always use the options api.
-    - Keep components small. Once something has like 10 complex methods- it should probably be broken up.
+    - Keep components small. Once something has many complex methods- it should probably be broken up.
     - Style colors should use the css variables defined in src/app/styles/style.css.
     - Use GSAP for animation, Popper for tooltips, D3 for SVG drawing and manipulation.
 
@@ -36,6 +36,18 @@
 - GM toggles entries; Player view receives the same set but cannot change it
 - Export/import snapshot keeps nodes + discovery set + layout config
 
+# Patch Steps
+1. Add undo types + undoRedoManager (no wiring yet).
+2. Extract pure mutations (nodes) + overlap util.
+3. Add nodeMax setting + enforcement.
+4. Introduce runtime context with selection + transform only.
+5. Implement selectionController and replace prop/emit flow for selected node.
+6. Add dragController + GhostLayer; strip drag code from InvestigationWeb / NodeDot.
+7. Wire undo manager: wrap store actions (addNode, patchNode, deleteNode, move).
+8. Replace Page functions with direct store/runtime usage; slim page.
+9. Add Toolbar buttons (Undo/Redo) using runtime.undo.canUndo, etc.
+10. Cleanup leftover unused emits/props.
+
 # Roadmap
 0. Foundation
     1. Remove all unecissary files that have altready been atempted. It is ok to scrap what has been done in favor of doign it better.
@@ -54,6 +66,7 @@
     3. Tool tips work
     4. Unlocked Bonuses work (all will be unlocked)
     5. Filters work
+    6. Undo / Redo
 2. Links and Discovery
     1. Add links to nodes
     2. Editing links works

@@ -65,6 +65,7 @@ export default defineComponent({
       const state = this.store.currentEditState;
       switch (state) {
         case "add-link": return "Add Link: click first node, then second. Shift = keep adding";
+        case "relink": return "Relink: click a node to reassign the selected link's endpoint. Right-click or Esc to cancel.";
         case "add-free-node":
           if (this.store.tools.addSimNode) return "Add Simulation Node: click to place. Shift = keep adding";
           return "Add Free Node: click to place. Shift = keep adding";

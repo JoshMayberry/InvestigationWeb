@@ -44,7 +44,9 @@ export default defineComponent({
     active: { type: Boolean, default: false },
     placement: { type: String, default: "top" },
     padding: { type: Number, default: 4 },
-    fadeMs: { type: Number, default: 140 }
+    fadeMs: { type: Number, default: 140 },
+    // When provided, the tooltip will anchor to this DOM element (used in panels)
+    anchorEl: { type: Object as () => HTMLElement | null, default: null },
   },
   setup(props){
     const runtime = inject(RUNTIME_KEY, null) as InvestigationRuntime | null;
@@ -63,15 +65,9 @@ export default defineComponent({
         getBoundingClientRect: () => {
           if (frozenRect.value) return frozenRect.value;
           const svg = view()?.getSvgEl();
-            if (!svg) {
-              console.warn("No SVG element");
-              return new DOMRect(0,0,0,0);
-            }
+          if (!svg) return new DOMRect(0,0,0,0);
           const t = view()?.transform;
-          if (!t) {
-            console.warn("No view transform");
-            return new DOMRect(0,0,0,0);
-          }
+          if (!t) return new DOMRect(0,0,0,0);
           const sx = node.x * t.k + t.x;
           const sy = node.y * t.k + t.y;
           const r = node.r || 12;
@@ -85,22 +81,6 @@ export default defineComponent({
       };
     }
 
-    function ensurePopper(node:NodeAny){
-      const el = tipEl();
-      if (!el) return;
-      destroyPopper(false);
-      virt.value = makeVirtual(node);
-      inst.value = createPopper(virt.value, el, {
-        placement: props.placement as any,
-        strategy: "fixed",
-        modifiers: [
-          { name: "offset", options: { offset: [0, 10] } },
-          { name: "preventOverflow", options: { padding: props.padding } },
-          { name: "arrow", options: { padding: 6 } },
-        ]
-      });
-    }
-
     function tipEl(){ return (tipRef.value as HTMLElement|null) || null; }
 
     function destroyPopper(clearRect:boolean){
@@ -112,9 +92,43 @@ export default defineComponent({
       if (clearRect) frozenRect.value = null;
     }
 
+    function ensurePopper(node:NodeAny){
+      const el = tipEl();
+      if (!el) return;
+      destroyPopper(false);
+      // If an external anchorEl is provided (e.g., staging panel), use it; otherwise use virtual xy from world coords.
+      if (props.anchorEl) {
+        inst.value = createPopper(props.anchorEl, el, {
+          placement: props.placement as any,
+          strategy: "fixed",
+          modifiers: [
+            { name: "offset", options: { offset: [0, 10] } },
+            { name: "preventOverflow", options: { padding: props.padding } },
+            { name: "arrow", options: { padding: 6 } },
+          ]
+        });
+      } else {
+        virt.value = makeVirtual(node);
+        inst.value = createPopper(virt.value, el, {
+          placement: props.placement as any,
+          strategy: "fixed",
+          modifiers: [
+            { name: "offset", options: { offset: [0, 10] } },
+            { name: "preventOverflow", options: { padding: props.padding } },
+            { name: "arrow", options: { padding: 6 } },
+          ]
+        });
+      }
+    }
+
     function freeze(){
-      if (!virt.value) return;
-      frozenRect.value = virt.value.getBoundingClientRect();
+      // Preserve position during fade-out
+      if (props.anchorEl) {
+        const r = props.anchorEl.getBoundingClientRect?.();
+        if (r) frozenRect.value = new DOMRect(r.left, r.top, r.width, r.height);
+      } else if (virt.value) {
+        frozenRect.value = virt.value.getBoundingClientRect();
+      }
     }
 
     function onEnterNode(node:NodeAny){
@@ -149,7 +163,6 @@ export default defineComponent({
     watch(()=> props.active, (a)=>{
       if (!displayNode.value) return;
       if (a){
-        // reactivate same node
         frozenRect.value = null;
         activeInternal.value = true;
         inst.value?.update();
@@ -158,18 +171,25 @@ export default defineComponent({
       }
     });
 
-    // Update on pan/zoom while visible
+    // If the external anchor element changes (e.g., different list item), refresh popper.
+    watch(()=> props.anchorEl, ()=>{
+      if (displayNode.value && activeInternal.value) {
+        ensurePopper(displayNode.value);
+        inst.value?.update();
+      }
+    });
+
+    // Update on pan/zoom while visible (canvas case)
     watch(()=> [
-      view()?.transform.k,
-      view()?.transform.x,
-      view()?.transform.y
+      view()?.transform?.k,
+      view()?.transform?.x,
+      view()?.transform?.y
     ], ()=>{
       if (activeInternal.value) inst.value?.update();
     });
 
     const tipRef = ref<HTMLElement|null>(null);
 
-    // Build label/value pairs for non-empty additional fields
     const extraPairs = computed(() => {
       const n = displayNode.value as any;
       if (!n) return [] as { key:string; label:string; value:string }[];

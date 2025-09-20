@@ -199,4 +199,45 @@ export const nodeActions = {
     this.snapPlacement.valid = false;
     this.snapPlacement.staged = false;
   },
+  
+  // Clipboard: copy node formatting (no id, no label/description/bonuses/connections)
+  copyNode(this:any, id:string){
+    const n = this.nodes.find((x:any)=> x.id === id) || this.staging.find((x:any)=> x.id === id);
+    if (!n) return false;
+    const payload:any = {
+      // formatting fields allowed to copy to other nodes
+      r: n.r,
+      color: n.color,
+      labelStyle: n.labelStyle ? { ...n.labelStyle } : undefined,
+      extra: n.extra ? JSON.parse(JSON.stringify(n.extra)) : {},
+      sim: n.sim ? { ...n.sim, vx: undefined, vy: undefined, fx: undefined, fy: undefined } : undefined
+    };
+    this.clipboard = { kind: 'node', data: payload };
+    return true;
+  },
+
+  // Paste clipboard as a new node at position x,y (creates new id, does NOT copy label/description/bonuses/connections)
+  pasteNodeAt(this:any, x:number, y:number){
+    if (!this.clipboard || this.clipboard.kind !== 'node') return null;
+    const tpl = this.clipboard.data || {};
+    return this.addNode({ x, y, r: tpl.r, color: tpl.color, labelStyle: tpl.labelStyle, extra: JSON.parse(JSON.stringify(tpl.extra || {})), sim: tpl.sim });
+  },
+
+  // Paste clipboard formatting onto existing node (only nodes -> nodes)
+  pasteNodeOnto(this:any, targetId:string){
+    if (!this.clipboard || this.clipboard.kind !== 'node') return false;
+    const t = this.nodes.find((n:any)=> n.id === targetId) || this.staging.find((n:any)=> n.id === targetId);
+    if (!t) return false;
+    const tpl = this.clipboard.data || {};
+    // Only allow node settings to be applied
+    const patch:any = {};
+    if (tpl.r !== undefined) patch.r = tpl.r;
+    if (tpl.color !== undefined) patch.color = tpl.color;
+    if (tpl.labelStyle !== undefined) patch.labelStyle = { ...(t.labelStyle||{}), ...tpl.labelStyle };
+    if (tpl.extra !== undefined) patch.extra = { ...(t.extra||{}), ...JSON.parse(JSON.stringify(tpl.extra)) };
+    if (tpl.sim !== undefined) patch.sim = { ...(t.sim||{}), ...tpl.sim };
+    this.patchNode(targetId, patch);
+    return true;
+  },
+  clearClipboard(this:any){ this.clipboard = null; return true; },
 };

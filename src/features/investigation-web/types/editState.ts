@@ -11,4 +11,5 @@ export type CurrentEditState =
   | "drag-track"
   | "drag-track-end"
   | "edit-selected-node"
+  | "relink"
   | "add-calc-group";

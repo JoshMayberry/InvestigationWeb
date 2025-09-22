@@ -17,6 +17,7 @@
         :currentTrack="currentTrack"
         :currentMode="currentMode"
         :trackState="trackState"
+        :masterVol="masterVol"
         @play="onTrackStateChange({
           state: 'playing',
           groupIndex: currentGroupIndex!,
@@ -87,7 +88,7 @@ import axios from "axios";
 import { EditSelection, Group, SoundboardMode, SubGroup, Track, TrackState } from "../types";
 
 const FOLDER = "soundboard";
-const FILENAME = "persona5";
+const FILENAME = "ffcb";
 
 export default defineComponent({
   name: "SoundboardPage",
@@ -216,8 +217,9 @@ export default defineComponent({
     }) {
       // TODO: Harden this? We need something better maybe...
       const track = this.groups?.[groupIndex]?.subGroups?.[subGroupIndex]?.items?.[trackIndex];
-      if (track && key in track) {
+      if (track) {
         (track as any)[key] = value;
+        this.isDirty = true;
       } else {
         console.warn(`Invalid track update: ${key}`);
       }
@@ -256,7 +258,6 @@ export default defineComponent({
     onGroupSelect({ groupIndex }: {
       groupIndex: number,
     }) {
-      console.log("@onGroupSelect")
       if (this.currentMode === "edit") {
         this.currentGroupIndex = groupIndex;
         this.currentSubGroupIndex = null;
@@ -267,7 +268,6 @@ export default defineComponent({
       groupIndex: number,
       subGroupIndex: number
     }) {
-      console.log("@onSubGroupSelect")
       if (this.currentMode === "edit") {
         this.currentGroupIndex = groupIndex;
         this.currentSubGroupIndex = subGroupIndex;
@@ -337,11 +337,22 @@ export default defineComponent({
       }
     },
     onNext(): void {
-      if (this.currentGroupIndex == null || this.currentSubGroupIndex == null) return
-      const subGroups = this.groups[this.currentGroupIndex].subGroups
-      const items = subGroups[this.currentSubGroupIndex].items
-      if (!items.length) return
-      this.currentTrackIndex = (this.currentTrackIndex! + 1) % items.length
+      if (this.currentGroupIndex == null || this.currentSubGroupIndex == null) return;
+      const items = this.groups[this.currentGroupIndex].subGroups[this.currentSubGroupIndex].items;
+      if (!items.length) return;
+      this.currentTrackIndex = ( (this.currentTrackIndex ?? -1) + 1 ) % items.length;
+      // Keep playing if we were playing
+      if (this.trackState === "playing") {
+        this.$nextTick(() => {
+          // re-emit play to ensure player knows to play new track
+          this.onTrackStateChange({
+            state: "playing",
+            groupIndex: this.currentGroupIndex!,
+            subGroupIndex: this.currentSubGroupIndex!,
+            trackIndex: this.currentTrackIndex!
+          });
+        });
+      }
     },
     onMasterVolChange(val: number): void { this.masterVol = val },
     onTrackRemove(sel: EditSelection): void {

@@ -13,7 +13,7 @@
           <input
             type="checkbox"
             :checked="item.useVolume"
-            @change="onFieldChange('useVolume', ($event?.target as HTMLInputElement)?.checked)"
+            @change="onToggleUseVolume"
             :disabled="currentMode === 'edit'"
           />
           <input
@@ -24,7 +24,7 @@
             step="1"
             :value="item.volume"
             :disabled="!item.useVolume || currentMode === 'edit'"
-            @change="onFieldChange('volume', + ($event?.target as HTMLInputElement).value)"
+            @input="onVolumeInput"
           />
           <span class="pill pct">{{ item.volume }}</span>
         </label>
@@ -65,6 +65,20 @@ export default defineComponent({
     "track:select"
   ],
   methods: {
+    onToggleUseVolume(e: Event) {
+      if (this.currentMode === "edit") return;
+      const checked = (e.target as HTMLInputElement).checked;
+      this.onFieldChange("useVolume", checked);
+      if (checked) {
+        // Re-emit current volume to ensure player applies immediately
+        this.onFieldChange("volume", this.item.volume);
+      }
+    },
+    onVolumeInput(e: Event) {
+      if (this.currentMode === "edit" || !this.item.useVolume) return;
+      const v = +(e.target as HTMLInputElement).value;
+      this.onFieldChange("volume", v);
+    },
     onPlayPause() {
       if (this.currentMode === "edit") return;
       if (this.trackState === "playing") {

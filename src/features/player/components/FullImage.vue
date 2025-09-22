@@ -9,7 +9,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
-import type { PhotoFile } from "@shared/stores/playerMessage";
+import type { PhotoFile } from "@shared/stores/photos";
 
 export default defineComponent({
   name: "FullImage",

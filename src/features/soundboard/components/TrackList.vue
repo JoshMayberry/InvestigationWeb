@@ -7,6 +7,7 @@
     @end="onDragEnd"
     :data-group-index="groupIndex"
     :data-sub-group-index="subGroupIndex"
+    :disabled="currentMode !== 'edit'"
   >
     <template #item="{ element: track, index: thisTrackIndex }">
       <TrackItem

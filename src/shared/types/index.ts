@@ -10,3 +10,5 @@ export type RouteDefinition = Omit<RouteRecordRaw, 'meta'> &  {
     navOrder?: number
   }
 }
+
+export type DrawerMeta = { icon?: string; label?: string };

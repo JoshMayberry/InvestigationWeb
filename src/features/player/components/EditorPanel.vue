@@ -25,9 +25,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import FullImage from "@features/player/components/FullImage.vue";
-import type { PhotoFile } from "@shared/stores/playerMessage";
-
-type DrawerMeta = { icon?: string; label?: string };
+import type { PhotoFile } from "@shared/stores/photos";
+import type { DrawerMeta } from "@shared/types";
 
 export default defineComponent({
   name: "EditorPanel",

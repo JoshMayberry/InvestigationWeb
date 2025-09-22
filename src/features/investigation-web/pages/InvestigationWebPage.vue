@@ -1,82 +1,117 @@
 <template>
-  <div class="player-page">
-    <EditPanel
-      class="edit-panel"
-      :node="selectedNode"
-      @update="onNodeUpdate"
-      @delete="onNodeDelete"
-    />
-    <InvestigationWeb
-      class="investigation-web"
-      :layout="layout"
-      v-model:nodes="nodes"
-      @select:node="onNodeSelect"
-    />
+  <div class="iw-page" v-if="store">
+    <Toolbar />
+    <div class="layout">
+      <DrawersLeft />
+      <InvestigationWeb class="canvas" />
+      <DrawersRight />
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import InvestigationWeb from "../components/InvestigationWeb.vue";
-import { LayoutGroup } from "../types/layout";
-import { NodeAny } from "../types/node";
-import EditPanel from "../components/EditPanel.vue";
+import InvestigationWeb from "../components/web/InvestigationWeb.vue";
+import DrawersLeft from "../components/layout/DrawersLeft.vue";
+import DrawersRight from "../components/layout/DrawersRight.vue";
+import Toolbar from "../components/layout/Toolbar.vue";
+import { useInvestigationWebStore } from "../stores/web";
+import { createInvestigationRuntime, RUNTIME_KEY } from "../context/runtime";
+import { createChannel } from "@shared/utils/broadcast"; // ADD
 
 export default defineComponent({
-  name: "PlayerPage",
-  components: { InvestigationWeb, EditPanel },
+  name: "InvestigationWebPage",
+  components: { InvestigationWeb, DrawersLeft, DrawersRight, Toolbar },
   data() {
-    const layout: LayoutGroup = {
-      type: "group",
-      kind: "row",
-      props: { gap: "40px" },
-      children: [
-        { type: "track", id: "tA", kind: "vline", props: { x: "50%", color: "red" } },
-        { type: "track", id: "tB", kind: "vline", props: { x: "50%", color: "gold" } },
-        { type: "track", id: "tC", kind: "vline", props: { x: "50%", color: "deepskyblue" } },
-      ]
-    };
-    const nodes: NodeAny[] = [
-      { id: "n1", kind: "free", x: 100, y: 100, r: 14, color: "#10b981" },
-      { id: "n2", kind: "free", x: 200, y: 200, r: 14, color: "#8b5cf6" },
-    ];
+    const runtime = createInvestigationRuntime(null);
     return {
-      layout,
-      nodes,
-      selectedNode: null as NodeAny | null,
+      store: null as ReturnType<typeof useInvestigationWebStore> | null,
+      runtime,
+      isDirty: false,
+      _bc: null as any,        // ADD
+      _timer: 0 as any,        // ADD
     };
   },
-  methods: {
-    onNodeSelect(node: NodeAny) {
-      this.selectedNode = node;
-    },
-    onNodeUpdate(updatedNode: NodeAny) {
-      const idx = this.nodes.findIndex(n => n.id === updatedNode.id);
-      if (idx !== -1) this.nodes.splice(idx, 1, updatedNode);
-      this.selectedNode = updatedNode;
-    },
-    onNodeDelete(nodeId: string) {
-      this.nodes = this.nodes.filter(n => n.id !== nodeId);
-      this.selectedNode = null;
-    },
+  provide() { return { [RUNTIME_KEY]: this.runtime }; },
+  created() {
+    const store = useInvestigationWebStore();
+    this.store = store;
+    this.runtime.setStore(this.store);
+    this.store.initSettingsFromLocal();
+    this.store.$subscribe((_m, state) => { this.isDirty = state.dirty; });
+    this.store.setMode?.("view");
+
+    // BroadcastChannel publisher (GM is authority)
+    this._bc = createChannel("iw-snapshot");
+    const publish = () => {
+      // Build a plain snapshot (no proxies)
+      const doc = {
+        version: 4,
+        nodes: this.store!.nodes,
+        staging: this.store!.staging,
+        bonuses: this.store!.bonuses,
+        tracks: this.store!.tracks,
+        links: this.store!.links,
+        calcGroups: this.store!.calcGroups,
+        trackSeq: this.store!.trackSeq,
+        linkSeq: this.store!.linkSeq,
+        trackDraft: this.store!.trackDraft,
+        linkDraft: this.store!.linkDraft,
+        groupDraft: this.store!.groupDraft,
+        customFields: this.store!.customFields,
+        discovery: this.store!.discovery,
+        // include UI/policy/config so players match GM view exactly
+        currentMode: this.store!.currentMode,
+        policy: this.store!.policy,
+        filters: this.store!.filters,
+        settings: this.store!.settings,
+        meta: { savedAt: this.store!.savedAt || null },
+      };
+      // debug published snapshot summary
+      try { console.debug("[GM publish snapshot] mode:", doc.currentMode, "discovery:", doc.discovery, "filters:", { q: doc.filters?.query, colors: (doc.filters?.colors||[]).length }); } catch {}
+      this._bc.post(doc);
+    };
+
+    // Throttle broadcasts on relevant changes
+    this.$watch(
+      () => [ this.store!.nodes, this.store!.links, this.store!.tracks, this.store!.calcGroups, this.store!.discovery,
+              this.store!.filters, this.store!.settings, this.store!.currentMode, this.store!.policy, this.store!.customFields ],
+      () => {
+        if (this._timer) return;
+        this._timer = window.setTimeout(() => { this._timer = 0; publish(); }, 150);
+      },
+      { deep: true, immediate: true }
+    );
+  },
+  mounted() { this.store?.load(); },
+  beforeUnmount(){
+    if (this._timer) { clearTimeout(this._timer); this._timer = 0; }
+    this._bc?.stop?.();
   },
 });
 </script>
 
 <style scoped>
-.player-page {
-  flex: 1;
+.iw-page {
+  display: flex;
+  background: black;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.layout {
   display: flex;
   flex-direction: row;
+  min-height: 60vh;
+  height: 100%;
+  overflow: hidden;
+  background: #0b1020;
 }
-
-.edit-panel {
-  flex: 0;
-  min-width: calc(max(300px, 10vh));
+.canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  position: relative;
 }
-
-.investigation-web {
-  flex: 1;
-}
-
 </style>

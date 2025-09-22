@@ -140,3 +140,4 @@ vite.config.ts.timestamp-*
 gpt/
 *.PNG
 *.xcf
+src/server/data/images/images-last-state.json

@@ -1,0 +1,1548 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "id": "face-chin",
+      "label": "Seal of Brightlord Itzmin",
+      "description": "Joint Thaylen–Azish rule on paper, but the newest ‘safety closures’ for the Hollow Mine and several ‘cultural grants’ all carry Itzmin’s personal seal—money and permission flowing to Teocín’s work.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Public notices at the Azish office; a Thaylen clerk willing to explain the ledgers over drinks.",
+        "note": "Needed for deep crack (1 of 3)"
+      },
+      "initiallyHidden": false,
+      "x": 590,
+      "y": 742,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 168,
+        "fontSize": 11,
+        "margin": 11
+      },
+      "discovered": false
+    },
+    {
+      "id": "face-stone-side",
+      "label": "Festival of Ancestors",
+      "description": "Stone ‘ancestors’ stroll the streets, dance on balconies, and share rehearsed stories. Guides boast how each moves ‘just like’ their loved one.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Observation in the plaza; first hour in Rufina’s tavern.",
+        "note": "Initial Entry Point"
+      },
+      "initiallyHidden": false,
+      "x": 942,
+      "y": 60,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "face-flesh-side",
+      "label": "Whispers of Missing Singers",
+      "description": "Festival talk turns dark in corners: names not showing for shifts, bunks stripped, foremen shrugging it off. Singers speak quietly about being ‘moved’ or ‘lost’—and about human indifference.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Singers at bunkhouses and street stalls; a worried elder during lantern-light.",
+        "note": "Needed for shallow crack (1 of 1)"
+      },
+      "initiallyHidden": false,
+      "x": 213,
+      "y": 77,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "face-top-middle",
+      "label": "Out of Range, Out of Role",
+      "description": "When a construct wandered too far from its ofrenda, it stopped acting like ‘Grandfather’ and began copying whoever was nearby—steps, gestures, even a bark of laughter.",
+      "extra": {
+        "tier": "crack",
+        "source": "A shrine steward’s incident tale; a child’s sketch of the ‘lost grandpa’ imitating street acrobats.",
+        "note": "Needed for a deep crack (1 of 3- likely the last of the 3 that makes it appear); Is one of 2 possible first cracks"
+      },
+      "initiallyHidden": true,
+      "x": 574.2516702825617,
+      "y": 153.7762829612709,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "flesh-eye-left-corner",
+      "label": "After the ‘Large Chicken’",
+      "description": "Locals joke about a ‘giant chicken’ overhead—really a big, dark bird. Right after these sightings, the Sereno hangs thickest in alleys below.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Rooftop watchers; a hawker who calls out ‘Mind the big chicken!’ when it circles.",
+        "note": ""
+      },
+      "initiallyHidden": false,
+      "x": 339,
+      "y": 332,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 206,
+        "fontSize": 11,
+        "margin": 17
+      },
+      "discovered": false
+    },
+    {
+      "id": "flesh-eye-top",
+      "label": "Mist with a Pulse",
+      "description": "Watch the purple—every few breaths it deepens, then fades, like a heartbeat. The rhythm grows stronger near the metalworks.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Street observation at dusk; the honorspren murmurs that the pulse is ‘not the wind.’",
+        "note": "Needed for deep crack"
+      },
+      "initiallyHidden": false,
+      "x": 442,
+      "y": 243,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 66,
+        "fontSize": 11,
+        "margin": 24
+      },
+      "discovered": false
+    },
+    {
+      "id": "flesh-eye-right-corner",
+      "label": "Second-Hand Sereno",
+      "description": "When someone nearby inhales a little Sereno and exhales slowly, those around them calm down—caregivers feel woozy first. The breath seems to ‘soften’ the mist for a moment.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Ardent nurse’s observation on a busy corner; bystanders copying the slow exhale during a coughing fit.",
+        "note": "Available without discovery"
+      },
+      "initiallyHidden": false,
+      "x": 514,
+      "y": 337,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 54,
+        "fontSize": 11,
+        "margin": 22
+      },
+      "discovered": false
+    },
+    {
+      "id": "flesh-eye-bottom",
+      "label": "Stormlight-Buffered Analgesic",
+      "description": "Teocín’s margins: if that exhaled, ‘second-hand’ Sereno passes across an **infused mark** (held under cloth at the mouth), it briefly blocks pain—good for calming, mercy, or field work.",
+      "extra": {
+        "tier": "deep",
+        "source": "Teocín’s lab notes in the Hollow Mine; confirmed during a desperate attempt to settle a patient’s breathing.",
+        "note": "needed for flesh oath"
+      },
+      "initiallyHidden": true,
+      "x": 426,
+      "y": 383,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 192,
+        "fontSize": 11,
+        "margin": 10
+      },
+      "discovered": false
+    },
+    {
+      "id": "flesh-eyebrow-left-side",
+      "label": "Black Feather Down the Shaft",
+      "description": "In the mine you glimpse a youth with shadow-wings vanish down the lift. A single ‘feather’ is left behind—dry, inky, and brittle.",
+      "extra": {
+        "tier": "crack",
+        "source": "PC sighting at the inner elevator; the brittle ‘feather’ recovered from the grating.",
+        "note": "Leads to 2 definition for flesh; Is one of 2 possible first cracks"
+      },
+      "initiallyHidden": true,
+      "x": 320.47393714510446,
+      "y": 292.61177421309037,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "flesh-eyebrow-right-side",
+      "label": "Gemheart Source",
+      "description": "Teocín’s diagrams conclude the Sereno vapor leaks from **Serapio’s gemheart**, where a parent-flame was threaded in. Panic thickens it; calm thins it.",
+      "extra": {
+        "tier": "deep",
+        "source": "Teocín’s research folio stacked near the inner lab; annotations about ‘vapor leakage’ and ‘dual pulse’.",
+        "note": "Needed for crack oath"
+      },
+      "initiallyHidden": true,
+      "x": 438,
+      "y": 192,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "flesh-pupil",
+      "label": "Artificial Gemheart",
+      "description": "A singer lies restrained, tubes threading an ‘artificial gemheart’ that pumps Stormlight in cycles. Their true heart sits on a tray beside them.",
+      "extra": {
+        "tier": "oath",
+        "source": "Hollow Mine inner lab: restraints, pump, and the gemheart on a metal table.",
+        "note": "This oath is the easiest to get to"
+      },
+      "initiallyHidden": true,
+      "x": 462.1039335507479,
+      "y": 343.710925127892,
+      "color": "#f59e0b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 291,
+        "fontSize": 11,
+        "margin": 23
+      },
+      "discovered": false
+    },
+    {
+      "id": "stone-eye-left-corner",
+      "label": "Carved Ancestors",
+      "description": "Stone skeletons with flexible, etched joints and small gemstone studs walk among the living, bowing and gesturing.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Parade route up close; a craftsperson explaining the etchwork with pride.",
+        "note": "Initial Entry Point"
+      },
+      "initiallyHidden": false,
+      "x": 657.6964983022464,
+      "y": 313.32716834516043,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 299,
+        "fontSize": 11,
+        "margin": 21
+      },
+      "discovered": false
+    },
+    {
+      "id": "stone-eye-top",
+      "label": "Leashed to the Ofrenda",
+      "description": "Each construct behaves like the ancestor tied to a nearby ofrenda—and rarely strays far from its assigned shrine.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Shrine handlers’ routes; maps showing where each ‘ancestor’ is scheduled to walk.",
+        "note": "Needed for shallow crack (1 of 1)"
+      },
+      "initiallyHidden": false,
+      "x": 751.6453971201793,
+      "y": 217.0030908587392,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "stone-eye-right-corner",
+      "label": "Control Rails",
+      "description": "Fine, deliberate pathways cross their bodies—some lines look like **control rails**, not just motion channels.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Close look at a loose joint-plate; a maintenance artisan’s offhand comment.",
+        "note": ""
+      },
+      "initiallyHidden": false,
+      "x": 832.9271327456124,
+      "y": 308.31301412331203,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 62,
+        "fontSize": 11,
+        "margin": 20
+      },
+      "discovered": false
+    },
+    {
+      "id": "stone-eye-right-corner-socket",
+      "label": "Continuous Contact",
+      "description": "Midnight Essence maintains control only across continuous contact—etched rails, bone, cloth, skin. Break the film and the mimic slumps. Contact-less spans (open air) do not transmit.",
+      "extra": {
+        "tier": "deep",
+        "source": "Char pit autopsy notes; failed frames showing control loss wherever straps burned away.",
+        "note": "Needed for crack oath"
+      },
+      "initiallyHidden": true,
+      "x": 848.9574432583256,
+      "y": 402.02092252707365,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "stone-eye-middle-socket",
+      "label": "Rufina’s Moving Shadow",
+      "description": "Near a strong cache of incense supplies, a black-violet glaze is faintly visible **flowing** through Rufina’s etched channels—like a fragment stirred by fresh fuel.",
+      "extra": {
+        "tier": "deep",
+        "source": "Observation behind a market stall where incense is bundled; Rufina pauses and the ‘sheen’ slides within her arms.",
+        "note": "Needed for stone oath"
+      },
+      "initiallyHidden": true,
+      "x": 749.5342166774911,
+      "y": 442.37502591147535,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "stone-eye-left-corner-socket",
+      "label": "Caged Midnight Essence",
+      "description": "Inside a damaged socket assembly, a tiny cage holds a black-violet fragment—light-drinking, faintly warm after incense rituals.",
+      "extra": {
+        "tier": "crack",
+        "source": "Recovered broken socket from a back-alley mishap; residue on the frame.",
+        "note": "Needs 3 shallow cracks to appear"
+      },
+      "initiallyHidden": true,
+      "x": 653.4740568804988,
+      "y": 437.8887876048561,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 304,
+        "fontSize": 11,
+        "margin": 25
+      },
+      "discovered": false
+    },
+    {
+      "id": "stone-pupil",
+      "label": "Rufina’s Selfhood",
+      "description": "Away from her ofrenda, Rufina still insists ‘I am me.’ Not just mimicry—she remembers routes, keeps jokes fresh, and chooses whom to help.",
+      "extra": {
+        "tier": "oath",
+        "source": "Conversations during long walks beyond the shrine circuit; patrons’ testimonies about new stories.",
+        "note": "This oath is a bit harder to get to"
+      },
+      "initiallyHidden": true,
+      "x": 749.2288227203811,
+      "y": 281.43017590032287,
+      "color": "#d9d9d9",
+      "kind": "free",
+      "r": 7,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "mouth-flesh-side",
+      "label": "Breath at the Altars",
+      "description": "Constructs occasionally pause by altars to ‘breathe’ the rising incense—handlers wave sticks near the faces as if feeding them.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Shrine-side observation during the procession; a child copying the ‘breathing’ motion.",
+        "note": ""
+      },
+      "initiallyHidden": false,
+      "x": 426,
+      "y": 491,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "mouth-center",
+      "label": "Ofrendas Everywhere",
+      "description": "Altars stand on most blocks—lanterns, offerings, and stewards who keep lists of whose keepsakes are where.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Shrine registry and steward rota; a district map with candle routes.",
+        "note": "Initial Entry Point"
+      },
+      "initiallyHidden": false,
+      "x": 592,
+      "y": 640,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 171,
+        "fontSize": 11,
+        "margin": 14
+      },
+      "discovered": false
+    },
+    {
+      "id": "mouth-stone-side",
+      "label": "More Mementos, Truer Mimicry",
+      "description": "The fuller the ofrenda—gloves, tools, letters—the more precisely the construct ‘plays’ the ancestor. Sparse altars produce awkward echoes.",
+      "extra": {
+        "tier": "shallow",
+        "source": "Handler notes and a ledger correlating items to ‘performance quality’.",
+        "note": "Needed for a deep crack (1 of 3)"
+      },
+      "initiallyHidden": false,
+      "x": 749,
+      "y": 494,
+      "color": "#64748b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "mouth-tounge",
+      "label": "On the Beat: Make Space",
+      "description": "When a Stormlight-buffered, second-hand exhale is timed to Serapio’s heartbeat, the Midnight Essence around his chest desynchronizes and won’t carry across the open air for a blink—opening a clear lane between him and Teocín’s control.",
+      "extra": {
+        "tier": "oath",
+        "source": "observed collapse of Teocín’s Essence tool as she approached; repeated by syncing breath with the pulse.",
+        "note": "Needs a crack from both sides to appear- making it the hardest to get to"
+      },
+      "initiallyHidden": true,
+      "x": 592.3845111050916,
+      "y": 589.1206698803956,
+      "color": "#f59e0b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      },
+      "discovered": false
+    },
+    {
+      "id": "nynxravq",
+      "kind": "free",
+      "x": 579.4425108660378,
+      "y": 390.9168057430311,
+      "r": 7,
+      "label": "Voidlight in the Incense",
+      "description": "The festival sticks aren’t just prayer-smoke—each is dusted with ground, voidlight-charged gemstone. When lit, they exhale a faint black-violet vapor that the ancestor constructs “breathe” to stay animated; fresh ash rims black and leaves a purple sheen on the brass trays.",
+      "data": {},
+      "locked": false,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 304,
+        "fontSize": 11,
+        "margin": 25
+      },
+      "extra": {
+        "tier": "crack",
+        "source": "Teocín’s Chambers",
+        "note": ""
+      },
+      "color": "#64748b",
+      "discovered": false
+    }
+  ],
+  "staging": [
+    {
+      "id": "etch-plate-shards",
+      "label": "",
+      "description": "",
+      "extra": {
+        "tier": "mid",
+        "source": "",
+        "note": ""
+      },
+      "initiallyHidden": true,
+      "x": 880,
+      "y": 380,
+      "color": "#60a5fa",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      }
+    },
+    {
+      "id": "invoice-stamp",
+      "label": "",
+      "description": "",
+      "extra": {
+        "tier": "mid",
+        "source": "",
+        "note": ""
+      },
+      "initiallyHidden": true,
+      "x": 780,
+      "y": 600,
+      "color": "#60a5fa",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      }
+    },
+    {
+      "id": "note-orencio",
+      "label": "",
+      "description": "",
+      "extra": {
+        "tier": "center",
+        "source": "",
+        "note": ""
+      },
+      "initiallyHidden": true,
+      "x": 580,
+      "y": 680,
+      "color": "#f59e0b",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      }
+    },
+    {
+      "id": "spren-edgy",
+      "label": "",
+      "description": "",
+      "extra": {
+        "tier": "shallow",
+        "source": "",
+        "note": ""
+      },
+      "initiallyHidden": false,
+      "x": 710,
+      "y": 330,
+      "color": "#10b981",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      }
+    },
+    {
+      "id": "missing-ledger",
+      "label": "",
+      "description": "",
+      "extra": {
+        "tier": "shallow",
+        "source": "",
+        "note": ""
+      },
+      "initiallyHidden": false,
+      "x": 660,
+      "y": 360,
+      "color": "#10b981",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      }
+    },
+    {
+      "id": "permit-closure",
+      "label": "",
+      "description": "",
+      "extra": {
+        "tier": "mid",
+        "source": "",
+        "note": ""
+      },
+      "initiallyHidden": true,
+      "x": 704.6709477112128,
+      "y": 67.89867680730933,
+      "color": "#60a5fa",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      }
+    },
+    {
+      "id": "recipe-scrap",
+      "label": "",
+      "description": "",
+      "extra": {
+        "tier": "deep",
+        "source": "",
+        "note": ""
+      },
+      "initiallyHidden": true,
+      "x": 834.7067739292527,
+      "y": 157.12028650217312,
+      "color": "#fb7185",
+      "kind": "free",
+      "r": 14,
+      "labelStyle": {
+        "mode": "angle",
+        "angle": 0,
+        "fontSize": 11,
+        "margin": 4
+      }
+    }
+  ],
+  "bonuses": [],
+  "tracks": [],
+  "links": [
+    {
+      "type": "straight",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L_spren-edgy__seam-wind-note",
+      "from": "spren-edgy",
+      "to": "stone-pupil",
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L23",
+      "from": "flesh-eyebrow-left-side",
+      "to": "flesh-eyebrow-right-side",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": 25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#2c2c2c",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L24",
+      "from": "face-flesh-side",
+      "to": "flesh-eyebrow-left-side",
+      "controls": [
+        {
+          "t": 44,
+          "off": -3
+        },
+        {
+          "t": 66,
+          "off": -35
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L26",
+      "from": "face-chin",
+      "to": "face-flesh-side",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L27",
+      "from": "face-stone-side",
+      "to": "face-flesh-side",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L31",
+      "from": "flesh-eye-right-corner",
+      "to": "flesh-eye-top",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": 25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L32",
+      "from": "flesh-eye-right-corner",
+      "to": "flesh-eye-left-corner",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": 45
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L33",
+      "from": "flesh-eye-left-corner",
+      "to": "flesh-eye-top",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L38",
+      "from": "flesh-eye-right-corner",
+      "to": "flesh-eye-bottom",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#2c2c2c",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L39",
+      "from": "face-chin",
+      "to": "stone-eye-middle-socket",
+      "controls": [
+        {
+          "t": 27,
+          "off": 1
+        },
+        {
+          "t": 59,
+          "off": -30
+        },
+        {
+          "t": 82,
+          "off": -22
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L52",
+      "from": "face-stone-side",
+      "to": "face-chin",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L54",
+      "from": "stone-eye-left-corner",
+      "to": "stone-eye-top",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L55",
+      "from": "flesh-eyebrow-left-side",
+      "to": "flesh-eye-bottom",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": 25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L56",
+      "from": "stone-eye-top",
+      "to": "stone-eye-right-corner",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L57",
+      "from": "stone-eye-left-corner",
+      "to": "stone-eye-right-corner",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -45
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#373737",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L58",
+      "from": "mouth-flesh-side",
+      "to": "nynxravq",
+      "controls": [
+        {
+          "t": 33,
+          "off": 20
+        },
+        {
+          "t": 66,
+          "off": -10
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L59",
+      "from": "mouth-center",
+      "to": "mouth-flesh-side",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": -25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L60",
+      "from": "mouth-flesh-side",
+      "to": "mouth-stone-side",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": 25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L61",
+      "from": "mouth-center",
+      "to": "mouth-stone-side",
+      "midpoints": [],
+      "midControls": [
+        {
+          "t": 50,
+          "off": 25
+        }
+      ],
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#373737",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L62",
+      "from": "face-top-middle",
+      "to": "stone-eye-middle-socket",
+      "controls": [
+        {
+          "t": 33,
+          "off": -1
+        },
+        {
+          "t": 60,
+          "off": 36
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#373737",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L63",
+      "from": "stone-eye-top",
+      "to": "face-top-middle",
+      "controls": [
+        {
+          "t": 33,
+          "off": 20
+        },
+        {
+          "t": 49,
+          "off": -24
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#f59e0b",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 24,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L64",
+      "from": "stone-eye-middle-socket",
+      "to": "stone-pupil",
+      "midpoints": [],
+      "midControls": [],
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#212121",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L67",
+      "from": "flesh-eye-bottom",
+      "to": "flesh-pupil",
+      "controls": [
+        {
+          "t": 33,
+          "off": 20
+        },
+        {
+          "t": 66,
+          "off": -10
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#212121",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L68",
+      "from": "flesh-eyebrow-right-side",
+      "to": "mouth-tounge",
+      "controls": [
+        {
+          "t": 16,
+          "off": -16
+        },
+        {
+          "t": 63,
+          "off": -7
+        },
+        {
+          "t": 67,
+          "off": 17
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#212121",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L69",
+      "from": "stone-eye-right-corner-socket",
+      "to": "mouth-tounge",
+      "controls": [
+        {
+          "t": 11,
+          "off": -11
+        },
+        {
+          "t": 58,
+          "off": -23
+        },
+        {
+          "t": 85,
+          "off": 1
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L70",
+      "from": "stone-eye-left-corner-socket",
+      "to": "stone-eye-middle-socket",
+      "midpoints": [],
+      "midControls": [],
+      "extra": {}
+    },
+    {
+      "type": "curved",
+      "color": "#d9d9d9",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L71",
+      "from": "stone-eye-middle-socket",
+      "to": "stone-eye-right-corner-socket",
+      "midpoints": [],
+      "midControls": [],
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#212121",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L72",
+      "from": "flesh-eye-top",
+      "to": "flesh-eyebrow-right-side",
+      "controls": [
+        {
+          "t": 33,
+          "off": 20
+        },
+        {
+          "t": 66,
+          "off": -10
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    },
+    {
+      "type": "spline",
+      "color": "#373737",
+      "stroke": "solid",
+      "arrowHead": false,
+      "pad": 0,
+      "sim": {
+        "enabled": false,
+        "restLength": 160,
+        "tension": 0.05,
+        "compression": 0.05,
+        "maxForce": 4
+      },
+      "id": "L73",
+      "from": "nynxravq",
+      "to": "stone-eye-middle-socket",
+      "controls": [
+        {
+          "t": 29,
+          "off": 73
+        },
+        {
+          "t": 57,
+          "off": 28
+        }
+      ],
+      "tension": 1,
+      "extra": {}
+    }
+  ],
+  "trackSeq": 1,
+  "linkSeq": 73,
+  "trackDraft": {
+    "color": "#93c5fd",
+    "kind": "free",
+    "type": "straight",
+    "locked": false,
+    "segments": 1,
+    "midControls": [],
+    "c1": {
+      "t": 25,
+      "off": 30
+    },
+    "c2": {
+      "t": 75,
+      "off": -30
+    },
+    "symmetric": false,
+    "controls": [
+      {
+        "t": 33,
+        "off": 20
+      },
+      {
+        "t": 66,
+        "off": -10
+      }
+    ],
+    "tension": 0.25,
+    "turns": 2,
+    "startRadius": 10,
+    "endRadius": 60,
+    "direction": 1
+  },
+  "linkDraft": {
+    "type": "curved",
+    "color": "#64748b",
+    "stroke": "solid",
+    "arrowHead": false,
+    "pad": 0,
+    "sim": {
+      "enabled": false,
+      "restLength": 160,
+      "tension": 0.05,
+      "compression": 0.05,
+      "maxForce": 4
+    },
+    "midControls": [
+      {
+        "t": 50,
+        "off": 25
+      },
+      {
+        "t": 50,
+        "off": 25
+      }
+    ]
+  },
+  "groupDraft": {
+    "type": "horizontal-lines",
+    "colorPalette": [
+      "#38bdf8",
+      "#22d3ee",
+      "#818cf8",
+      "#f472b6"
+    ],
+    "params": {
+      "cx": 0,
+      "cy": 0,
+      "width": 800,
+      "lines": 4,
+      "gap": 120,
+      "rotation": 0
+    }
+  },
+  "customFields": {
+    "node": [
+      {
+        "key": "tier",
+        "label": "r"
+      },
+      {
+        "key": "source",
+        "label": "e"
+      },
+      {
+        "key": "note",
+        "label": "e"
+      }
+    ],
+    "link": [],
+    "track": [],
+    "group": []
+  },
+  "meta": {
+    "savedAt": "2025-09-20T15:59:20.960Z"
+  },
+  "calcGroups": []
+}

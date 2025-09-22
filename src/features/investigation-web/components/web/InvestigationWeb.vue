@@ -31,6 +31,7 @@
         :settings="settings"
         :filtersActive="filtersActive"
         :filteredIdsSet="filteredIdsSet"
+        :playerView="playerView"
         :discoveryPreviewActive="discoveryPreviewActive"
         :discoveryVisibleSet="discoveryVisibleSet"
       />

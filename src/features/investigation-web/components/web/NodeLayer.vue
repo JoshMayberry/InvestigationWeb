@@ -6,6 +6,7 @@
       v-show="!hideWhileDrag(n)"
       :node="n"
       :dim="(filtersActive && !filteredIdsSet.has(n.id))"
+      :playerView="playerView"
     />
   </g>
 
@@ -32,6 +33,7 @@ export default defineComponent({
   components: { NodeDot },
   props: {
     nodes: { type: Array, required: true },
+    playerView: { type: Boolean, required: true },
     settings: { type: Object, required: true },
     filtersActive: { type: Boolean, required: true },
     filteredIdsSet: { type: Object, required: true },

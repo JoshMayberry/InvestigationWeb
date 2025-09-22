@@ -49,11 +49,11 @@
       pointer-events="none"
     />
     <circle
-      v-if="(canEdit || isSimulationMode) && (node.kind!=='snap')"
+      v-if="(canEdit || isSimulationMode || (!playerView && isDiscoveryMode)) && (node.kind!=='snap')"
       :class="node.sim?.enabled ? 'sim-ring' : ''"
       :r="(node.r||12)+4"
       fill="none"
-      :stroke="node.sim?.enabled ? '#f59e0b' : '#999999'"
+      :stroke="(isDiscoveryMode ? ( isDiscoverable ? '#f59e0b' : 'transparent' ) : node.sim?.enabled ? '#f59e0b' : '#999999')"
       stroke-width="1.5"
       stroke-dasharray="4 3"
       pointer-events="none"
@@ -65,7 +65,7 @@
       :text-anchor="textAnchor"
       :style="labelCss"
       pointer-events="none"
-    >{{ node.label }}</text>
+    >{{ playerView && !discovered ? "?" : node.label }}</text>
   </g>
 </template>
 
@@ -83,6 +83,7 @@ export default defineComponent({
   props: {
     node: { type: Object as () => NodeAny, required: true },
     dim: { type: Boolean, default: false },
+    playerView: { type: Boolean, required: true },
   },
   data(){
     return {
@@ -112,6 +113,15 @@ export default defineComponent({
     viewCtrl(): any { return this.runtime?.controllers?.view; },
     canEdit(): boolean { return !!this.store?.policy?.canEditStructure; },
     canDiscover(): boolean { return !!this.store?.policy?.canDiscover; },
+    isDiscoverable(): boolean {
+      // True (GM/editor view) when in discovery mode, node is NOT yet discovered,
+      // and node id appears in the store's discoverable set.
+      // (Getter returns only undiscovered discoverables, so discovered guard is optional.)
+      if (!this.isDiscoveryMode) return false;
+      const set = this.store?.discoverableIdSet;
+      if (!(set instanceof Set)) return false;
+      return !this.node.discovered && set.has(this.node.id);
+    },
     isSelected(): boolean { return !!this.selCtrl?.is(this.node.id); },
     isHovered(): boolean { return !!this.hoverCtrl?.is(this.node.id); },
     placingActive(): boolean {
@@ -120,6 +130,7 @@ export default defineComponent({
     },
     addLinkActive(): boolean { return !!this.store?.tools?.addLink; },
     isSimulationMode(): boolean { return this.store.currentMode === 'simulation'; },
+    isDiscoveryMode(): boolean { return this.store.currentMode === 'discovery'; },
     discovered(): boolean { return !!this.node.discovered; },
     showLabel(): boolean {
       if (!this.node.label) return false;
